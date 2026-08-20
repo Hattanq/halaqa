@@ -1624,6 +1624,27 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .ev-dd-lock .ev-dd-btn{cursor:default;opacity:.92}
 .menu-card.mc-soon{opacity:.6;filter:saturate(.6)}
 .mc-soon-tag{display:block;font-size:.55rem;font-weight:800;color:#f0c040;background:rgba(240,192,64,.14);border:1px solid rgba(240,192,64,.3);border-radius:6px;padding:1px 6px;margin-top:4px;width:fit-content}
+.hqacc{margin:8px 0;border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.03);transition:border-color .25s}
+.hqacc.open{border-color:rgba(201,162,39,.35)}
+.hqacc-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 14px;cursor:pointer;touch-action:manipulation}
+.hqacc-ttls{min-width:0;flex:1}
+.hqacc-t{font-weight:800;color:#f0d060;font-size:.95rem;line-height:1.3}
+.hqacc-s{font-size:.78rem;color:#9abdba;margin-top:3px;line-height:1.35}
+.hqacc-arw{color:#9abdba;font-size:1.05rem;flex:none;transition:transform .25s}
+.hqacc.open .hqacc-arw{transform:rotate(180deg)}
+.hqacc-arw.pick{transform:none}
+.hqacc-body{display:none;padding:2px 14px 12px}
+.hqacc.open .hqacc-body{display:block;animation:hqAccIn .25s ease both}
+@keyframes hqAccIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.hqacc-row{display:flex;justify-content:space-between;gap:10px;padding:8px 2px;border-bottom:1px solid rgba(255,255,255,.06)}
+.hqacc-row:last-child{border-bottom:none}
+.hqacc-lbl{color:#9abdba;font-size:.8rem;font-weight:700;flex:none}
+.hqacc-val{font-weight:700;text-align:left;color:#eef;font-size:.85rem;word-break:break-word}
+.hqacc-val.dash{color:#6d8a87;font-weight:600}
+.hqacc-acts{display:flex;gap:7px;margin-top:11px;padding-top:11px;border-top:1px solid rgba(255,255,255,.08)}
+.hqacc-acts .hq-mini-btn{flex:1}
+.hqacc.pick{cursor:pointer}
+.hqacc.pick .hqacc-hd{cursor:pointer}
 .supp-card{background:linear-gradient(150deg,rgba(14,107,110,.5),rgba(10,61,63,.5));border:1px solid rgba(201,162,39,.25);border-radius:18px;padding:20px 16px;text-align:center;margin-bottom:14px}
 .supp-name{font-family:'Amiri',serif;font-size:1.45rem;color:#fff;font-weight:700;line-height:1.3}
 .supp-sub{font-size:.78rem;color:rgba(201,162,39,.85);font-weight:700;margin-top:5px}
@@ -5460,18 +5481,25 @@ function saveNewHalqa(){
 function showHalqatList(){
   var halqat=DB.halqat||[];
   if(!halqat.length){ openModal('عرض الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات بعد</div>'); return; }
-  var rows=halqat.map(function(h){
-    var n=(h.students||[]).length;
-    return '<div class="notif-row">'+
-      '<div class="notif-dot">📖</div>'+
-      '<div style="flex:1;min-width:0"><div class="notif-msg" style="font-weight:800">'+hqEsc(h.name)+'</div>'+
-      '<div class="notif-time">المعلّم: '+hqEsc(h.teacherName||'—')+' • '+n+' طالب</div></div>'+
-      '<div style="display:flex;gap:6px;flex:none">'+
-        '<button class="hq-mini-btn view" onclick="adminHalqaInfo(\''+h.id+'\')">عرض</button>'+
-        '<button class="hq-mini-btn del" onclick="adminDeleteHalqa(\''+h.id+'\')">حذف</button>'+
-      '</div></div>';
-  }).join('');
-  openModal('عرض الحلقات','<div>'+rows+'</div>');
+  var rows=halqat.map(function(h){ return hqHalqaAcc(h,true); }).join('');
+  openModal('عرض الحلقات','<div class="hs-wrap">'+rows+'</div>');
+}
+/* بطاقة حلقة قابلة للطي — تُستخدم في «عرض الحلقات» للجهتين */
+function hqHalqaAcc(h,canDelete){
+  var n=(h.students||[]).length;
+  var reg=(h.students||[]).filter(function(x){ return !isDiscontinued(x); }).length;
+  var body=
+    hqAccRow('اسم المعلّم', h.teacherName)+
+    hqAccRow('فترة الحلقة', h.period)+
+    hqAccRow('أيام الحلقة', hqDaysText(h.days))+
+    hqAccRow('مقرّ الحلقة', h.venue)+
+    hqAccRow('قطاع الحلقة', h.sector)+
+    hqAccRow('مشرف الحلقة', hqSuperName(h.supervisorId)||h.supervisorName)+
+    hqAccRow('عدد الطلاب', arNum(n))+
+    hqAccRow('المنتظمون', arNum(reg));
+  var acts='<button class="hq-mini-btn view" onclick="adminViewHalqa(\''+h.id+'\')">الإحصائيّات</button>'+
+    (canDelete?('<button class="hq-mini-btn del" onclick="adminDeleteHalqa(\''+h.id+'\')">حذف</button>'):'');
+  return hqAccCard(h.name, 'المعلّم: '+hqEsc(h.teacherName||'—')+' · '+arNum(n)+' طالب', body, acts);
 }
 function adminViewHalqa(hid){ setActiveHalqa(hid); showHalqaStats(); }
 
@@ -5508,17 +5536,13 @@ function showSupervisors(){
   var list=hqSupers();
   var rows=list.length?list.map(function(v){
     var n=(DB.halqat||[]).filter(function(h){return h.supervisorId===v.id;}).length;
-    return '<div class="notif-row">'+
-      '<div class="notif-dot">👤</div>'+
-      '<div style="flex:1;min-width:0"><div class="notif-msg" style="font-weight:800">'+hqEsc(v.name)+'</div>'+
-      '<div class="notif-time">'+n+' حلقة • '+hqEsc(v.phone||'—')+'</div></div>'+
-      '<div style="display:flex;gap:6px;flex:none">'+
-        '<button class="hq-mini-btn del" onclick="supDelete(\''+v.id+'\')">حذف</button>'+
-      '</div></div>';
+    var body=hqAccRow('الجوال', v.phone)+hqAccRow('قطاع المشرف', v.sector)+hqAccRow('عدد الحلقات', arNum(n));
+    return hqAccCard(v.name, hqEsc(v.sector||'بلا قطاع')+' · '+arNum(n)+' حلقة', body,
+      '<button class="hq-mini-btn del" onclick="supDelete(\''+v.id+'\')">حذف</button>');
   }).join(''):'<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد مشرفون بعد</div>';
   openModal('مشرفو الحلقات',
-    '<div>'+rows+'</div>'+
-    '<button class="prof-form-save" style="margin-top:14px" onclick="showAddSupervisor()">➕ إضافة مشرف حلقات</button>');
+    '<div class="hs-wrap">'+rows+'</div>'+
+    '<button class="prof-form-save" style="margin-top:14px" onclick="showAddSupervisor()">إضافة مشرف حلقات</button>');
 }
 function showAddSupervisor(){
   var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
@@ -5706,6 +5730,30 @@ function supEditSave(){
   }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
 }
 
+/* ============ بطاقة قابلة للطي — النمط الموحّد للقوائم ============ */
+function hqAccRow(lbl,val){
+  return '<div class="hqacc-row"><span class="hqacc-lbl">'+lbl+'</span>'+
+         '<span class="hqacc-val'+(val?'':' dash')+'">'+hqEsc(val==null||val===''?'—':val)+'</span></div>';
+}
+/* title: العنوان · sub: السطر تحته · body: محتوى الطيّة · acts: أزرار أسفلها */
+function hqAccCard(title,sub,body,acts){
+  return '<div class="hqacc">'+
+    '<div class="hqacc-hd" onclick="hqAccToggle(this)">'+
+      '<div class="hqacc-ttls"><div class="hqacc-t">'+hqEsc(title)+'</div>'+
+      (sub?('<div class="hqacc-s">'+sub+'</div>'):'')+'</div>'+
+      '<span class="hqacc-arw">▾</span>'+
+    '</div>'+
+    '<div class="hqacc-body">'+(body||'')+
+      (acts?('<div class="hqacc-acts">'+acts+'</div>'):'')+
+    '</div></div>';
+}
+function hqAccToggle(hd){
+  var c=hd.parentNode, open=c.classList.contains('open');
+  var box=c.parentNode;
+  if(box) Array.prototype.forEach.call(box.querySelectorAll('.hqacc.open'),function(x){ if(x!==c) x.classList.remove('open'); });
+  c.classList.toggle('open', !open);
+}
+
 /* بيانات مشرفي الحلقات — بنفس شكل بيانات المعلمين */
 function showSupervisorsData(){
   var list=hqSupers();
@@ -5779,17 +5827,8 @@ function supIsSup(){ return STATE.role==='supervisor'; }
 function supHalqatList(){
   var my=supMyHalqat();
   if(!my.length){ openModal('عرض الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
-  var rows=my.map(function(h){
-    var n=(h.students||[]).length;
-    return '<div class="notif-row">'+
-      '<div class="notif-dot">📖</div>'+
-      '<div style="flex:1;min-width:0"><div class="notif-msg" style="font-weight:800">'+hqEsc(h.name)+'</div>'+
-      '<div class="notif-time">المعلّم: '+hqEsc(h.teacherName||'—')+' • '+n+' طالب</div></div>'+
-      '<div style="display:flex;gap:6px;flex:none">'+
-        '<button class="hq-mini-btn view" onclick="adminHalqaInfo(\''+h.id+'\')">عرض</button>'+
-      '</div></div>';
-  }).join('');
-  openModal('عرض الحلقات', '<div>'+rows+'</div>');
+  var rows=my.map(function(h){ return hqHalqaAcc(h,false); }).join('');
+  openModal('عرض الحلقات', '<div class="hs-wrap">'+rows+'</div>');
 }
 
 function supTeachersData(){
@@ -5803,11 +5842,11 @@ function supExamPick(){
   var my=supMyHalqat();
   if(!my.length){ openModal('اختبارات الجمعية','<div class="empty-state"><div class="empty-state-icon">📝</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
   var rows=my.map(function(h){
-    return '<div class="notif-row" style="cursor:pointer" onclick="supExamOpen(\''+h.id+'\')">'+
-      '<div class="notif-dot">📝</div>'+
-      '<div style="flex:1;min-width:0"><div class="notif-msg" style="font-weight:800">'+hqEsc(h.name)+'</div>'+
-      '<div class="notif-time">'+hqEsc(h.teacherName||'—')+' • '+((h.students||[]).length)+' طالب</div></div>'+
-      '<span style="color:#9abdba">›</span></div>';
+    return '<div class="hqacc pick" onclick="supExamOpen(\''+h.id+'\')">'+
+      '<div class="hqacc-hd"><div class="hqacc-ttls">'+
+        '<div class="hqacc-t">'+hqEsc(h.name)+'</div>'+
+        '<div class="hqacc-s">'+hqEsc(h.teacherName||'—')+' · '+arNum((h.students||[]).length)+' طالب</div>'+
+      '</div><span class="hqacc-arw pick">›</span></div></div>';
   }).join('');
   openModal('اختبارات الجمعية · اختر الحلقة','<div>'+rows+'</div>');
 }
@@ -5957,18 +5996,30 @@ function hqStatsHub(halqat, title, isAll){
   if(!halqat.length){ openModal(title,'<div class="empty-state"><div class="empty-state-icon">📊</div>لا توجد حلقات بعد</div>'); return; }
   window._hqHubList=halqat.map(function(h){return h.id;});
   window._hqHubTitle=title; window._hqHubAll=!!isAll;
-  var opts=halqat.map(function(h){ return '<option value="'+hqEsc(h.id)+'">'+hqEsc(h.name)+'</option>'; }).join('');
-  var picker='<div class="hq-hub-pick">'+
-    '<label class="prof-form-lbl" style="margin-bottom:6px;display:block">إحصائيّات حلقة بعينها</label>'+
-    '<div style="display:flex;gap:8px">'+
-      '<select class="prof-form-input" id="hq-hub-sel" style="flex:1"><option value="">— اختر الحلقة —</option>'+opts+'</select>'+
-      '<button class="hq-mini-btn view" style="flex:none;padding:0 14px" onclick="hqHubGo()">عرض</button>'+
-    '</div></div>';
-  hqStatsOverview(halqat, title, picker);
+  /* قائمة قابلة للطي: كل حلقة تُفتح فتعرض إحصاءها */
+  var cards=halqat.map(function(h){
+    var m=hqMetrics(h);
+    var body=
+      hqAccRow('عدد الطلاب', arNum(m.students))+
+      hqAccRow('المنتظمون', arNum(m.students-m.disc))+
+      hqAccRow('المنقطعون', arNum(m.disc))+
+      hqAccRow('حضور اليوم', arNum(m.present))+
+      hqAccRow('غياب اليوم', arNum(m.absent))+
+      hqAccRow('متوسّط الدرجات', m.avg?String(Math.round(m.avg)):'—')+
+      hqAccRow('جلسات التسميع', arNum(m.tasmee))+
+      hqAccRow('نشاط اليوم', m.active?'نشطة':'غير نشطة')+
+      (m.suspended?hqAccRow('تعليق الحضور', m.suspReason||'مُعلَّق'):'');
+    return hqAccCard(h.name,
+      hqEsc(h.teacherName||'—')+' · '+arNum(m.students)+' طالب',
+      body,
+      '<button class="hq-mini-btn view" onclick="event.stopPropagation();hqHubGo(\''+h.id+'\')">التفاصيل الكاملة</button>');
+  }).join('');
+  var listBox='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات كل حلقة</div>'+cards+'</div>';
+  hqStatsOverview(halqat, title, '', listBox);
 }
-function hqHubGo(){
-  var sel=document.getElementById('hq-hub-sel'); if(!sel||!sel.value){ showToast('اختر الحلقة أولاً','error'); return; }
-  var hid=sel.value;
+function hqHubGo(hid){
+  if(!hid){ var sel=document.getElementById('hq-hub-sel'); hid=sel?sel.value:''; }
+  if(!hid){ showToast('اختر الحلقة أولاً','error'); return; }
   var prevList=window._hqHubList, prevT=window._hqHubTitle, prevAll=window._hqHubAll;
   setActiveHalqa(hid);
   showHalqaStats();
@@ -5982,7 +6033,7 @@ function hqHubGo(){
 
 function showAllHalqatStats(){ hqStatsHub(DB.halqat||[], 'إحصائيّات الحلقات', true); }
 
-function hqStatsOverview(halqat, title, extraTop){
+function hqStatsOverview(halqat, title, extraTop, extraBottom){
   var prev=STATE.activeHid;
   var M=halqat.map(hqMetrics);
   setActiveHalqa(prev);
@@ -6033,6 +6084,7 @@ function hqStatsOverview(halqat, title, extraTop){
     '</div></div>'+
     '<div class="hs-sec"><div class="hs-sec-hd">الحلقات الغير نشطة هذا اليوم</div>'+inactiveRows+'</div>'+
     '<div class="hs-sec"><div class="hs-sec-hd">حلقات علّقت الحضور اليوم</div>'+suspRows+'</div>'+
+    (extraBottom||'')+
   '</div>';
   openModal(title||'إحصائيّات الحلقات', body);
 }
