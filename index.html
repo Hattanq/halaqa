@@ -1592,7 +1592,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;min-height:100dvh;overflow:h
 .prof-form-input:focus { border-color:rgba(201,162,39,.6);box-shadow:0 0 0 3px rgba(201,162,39,.1); }
 .prof-form-input::placeholder { color:rgba(255,255,255,.25); }
 /* Hijri select */
-.hijri-picker { display:grid;grid-template-columns:.92fr 1.5fr 1.32fr;gap:5px;align-items:stretch; }
+.hijri-picker { display:grid;grid-template-columns:repeat(3,minmax(0,150px));gap:5px;align-items:stretch;justify-content:start; }
 .hijri-picker > div { display:block;background:none;border:0;padding:0;margin:0;border-radius:0;box-shadow:none; }
 .age-auto-tag{font-size:.5rem;font-weight:700;color:#8ad3c8;background:rgba(138,211,200,.13);border:1px solid rgba(138,211,200,.25);border-radius:6px;padding:1px 5px;margin-inline-start:5px;vertical-align:middle}
 .age-slider-wrap.age-auto{justify-content:center;gap:7px}
