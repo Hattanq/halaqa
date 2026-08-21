@@ -1646,6 +1646,38 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .hqacc.pick{cursor:pointer}
 .hqacc.pick .hqacc-hd{cursor:pointer}
 .hqacc-plain{display:block !important;padding:6px 14px 12px}
+/* صف قابل للطي داخل مربّع موحّد */
+.hqrow{border-bottom:1px solid rgba(255,255,255,.06)}
+.hqrow:last-child{border-bottom:none}
+.hqrow-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 2px;cursor:pointer;touch-action:manipulation}
+.hqrow-arw{color:#9abdba;font-size:.95rem;flex:none;transition:transform .25s}
+.hqrow.open .hqrow-arw{transform:rotate(180deg)}
+.hqrow.open .hqacc-lbl{color:#f0c040}
+.hqrow-body{display:none}
+.hqrow.open .hqrow-body{display:block;padding:2px 0 10px;animation:hqAccIn .25s ease both}
+/* حقول الاختيار داخل المربّع */
+.hqfld{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.06)}
+.hqfld .hqacc-lbl{flex:none}
+.hqsel{flex:1;max-width:62%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#eef;font:700 .82rem inherit;padding:8px 10px;text-align:right;direction:rtl}
+.tl-fetch{width:100%;margin-top:12px;padding:12px;border-radius:12px;border:1px solid rgba(201,162,39,.4);background:linear-gradient(160deg,rgba(201,162,39,.22),rgba(201,162,39,.1));color:#f0d060;font:800 .88rem inherit;cursor:pointer;touch-action:manipulation}
+.hqres{margin-top:12px;padding-top:10px;border-top:1px solid rgba(201,162,39,.25)}
+/* الخط الزمني */
+.tl-head{text-align:center;padding:16px 12px;margin-bottom:12px;border-radius:16px;background:linear-gradient(150deg,rgba(14,107,110,.5),rgba(10,61,63,.5));border:1px solid rgba(201,162,39,.25)}
+.tl-term{font-family:'Amiri',serif;font-size:1.2rem;color:#fff;font-weight:700}
+.tl-range{font-size:.8rem;color:rgba(201,162,39,.9);font-weight:700;margin-top:6px;direction:rtl}
+.tl-month{margin-bottom:12px}
+.tl-month-hd{font-size:.78rem;font-weight:800;color:#9abdba;margin-bottom:6px;padding-inline-start:2px}
+.tl-weeks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tl-week{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 4px;text-align:center}
+.tl-week.hol{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35)}
+.tl-week-n{font-weight:900;font-size:.85rem;color:#f0d060}
+.tl-week.hol .tl-week-n{color:#fcd9a0;font-size:.72rem}
+.tl-week-l{font-size:.6rem;color:#9abdba;margin-top:3px;font-weight:700;line-height:1.3}
+.tl-sec-hd{font-size:.8rem;font-weight:800;color:#f0c040;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(201,162,39,.22)}
+.tl-hol{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;margin-bottom:9px}
+.tl-hol-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.78rem;font-weight:800;color:#9abdba}
+.tl-hol-x{background:rgba(224,90,90,.14);border:1px solid rgba(224,90,90,.3);color:#f6a9a4;border-radius:8px;padding:4px 10px;font:700 .7rem inherit;cursor:pointer}
+.tl-add{width:100%;margin-top:4px;padding:11px;border-radius:12px;border:1px dashed rgba(255,255,255,.24);background:rgba(255,255,255,.04);color:#bcd6d3;font:800 .82rem inherit;cursor:pointer}
 .hqacc-load{padding:14px 4px;text-align:center;color:#9abdba;font-size:.83rem;font-weight:700}
 .hqrk{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.06)}
 .hqrk:last-child{border-bottom:none}
@@ -2665,12 +2697,13 @@ let DB = {
   exams:    lsGet('hq_exams',    {}),
   supervisors: lsGet('hq_supervisors', []),
   visits:   lsGet('hq_visits',   []),
+  timeline: lsGet('hq_timeline', {}),
   suspend:  lsGet('hq_suspend',  {}),
 };
 
 function lsGet(k,def){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch{return def;} }
 function lsSave(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch{} }
-function save(){ if(DB.halqat){ lsSave('hq_halqat',DB.halqat); } lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_suspend',DB.suspend||{}); lsSave('hq_visits',DB.visits||[]); lsSave('hq_students',DB.students);lsSave('hq_sessions',DB.sessions);lsSave('hq_grades',DB.grades);lsSave('hq_plans',DB.plans);lsSave('hq_attend',DB.attend);lsSave('hq_users',DB.users);lsSave('hq_recitation',DB.recitation);lsSave('hq_evals',DB.evals);lsSave('hq_mistakes',DB.mistakes);lsSave('hq_exams',DB.exams); cloudPushDebounced(); }
+function save(){ if(DB.halqat){ lsSave('hq_halqat',DB.halqat); } lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_suspend',DB.suspend||{}); lsSave('hq_visits',DB.visits||[]); lsSave('hq_timeline',DB.timeline||{}); lsSave('hq_students',DB.students);lsSave('hq_sessions',DB.sessions);lsSave('hq_grades',DB.grades);lsSave('hq_plans',DB.plans);lsSave('hq_attend',DB.attend);lsSave('hq_users',DB.users);lsSave('hq_recitation',DB.recitation);lsSave('hq_evals',DB.evals);lsSave('hq_mistakes',DB.mistakes);lsSave('hq_exams',DB.exams); cloudPushDebounced(); }
 
 /* ================= مزامنة سحابية للبيانات عبر كل الأجهزة (Firebase RTDB) ================= */
 function cloudGetCID(){
@@ -2678,7 +2711,7 @@ function cloudGetCID(){
   catch(e){ return 'c0'; }
 }
 var _cloudLastTs=0, _cloudTimer=null, _cloudPending=false, _cloudFirst=true, _cloudReconciled=false, _cloudErrShown=false;
-function cloudBlob(){ return JSON.stringify({halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], visits:DB.visits||[]}); }
+function cloudBlob(){ return JSON.stringify({halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], visits:DB.visits||[], timeline:DB.timeline||{}}); }
 function cloudSize(o){ try{ var n=(o.halqat||[]).length; (o.halqat||[]).forEach(function(h){ n+=((h.students||[]).length)*3; }); n+=Object.keys(o.users||{}).length; return n; }catch(e){ return 0; } }
 function _cloudOnHome(){
   try{
@@ -2734,7 +2767,8 @@ function cloudApply(val){
   DB.halqat=obj.halqat; if(obj.users) DB.users=obj.users;
   if(obj.supervisors) DB.supervisors=obj.supervisors;
   if(obj.visits) DB.visits=obj.visits;
-  try{ lsSave('hq_halqat',DB.halqat); lsSave('hq_users',DB.users); lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_visits',DB.visits||[]); }catch(e){}
+  if(obj.timeline) DB.timeline=obj.timeline;
+  try{ lsSave('hq_halqat',DB.halqat); lsSave('hq_users',DB.users); lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_visits',DB.visits||[]); lsSave('hq_timeline',DB.timeline||{}); }catch(e){}
   _cloudLastTs=val.ts||Date.now();
   var hid=(typeof STATE!=='undefined'&&STATE.activeHid)||((DB.halqat[0]||{}).id);
   if(hid && typeof setActiveHalqa==='function') setActiveHalqa(hid);
@@ -2758,7 +2792,7 @@ function cloudRerender(){
 function cloudFirstReconcile(val){
   if(val && val.data){
     var remote=null; try{ remote=JSON.parse(val.data); }catch(e){}
-    var localObj={halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], visits:DB.visits||[]};
+    var localObj={halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], visits:DB.visits||[], timeline:DB.timeline||{}};
     if(remote && cloudSize(remote) >= cloudSize(localObj)){ _cloudReconciled=true; if(cloudApply(val)){ cloudRerender(); cloudSetStatus('updated'); } else cloudSetStatus('synced'); }
     else { _cloudReconciled=true; _cloudDoPush(); }        /* المحلي أغنى → ارفعه */
   } else { _cloudReconciled=true; _cloudDoPush(); }          /* لا توجد بيانات سحابية → ارفع المحلي */
@@ -3126,7 +3160,8 @@ function renderDash(){
       '<div class="menu-card mc-1" onclick="showAddHalqa()"><div class="mc-icon">'+svgAddH+'</div><div class="mc-accent"></div><div class="mc-label">إضافة حلقة</div></div>'+
       '<div class="menu-card mc-3" onclick="showSupervisors()"><div class="mc-icon">'+svgAddH+'</div><div class="mc-accent"></div><div class="mc-label">إضافة مشرف حلقات</div></div>'+
       '<div class="menu-card mc-4" onclick="showHalqatList()"><div class="mc-icon">'+svgListH+'</div><div class="mc-accent"></div><div class="mc-label">عرض الحلقات ('+_hc+')</div></div>'+
-      '<div class="menu-card mc-5" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيّات الحلقات</div></div>'+
+      '<div class="menu-card mc-7" onclick="tlOpen()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>'+
+      '<div class="menu-card mc-5" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
       '<div class="menu-card mc-2" onclick="showTeachersData()"><div class="mc-icon">'+svgTeachH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات معلمي الحلقات</div></div>'+
       '<div class="menu-card mc-6" onclick="showSupervisorsData()"><div class="mc-icon">'+svgTeachH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات مشرفي الحلقات</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="16" y="28" width="32" height="24" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M23 28v-6a9 9 0 0118 0v6" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="38" r="3.5" fill="white"/><line x1="32" y1="41" x2="32" y2="46" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
@@ -3148,6 +3183,7 @@ function renderDash(){
       '<div class="menu-card mc-4" onclick="supHalqatList()"><div class="mc-icon">'+svgListH2+'</div><div class="mc-accent"></div><div class="mc-label">عرض الحلقات ('+_my.length+')</div></div>'+
       '<div class="menu-card mc-5 mc-wide" onclick="supStats()"><div class="mc-icon">'+svgStatH2+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيّات الحلقات</div></div>'+
       '<div class="menu-card mc-2" onclick="supTeachersData()"><div class="mc-icon">'+svgTeachH2+'</div><div class="mc-accent"></div><div class="mc-label">بيانات معلمي الحلقات</div></div>'+
+      '<div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>'+
       '<div class="menu-card mc-1" onclick="supVisitOpen()"><div class="mc-icon">'+svgVisit2+'</div><div class="mc-accent"></div><div class="mc-label">زيارة الحلقات</div></div>'+
       '<div class="menu-card mc-3" onclick="supExamPick()"><div class="mc-icon">'+svgExam2+'</div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon">'+svgKey2+'</div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
@@ -3174,6 +3210,7 @@ function renderDash(){
       <div class="menu-card mc-5" onclick="showRankTable(null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطلاب</div></div>
       <div class="menu-card mc-3" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
       <div class="menu-card mc-3" onclick="hqOfflineOpen()"><div class="mc-icon">${HQ_SVG_OFFLINE}</div><div class="mc-accent"></div><div class="mc-label">العمل بلا إنترنت</div></div>
+      <div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>
       <div class="menu-card mc-6 mc-soon" onclick="remComingSoon()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="24" y="8" width="16" height="28" rx="8" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M17 30a15 15 0 0030 0" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="32" y1="45" x2="32" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="23" y1="54" x2="41" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">التسميع عن بُعد<span class="mc-soon-tag">قريباً</span></div></div>
       <div class="menu-card mc-5 mc-wide" onclick="showHalqaStats()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="10" y="34" width="10" height="20" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="27" y="22" width="10" height="32" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="44" y="12" width="10" height="42" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><path d="M8 54h48" stroke="white" stroke-width="2.6" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">إحصائيّات الحلقة</div></div>
 </div>`;
@@ -3198,6 +3235,7 @@ function renderDash(){
       <div class="menu-card mc-3" onclick="showRankTable(window._ds?window._ds.id:null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطالب</div></div>
       <div class="menu-card mc-4" onclick="showStudentPlan(window._dp, window._ds?window._ds.id:'')"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">عرض الخطط</div></div>
       <div class="menu-card mc-5" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
+      <div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>
       ${STATE.role==='student' ? '<div class="menu-card mc-6 mc-soon" onclick="remComingSoon()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="24" y="8" width="16" height="28" rx="8" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M17 30a15 15 0 0030 0" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="32" y1="45" x2="32" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="23" y1="54" x2="41" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">التسميع عن بُعد<span class="mc-soon-tag">قريباً</span></div></div>' : ''}
       ${(function(){
         var msgSVG='<svg viewBox="0 0 64 64" fill="none"><rect x="8" y="14" width="48" height="34" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M8 20l24 16 24-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>';
@@ -6039,6 +6077,221 @@ function hqHubGo(hid){
   if(slot){ slot.style.display=''; slot.innerHTML='<button class="ex-back" onclick="modalBack()">‹ رجوع للإحصائيّات</button>'; }
 }
 
+var HQ_SVG_TL='<svg viewBox="0 0 64 64" fill="none"><rect x="9" y="14" width="46" height="40" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.08)"/><line x1="9" y1="26" x2="55" y2="26" stroke="white" stroke-width="2.6"/><line x1="21" y1="8" x2="21" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="43" y1="8" x2="43" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/><rect x="17" y="33" width="8" height="7" rx="2" fill="rgba(255,255,255,.85)"/><rect x="30" y="33" width="8" height="7" rx="2" fill="rgba(255,255,255,.45)"/><rect x="43" y="33" width="4" height="7" rx="2" fill="rgba(255,255,255,.45)"/></svg>';
+
+// =====================================================
+//  الخط الزمني للجمعية
+// =====================================================
+var TL_TERMS=[
+  {k:'1448-1', n:'الفصل الدراسي الأول لعام 1448 هـ'},
+  {k:'1448-2', n:'الفصل الدراسي الثاني لعام 1448 هـ'}
+];
+var TL_HOLIDAYS=['اليوم الوطني','يوم التأسيس','إجازة الربيع','إجازة الخريف'];
+var TL_HM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+
+function tlStore(){ if(!DB.timeline) DB.timeline={}; return DB.timeline; }
+/* الخط الزمني المعتمَد حالياً (آخر ما اعتُمد) */
+function tlActive(){
+  var st=tlStore();
+  if(st.activeKey && st[st.activeKey]) return st[st.activeKey];
+  for(var k in st){ if(k!=='activeKey' && st[k] && st[k].approved) return st[k]; }
+  return null;
+}
+function tlDateStr(d,m,y){ return arNum(d)+' '+TL_HM[parseInt(m,10)-1]+' '+arNum(y)+'هـ'; }
+/* ترقيم هجري تقريبي متسلسل للمقارنة (يوم واحد = وحدة) */
+function tlSerial(d,m,y){ return (parseInt(y,10)*354) + ((parseInt(m,10)-1)*29.5) + parseInt(d,10); }
+
+/* توليد الأسابيع من بيانات الخط الزمني */
+function tlWeeks(tl){
+  if(!tl) return [];
+  var a=tlSerial(tl.fromD,tl.fromM,tl.fromY), b=tlSerial(tl.toD,tl.toM,tl.toY);
+  var total=Math.max(1, Math.round(b-a)+1);
+  var perWeek=7;
+  var n=Math.max(1, Math.round(total/perWeek));
+  var out=[], cur=a;
+  for(var i=1;i<=n;i++){
+    var end=Math.min(b, cur+perWeek-1);
+    /* هل يقع في هذا الأسبوع إجازة؟ */
+    var hol=null;
+    (tl.holidays||[]).forEach(function(x){
+      var hs=tlSerial(x.fromD,x.fromM,x.fromY), he=tlSerial(x.toD,x.toM,x.toY);
+      if(!(he<cur || hs>end)) hol=x.name;
+    });
+    out.push({no:i, from:cur, to:end, holiday:hol});
+    cur=end+1;
+    if(cur>b) break;
+  }
+  return out;
+}
+/* عدد أيام الدراسة الفعلية بعد خصم الإجازات */
+function tlStudyDays(tl){
+  if(!tl) return 0;
+  var wk=tlWeeks(tl), per=parseInt(tl.daysPerWeek,10)||4;
+  var n=0;
+  wk.forEach(function(w){ if(!w.holiday) n+=per; });
+  return n;
+}
+function tlWeekCount(tl){ return tlWeeks(tl).filter(function(w){ return !w.holiday; }).length; }
+
+/* ---------- نافذة البناء (الشؤون التعليمية) ---------- */
+var _tlHolN=0;
+function tlHolRow(v){
+  _tlHolN++;
+  var id=_tlHolN;
+  function dsel(pfx,val,a,b,lbl){
+    var o=''; for(var i=a;i<=b;i++) o+='<option value="'+i+'"'+((val&&parseInt(val,10)===i)?' selected':'')+'>'+(lbl?lbl(i):arNum(i))+'</option>';
+    return o;
+  }
+  var yA=1448, yB=1460;
+  return '<div class="tl-hol" id="tl-hol-'+id+'">'+
+    '<div class="tl-hol-hd"><span>إجازة</span>'+
+      '<button type="button" class="tl-hol-x" onclick="tlHolDel('+id+')">حذف</button></div>'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">نوع الإجازة</label>'+
+      '<select class="prof-form-input tlh-name">'+
+      TL_HOLIDAYS.map(function(x){ return '<option value="'+hqEsc(x)+'"'+((v&&v.name===x)?' selected':'')+'>'+hqEsc(x)+'</option>'; }).join('')+
+      '</select></div>'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">التاريخ من</label>'+
+      '<div class="hijri-picker">'+
+        '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select tlh-fd">'+dsel('fd',v&&v.fromD,1,30)+'</select></div>'+
+        '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select tlh-fm">'+dsel('fm',v&&v.fromM,1,12,function(i){return TL_HM[i-1];})+'</select></div>'+
+        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select tlh-fy">'+dsel('fy',v&&v.fromY,yA,yB)+'</select></div>'+
+      '</div></div>'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">التاريخ إلى</label>'+
+      '<div class="hijri-picker">'+
+        '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select tlh-td">'+dsel('td',v&&v.toD,1,30)+'</select></div>'+
+        '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select tlh-tm">'+dsel('tm',v&&v.toM,1,12,function(i){return TL_HM[i-1];})+'</select></div>'+
+        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select tlh-ty">'+dsel('ty',v&&v.toY,yA,yB)+'</select></div>'+
+      '</div></div>'+
+  '</div>';
+}
+function tlHolAdd(){
+  var box=document.getElementById('tl-hols'); if(!box) return;
+  box.insertAdjacentHTML('beforeend', tlHolRow(null));
+}
+function tlHolDel(id){ var e=document.getElementById('tl-hol-'+id); if(e) e.remove(); }
+
+function tlOpen(){
+  if(STATE.role!=='admin'){ tlShow(); return; }
+  var st=tlStore();
+  var cur=tlActive();
+  var key=(cur&&cur.term)||TL_TERMS[0].k;
+  var ex=st[key]||cur||null;
+  function dsel(id,val,a,b,lbl){
+    var o=''; for(var i=a;i<=b;i++) o+='<option value="'+i+'"'+((val&&parseInt(val,10)===i)?' selected':'')+'>'+(lbl?lbl(i):arNum(i))+'</option>';
+    return '<select class="hijri-select" id="'+id+'">'+o+'</select>';
+  }
+  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">حدّد الفصل</label>'+
+      '<select class="prof-form-input" id="tl-term">'+
+      TL_TERMS.map(function(t){ return '<option value="'+t.k+'"'+((ex&&ex.term===t.k)?' selected':'')+'>'+t.n+'</option>'; }).join('')+
+      '</select></div>'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ بداية الفصل</label>'+
+      '<div class="hijri-picker">'+
+        '<div><div class="hijri-lbl">اليوم</div>'+dsel('tl-fd',ex&&ex.fromD,1,30)+'</div>'+
+        '<div><div class="hijri-lbl">الشهر</div>'+dsel('tl-fm',ex&&ex.fromM,1,12,function(i){return TL_HM[i-1];})+'</div>'+
+        '<div><div class="hijri-lbl">السنة</div>'+dsel('tl-fy',ex&&ex.fromY,1448,1460)+'</div>'+
+      '</div></div>'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ نهاية الفصل</label>'+
+      '<div class="hijri-picker">'+
+        '<div><div class="hijri-lbl">اليوم</div>'+dsel('tl-td',ex&&ex.toD,1,30)+'</div>'+
+        '<div><div class="hijri-lbl">الشهر</div>'+dsel('tl-tm',ex&&ex.toM,1,12,function(i){return TL_HM[i-1];})+'</div>'+
+        '<div><div class="hijri-lbl">السنة</div>'+dsel('tl-ty',ex&&ex.toY,1448,1460)+'</div>'+
+      '</div></div>'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">الأيام الدراسية للأسبوع</label>'+
+      '<select class="prof-form-input" id="tl-dpw">'+
+        '<option value="4"'+((ex&&ex.daysPerWeek==4)?' selected':'')+'>أربعة أيام</option>'+
+        '<option value="5"'+((ex&&ex.daysPerWeek==5)?' selected':'')+'>خمسة أيام</option>'+
+      '</select></div>'+
+    '</div>'+
+    '<div class="tl-sec-hd">إجازات الفصل الدراسي</div>'+
+    '<div id="tl-hols">'+((ex&&ex.holidays&&ex.holidays.length)?ex.holidays.map(function(x){return tlHolRow(x);}).join(''):tlHolRow(null))+'</div>'+
+    '<button class="tl-add" type="button" onclick="tlHolAdd()">+ إضافة إجازة أخرى</button>'+
+    '<button class="prof-form-save" style="margin-top:14px" onclick="tlSave()">اعتمد الخط الزمني لهذا الفصل</button>'+
+    (cur?'<button class="hq-mini-btn view" style="width:100%;margin-top:9px;height:38px" onclick="tlShow()">عرض الخط الزمني المعتمَد</button>':'')+
+  '</div>';
+  openModal('الخط الزمني للجمعية', body);
+}
+
+function tlSave(){
+  try{
+    function V(id){ var e=document.getElementById(id); return e?e.value:''; }
+    var term=V('tl-term');
+    var fD=V('tl-fd'), fM=V('tl-fm'), fY=V('tl-fy');
+    var tD=V('tl-td'), tM=V('tl-tm'), tY=V('tl-ty');
+    if(tlSerial(tD,tM,tY) <= tlSerial(fD,fM,fY)){
+      showToast('تاريخ النهاية يجب أن يكون بعد البداية','error'); return;
+    }
+    var hols=[];
+    Array.prototype.forEach.call(document.querySelectorAll('#tl-hols .tl-hol'),function(el){
+      function G(c){ var x=el.querySelector('.'+c); return x?x.value:''; }
+      hols.push({name:G('tlh-name'),
+        fromD:G('tlh-fd'), fromM:G('tlh-fm'), fromY:G('tlh-fy'),
+        toD:G('tlh-td'),   toM:G('tlh-tm'),   toY:G('tlh-ty')});
+    });
+    var tName=(TL_TERMS.find(function(t){return t.k===term;})||{}).n||'';
+    var obj={ term:term, termName:tName,
+      fromD:fD, fromM:fM, fromY:fY, toD:tD, toM:tM, toY:tY,
+      fromStr:tlDateStr(fD,fM,fY), toStr:tlDateStr(tD,tM,tY),
+      daysPerWeek:parseInt(V('tl-dpw'),10)||4,
+      holidays:hols, approved:true, ts:Date.now() };
+    var st=tlStore();
+    st[term]=obj; st.activeKey=term;
+    save();
+    showToast('اعتُمد الخط الزمني · '+tName,'success');
+    tlShow();
+  }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
+}
+
+/* ---------- عرض الخط الزمني (لكل الحسابات) ---------- */
+function tlShow(){
+  var tl=tlActive();
+  if(!tl){
+    openModal('الخط الزمني للجمعية',
+      '<div class="ev-susp-card"><div class="ev-susp-ttl">لم يُعتمد بعد</div>'+
+      '<div class="ev-susp-sub">'+(STATE.role==='admin'?'ابنِ الخط الزمني واعتمده أولاً.':'الشؤون التعليمية لم تعتمد الخط الزمني للفصل بعد.')+'</div></div>');
+    return;
+  }
+  var wk=tlWeeks(tl), per=tl.daysPerWeek||4;
+  var studyWk=wk.filter(function(w){ return !w.holiday; }).length;
+
+  /* توزيع الأسابيع على شهور (كل ٤ أسابيع دراسية = شهر) */
+  var months=[], m=[], c=0;
+  wk.forEach(function(w){
+    m.push(w);
+    if(!w.holiday) c++;
+    if(c===4){ months.push(m); m=[]; c=0; }
+  });
+  if(m.length) months.push(m);
+
+  var body='<div class="tl-head">'+
+      '<div class="tl-term">'+hqEsc(tl.termName||'')+'</div>'+
+      '<div class="tl-range">'+hqEsc(tl.fromStr)+'  ←  '+hqEsc(tl.toStr)+'</div>'+
+    '</div>'+
+    '<div class="hqacc" style="margin:0 0 12px"><div class="hqacc-body hqacc-plain">'+
+      hqAccRow('الأيام الدراسية للأسبوع', arNum(per)+' أيام')+
+      hqAccRow('عدد الأسابيع الدراسية', arNum(studyWk))+
+      hqAccRow('عدد الأيام الدراسية', arNum(studyWk*per))+
+      hqAccRow('عدد الإجازات', arNum((tl.holidays||[]).length))+
+    '</div></div>'+
+    months.map(function(mm,i){
+      return '<div class="tl-month">'+
+        '<div class="tl-month-hd">الشهر '+hqOrd(i+1)+'</div>'+
+        '<div class="tl-weeks">'+mm.map(function(w){
+          return '<div class="tl-week'+(w.holiday?' hol':'')+'">'+
+            '<div class="tl-week-n">'+(w.holiday?'إجازة':('أ'+arNum(w.no)))+'</div>'+
+            '<div class="tl-week-l">'+(w.holiday?hqEsc(w.holiday):(arNum(per)+' أيام'))+'</div>'+
+          '</div>';
+        }).join('')+'</div></div>';
+    }).join('')+
+    ((tl.holidays||[]).length?('<div class="hs-sec"><div class="hs-sec-hd">الإجازات</div>'+
+      '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
+      tl.holidays.map(function(x){
+        return hqAccRow(x.name, tlDateStr(x.fromD,x.fromM,x.fromY)+' ← '+tlDateStr(x.toD,x.toM,x.toY));
+      }).join('')+'</div></div></div>'):'');
+
+  openModal('الخط الزمني للجمعية','<div class="hs-wrap">'+body+'</div>');
+}
+
 // =====================================================
 //  إحصائيّات الجمعية — الشؤون التعليمية
 // =====================================================
@@ -6105,11 +6358,15 @@ function hqJamStats(halqat){
   r.supers=Object.keys(supSet).length || hqSupers().length;
   r.sectors=Object.keys(secSet).length;
   r.teachers=Object.keys(tSet).length;
-  /* الأيام الدراسية = أكبر عدد أيام مسجّلة لطالب */
-  var mx=0;
-  halqat.forEach(function(h){ hqStudentsOf(h).forEach(function(st){
-    var n=hsTermDays(st.id).length; if(n>mx) mx=n; }); });
-  r.days=mx;
+  /* الأيام الدراسية: من الخط الزمني المعتمَد، وإلا فأكبر عدد أيام مسجّلة لطالب */
+  var tl=tlActive();
+  if(tl){ r.days=tlStudyDays(tl); }
+  else {
+    var mx=0;
+    halqat.forEach(function(h){ hqStudentsOf(h).forEach(function(st){
+      var n=hsTermDays(st.id).length; if(n>mx) mx=n; }); });
+    r.days=mx;
+  }
   return r;
 }
 
@@ -6157,10 +6414,10 @@ function hqRankToggle(el,metric){
   var c=el.parentNode;
   var box=c.parentNode;
   var was=c.classList.contains('open');
-  if(box) Array.prototype.forEach.call(box.querySelectorAll('.hqacc.open'),function(x){ if(x!==c) x.classList.remove('open'); });
+  if(box) Array.prototype.forEach.call(box.querySelectorAll('.hqrow.open'),function(x){ if(x!==c) x.classList.remove('open'); });
   c.classList.toggle('open', !was);
   if(was) return;
-  var body=c.querySelector('.hqacc-body');
+  var body=c.querySelector('.hqrow-body');
   if(!body || body.getAttribute('data-loaded')==='1') return;
   body.innerHTML='<div class="hqacc-load">جارٍ الحساب…</div>';
   hqHalqaRank(window._hqStatsHalqat||[], metric).then(function(list){
@@ -6180,12 +6437,15 @@ var HQ_PERIOD_KINDS=[
   {k:'month', n:'إحصائية بالشهور'},
   {k:'term',  n:'إحصائية بالفصل كامل'}
 ];
-var HQ_WEEKS_COUNT=18;      /* حتى تُربط ببطاقة الخط الزمني لاحقاً */
+var HQ_WEEKS_DEFAULT=18;
+/* عدد الأسابيع وأيام الأسبوع: من الخط الزمني المعتمَد إن وُجد */
+function hqWeeksCount(){ var tl=tlActive(); return tl?Math.max(1,tlWeekCount(tl)):HQ_WEEKS_DEFAULT; }
+function hqDaysPerWeek(){ var tl=tlActive(); return (tl&&parseInt(tl.daysPerWeek,10))||4; }
 var HQ_ORD=['','الأول','الثاني','الثالث','الرابع','الخامس','السادس','السابع','الثامن','التاسع','العاشر',
   'الحادي عشر','الثاني عشر','الثالث عشر','الرابع عشر','الخامس عشر','السادس عشر','السابع عشر','الثامن عشر',
   'التاسع عشر','العشرون'];
 function hqOrd(n){ return HQ_ORD[n]||arNum(n); }
-var HQ_DAYS_PER_WEEK=4;
+
 
 function hqSecSel(){
   var secs={};
@@ -6215,7 +6475,7 @@ function hqStuFillRange(){
   var kind=(document.getElementById('sq-kind')||{}).value||'';
   var el=document.getElementById('sq-range'); if(!el) return;
   var o='<option value="">— اختر —</option>';
-  if(kind==='week'){ for(var i=1;i<=HQ_WEEKS_COUNT;i++) o+='<option value="'+i+'">الأسبوع '+hqOrd(i)+'</option>'; }
+  if(kind==='week'){ var wc=hqWeeksCount(); for(var i=1;i<=wc;i++) o+='<option value="'+i+'">الأسبوع '+hqOrd(i)+'</option>'; }
   else if(kind==='month'){ for(var m=1;m<=4;m++) o+='<option value="'+m+'">الشهر '+hqOrd(m)+'</option>'; }
   else if(kind==='term'){ o+='<option value="1">الفصل الحالي</option>'; }
   el.innerHTML=o;
@@ -6228,8 +6488,9 @@ function hqStuDays(sid,kind,idx){
   var td=hsTermDays(sid);
   idx=parseInt(idx,10)||1;
   if(kind==='term') return td;
-  if(kind==='week'){ var a=(idx-1)*HQ_DAYS_PER_WEEK; return td.slice(a,a+HQ_DAYS_PER_WEEK); }
-  if(kind==='month'){ var per=HQ_DAYS_PER_WEEK*4, b=(idx-1)*per; return td.slice(b,b+per); }
+  var dpw=hqDaysPerWeek();
+  if(kind==='week'){ var a=(idx-1)*dpw; return td.slice(a,a+dpw); }
+  if(kind==='month'){ var per=dpw*4, b=(idx-1)*per; return td.slice(b,b+per); }
   return td;
 }
 
@@ -6246,14 +6507,14 @@ async function hqStuShow(){
   var st=hqDaysStats(days);
   var lp=await hqStuPages(sid,'lesson',days);
   var rp=await hqStuPages(sid,'review',days);
-  box.innerHTML='<div class="hqacc" style="border-color:rgba(201,162,39,.3)"><div class="hqacc-body" style="display:block">'+
+  box.innerHTML='<div class="hqres">'+
     hqAccRow('الحضور', arNum(st.present)+' يوم')+
     hqAccRow('الغياب', arNum(st.absent)+' يوم')+
     hqAccRow('الدرجة', arNum(st.score))+
     hqAccRow('التجويد', hqTajWord(st.tajSum,st.tajCnt))+
     hqAccRow('صفحات الدرس', arNum(lp)+' صفحة')+
     hqAccRow('صفحات المراجعة', arNum(rp)+' صفحة')+
-  '</div></div>';
+  '</div>';
 }
 
 /* ---------- الشاشة الرئيسية ---------- */
@@ -6286,30 +6547,32 @@ function showAllHalqatStats(){
 
   /* (٢) ترتيب الحلقات */
   var ranks='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات حلقات الجمعية</div>'+
+    '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
     HQ_RANK_DEFS.map(function(d){
-      return '<div class="hqacc">'+
-        '<div class="hqacc-hd" onclick="hqRankToggle(this,\''+d.k+'\')">'+
-          '<div class="hqacc-ttls"><div class="hqacc-t">'+d.n+'</div></div>'+
-          '<span class="hqacc-arw">▾</span></div>'+
-        '<div class="hqacc-body"></div></div>';
-    }).join('')+'</div>';
+      return '<div class="hqrow">'+
+        '<div class="hqrow-hd" onclick="hqRankToggle(this,\''+d.k+'\')">'+
+          '<span class="hqacc-lbl">'+d.n+'</span>'+
+          '<span class="hqrow-arw">▾</span></div>'+
+        '<div class="hqrow-body"></div></div>';
+    }).join('')+'</div></div></div>';
 
   /* (٣) إحصائيّات الطلاب */
   function sel(lbl,id,opts,on){
-    return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label>'+
-      '<select class="prof-form-input" id="'+id+'"'+(on?(' onchange="'+on+'"'):'')+'>'+opts+'</select></div>';
+    return '<div class="hqfld"><label class="hqacc-lbl">'+lbl+'</label>'+
+      '<select class="hqsel" id="'+id+'"'+(on?(' onchange="'+on+'"'):'')+'>'+opts+'</select></div>';
   }
   var stu='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات طلاب الجمعية</div>'+
-    '<div class="prof-form-wrap" style="padding:0"><div class="prof-form-grid">'+
+    '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
       sel('اختر القطاع','sq-sector','<option value="">— كل القطاعات —</option>'+
         hqSecSel().map(function(x){ return '<option value="'+hqEsc(x)+'">'+hqEsc(x)+'</option>'; }).join(''),'hqStuFillHalqat()')+
       sel('اختر الحلقة','sq-halqa','<option value="">— اختر الحلقة —</option>','hqStuFillStudents()')+
       sel('اختر الطالب','sq-stu','<option value="">— اختر الطالب —</option>','hqStuClear()')+
       sel('اختر مدة الإحصائية','sq-kind','<option value="">— اختر المدة —</option>'+
         HQ_PERIOD_KINDS.map(function(x){ return '<option value="'+x.k+'">'+x.n+'</option>'; }).join(''),'hqStuFillRange()')+
-      sel('اختر المطلوب','sq-range','<option value="">— اختر —</option>','hqStuShow()')+
+      sel('اختر المطلوب','sq-range','<option value="">— اختر —</option>','hqStuClear()')+
+      '<button class="tl-fetch" onclick="hqStuShow()">جلب البيانات</button>'+
+      '<div id="sq-result"></div>'+
     '</div></div>'+
-    '<div id="sq-result" style="margin-top:10px"></div>'+
   '</div>';
 
   openModal('إحصائيّات الجمعية','<div class="hs-wrap">'+gen+ranks+stu+'</div>');
