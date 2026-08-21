@@ -1669,10 +1669,14 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .tl-month-hd{font-size:.78rem;font-weight:800;color:#9abdba;margin-bottom:6px;padding-inline-start:2px}
 .tl-weeks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .tl-week{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 4px;text-align:center}
-.tl-week.hol{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35)}
-.tl-week-n{font-weight:900;font-size:.85rem;color:#f0d060}
-.tl-week.hol .tl-week-n{color:#fcd9a0;font-size:.72rem}
-.tl-week-l{font-size:.6rem;color:#9abdba;margin-top:3px;font-weight:700;line-height:1.3}
+.tl-week-d{font-size:.66rem;color:#bcd6d3;margin-top:2px;font-weight:700;line-height:1.45;direction:ltr;unicode-bidi:isolate}
+.tl-week-n{font-weight:900;font-size:.76rem;color:#f0d060}
+.tl-pick{display:flex;flex-direction:column;gap:10px;padding:6px 2px}
+.tl-pick-b{padding:16px;border-radius:14px;border:1px solid rgba(201,162,39,.4);background:linear-gradient(160deg,rgba(201,162,39,.22),rgba(201,162,39,.08));color:#f0d060;font:800 .95rem inherit;cursor:pointer;touch-action:manipulation}
+.tl-pick-b.alt{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#dbeae8}
+/* خانات اليوم/الشهر/السنة: أوسع ليظهر النص كاملاً */
+.hijri-picker{grid-template-columns:.8fr 1.5fr 1fr !important;gap:7px !important}
+.hijri-select{width:100%;min-height:42px;font-size:.82rem !important;padding:8px 6px !important;text-align:center;text-align-last:center}
 .tl-sec-hd{font-size:.8rem;font-weight:800;color:#f0c040;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(201,162,39,.22)}
 .tl-hol{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;margin-bottom:9px}
 .tl-hol-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.78rem;font-weight:800;color:#9abdba}
@@ -6098,40 +6102,60 @@ function tlActive(){
   return null;
 }
 function tlDateStr(d,m,y){ return arNum(d)+' '+TL_HM[parseInt(m,10)-1]+' '+arNum(y)+'هـ'; }
-/* ترقيم هجري تقريبي متسلسل للمقارنة (يوم واحد = وحدة) */
-function tlSerial(d,m,y){ return (parseInt(y,10)*354) + ((parseInt(m,10)-1)*29.5) + parseInt(d,10); }
+/* تاريخ مختصر: ١٧-٣-١٤٤٨ */
+function tlShort(o){ return arNum(o.d)+'-'+arNum(o.m)+'-'+arNum(o.y); }
 
-/* توليد الأسابيع من بيانات الخط الزمني */
+/* ---- تحويل هجري ↔ يوم يوليوسي (التقويم الهجري الحسابي) ---- */
+function tlH2J(y,m,d){
+  y=parseInt(y,10); m=parseInt(m,10); d=parseInt(d,10);
+  return Math.floor(d + Math.ceil(29.5*(m-1)) + (y-1)*354 + Math.floor((3+11*y)/30) + 1948439.5) - 1;
+}
+function tlJ2H(jd){
+  jd=Math.floor(jd)+0.5;
+  var y=Math.floor((30*(jd-1948439.5)+10646)/10631);
+  var m=Math.min(12, Math.ceil((jd-(29+tlH2J(y,1,1)))/29.5)+1);
+  var d=jd-tlH2J(y,m,1)+1;
+  return {y:y, m:m, d:Math.floor(d)};
+}
+/* ٠ = الأحد */
+function tlWeekday(jd){ return (jd+1)%7; }
+/* للمقارنة: الرقم اليوليوسي مباشرة */
+function tlSerial(d,m,y){ return tlH2J(y,m,d); }
+
+/* توليد الأسابيع الدراسية: تبدأ كل أسبوع يوم الأحد، وتُتخطّى أسابيع الإجازات كلياً */
 function tlWeeks(tl){
   if(!tl) return [];
-  var a=tlSerial(tl.fromD,tl.fromM,tl.fromY), b=tlSerial(tl.toD,tl.toM,tl.toY);
-  var total=Math.max(1, Math.round(b-a)+1);
-  var perWeek=7;
-  var n=Math.max(1, Math.round(total/perWeek));
-  var out=[], cur=a;
-  for(var i=1;i<=n;i++){
-    var end=Math.min(b, cur+perWeek-1);
-    /* هل يقع في هذا الأسبوع إجازة؟ */
-    var hol=null;
-    (tl.holidays||[]).forEach(function(x){
-      var hs=tlSerial(x.fromD,x.fromM,x.fromY), he=tlSerial(x.toD,x.toM,x.toY);
-      if(!(he<cur || hs>end)) hol=x.name;
-    });
-    out.push({no:i, from:cur, to:end, holiday:hol});
-    cur=end+1;
-    if(cur>b) break;
+  var start=tlH2J(tl.fromY,tl.fromM,tl.fromD);
+  var end  =tlH2J(tl.toY,  tl.toM,  tl.toD);
+  var per=parseInt(tl.daysPerWeek,10)||4;      /* ٤ = أحد→أربعاء · ٥ = أحد→خميس */
+  /* أول أحد في أو بعد تاريخ البداية */
+  var cur=start;
+  while(tlWeekday(cur)!==0) cur++;
+  var hol=(tl.holidays||[]).map(function(x){
+    return {n:x.name, a:tlH2J(x.fromY,x.fromM,x.fromD), b:tlH2J(x.toY,x.toM,x.toD)};
+  });
+  var out=[], no=0, guard=0;
+  while(cur<=end && guard++<200){
+    var last=cur+per-1;                        /* آخر يوم دراسي في الأسبوع */
+    var isHol=false;
+    for(var i=0;i<hol.length;i++){
+      if(!(hol[i].b<cur || hol[i].a>last)){ isHol=true; break; }
+    }
+    if(!isHol){
+      no++;
+      out.push({no:no, jdFrom:cur, jdTo:last,
+                from:tlJ2H(cur), to:tlJ2H(last)});
+    }
+    cur+=7;                                    /* الأحد التالي */
   }
   return out;
 }
-/* عدد أيام الدراسة الفعلية بعد خصم الإجازات */
+/* عدد أيام الدراسة الفعلية (الإجازات مخصومة أصلاً) */
 function tlStudyDays(tl){
   if(!tl) return 0;
-  var wk=tlWeeks(tl), per=parseInt(tl.daysPerWeek,10)||4;
-  var n=0;
-  wk.forEach(function(w){ if(!w.holiday) n+=per; });
-  return n;
+  return tlWeeks(tl).length * (parseInt(tl.daysPerWeek,10)||4);
 }
-function tlWeekCount(tl){ return tlWeeks(tl).filter(function(w){ return !w.holiday; }).length; }
+function tlWeekCount(tl){ return tlWeeks(tl).length; }
 
 /* ---------- نافذة البناء (الشؤون التعليمية) ---------- */
 var _tlHolN=0;
@@ -6172,6 +6196,13 @@ function tlHolDel(id){ var e=document.getElementById('tl-hol-'+id); if(e) e.remo
 
 function tlOpen(){
   if(STATE.role!=='admin'){ tlShow(); return; }
+  openModal('الخط الزمني للجمعية',
+    '<div class="tl-pick">'+
+      '<button class="tl-pick-b" onclick="tlBuild()">بناء الخط الزمني</button>'+
+      '<button class="tl-pick-b alt" onclick="tlShow()">عرض الخط الزمني</button>'+
+    '</div>');
+}
+function tlBuild(){
   var st=tlStore();
   var cur=tlActive();
   var key=(cur&&cur.term)||TL_TERMS[0].k;
@@ -6207,7 +6238,6 @@ function tlOpen(){
     '<div id="tl-hols">'+((ex&&ex.holidays&&ex.holidays.length)?ex.holidays.map(function(x){return tlHolRow(x);}).join(''):tlHolRow(null))+'</div>'+
     '<button class="tl-add" type="button" onclick="tlHolAdd()">+ إضافة إجازة أخرى</button>'+
     '<button class="prof-form-save" style="margin-top:14px" onclick="tlSave()">اعتمد الخط الزمني لهذا الفصل</button>'+
-    (cur?'<button class="hq-mini-btn view" style="width:100%;margin-top:9px;height:38px" onclick="tlShow()">عرض الخط الزمني المعتمَد</button>':'')+
   '</div>';
   openModal('الخط الزمني للجمعية', body);
 }
@@ -6252,37 +6282,33 @@ function tlShow(){
     return;
   }
   var wk=tlWeeks(tl), per=tl.daysPerWeek||4;
-  var studyWk=wk.filter(function(w){ return !w.holiday; }).length;
+  var studyWk=wk.length;
 
-  /* توزيع الأسابيع على شهور (كل ٤ أسابيع دراسية = شهر) */
-  var months=[], m=[], c=0;
-  wk.forEach(function(w){
-    m.push(w);
-    if(!w.holiday) c++;
-    if(c===4){ months.push(m); m=[]; c=0; }
-  });
-  if(m.length) months.push(m);
+  /* توزيع الأسابيع الدراسية على شهور — أربعة أسابيع لكل شهر */
+  var months=[];
+  for(var i=0;i<wk.length;i+=4) months.push(wk.slice(i,i+4));
 
   var body='<div class="tl-head">'+
       '<div class="tl-term">'+hqEsc(tl.termName||'')+'</div>'+
       '<div class="tl-range">'+hqEsc(tl.fromStr)+'  ←  '+hqEsc(tl.toStr)+'</div>'+
     '</div>'+
-    '<div class="hqacc" style="margin:0 0 12px"><div class="hqacc-body hqacc-plain">'+
+    months.map(function(mm,i){
+      return '<div class="tl-month">'+
+        '<div class="tl-month-hd">الشهر '+hqOrd(i+1)+'</div>'+
+        '<div class="tl-weeks">'+mm.map(function(w){
+          return '<div class="tl-week">'+
+            '<div class="tl-week-n">أسبوع '+arNum(w.no)+'</div>'+
+            '<div class="tl-week-d">'+tlShort(w.from)+'</div>'+
+            '<div class="tl-week-d">'+tlShort(w.to)+'</div>'+
+          '</div>';
+        }).join('')+'</div></div>';
+    }).join('')+
+    '<div class="hqacc" style="margin:14px 0 0"><div class="hqacc-body hqacc-plain">'+
       hqAccRow('الأيام الدراسية للأسبوع', arNum(per)+' أيام')+
       hqAccRow('عدد الأسابيع الدراسية', arNum(studyWk))+
       hqAccRow('عدد الأيام الدراسية', arNum(studyWk*per))+
       hqAccRow('عدد الإجازات', arNum((tl.holidays||[]).length))+
     '</div></div>'+
-    months.map(function(mm,i){
-      return '<div class="tl-month">'+
-        '<div class="tl-month-hd">الشهر '+hqOrd(i+1)+'</div>'+
-        '<div class="tl-weeks">'+mm.map(function(w){
-          return '<div class="tl-week'+(w.holiday?' hol':'')+'">'+
-            '<div class="tl-week-n">'+(w.holiday?'إجازة':('أ'+arNum(w.no)))+'</div>'+
-            '<div class="tl-week-l">'+(w.holiday?hqEsc(w.holiday):(arNum(per)+' أيام'))+'</div>'+
-          '</div>';
-        }).join('')+'</div></div>';
-    }).join('')+
     ((tl.holidays||[]).length?('<div class="hs-sec"><div class="hs-sec-hd">الإجازات</div>'+
       '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
       tl.holidays.map(function(x){
