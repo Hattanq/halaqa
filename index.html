@@ -8548,6 +8548,17 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 (function(){
   var SW_OK=false, _swReg=null;
 
+  /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
+  window.HQ_BUILD='2026-08-21 · 4';
+  document.addEventListener('DOMContentLoaded', function(){
+    var t=document.createElement('div');
+    t.id='hq-build';
+    t.textContent='إصدار '+window.HQ_BUILD;
+    t.style.cssText='position:fixed;left:6px;bottom:4px;z-index:9;font-size:9px;'+
+      'color:rgba(255,255,255,.28);pointer-events:none;letter-spacing:.3px';
+    document.body.appendChild(t);
+  });
+
   /* ---- شارة «بلا إنترنت» ---- */
   function netBadge(){
     var b=document.getElementById('hq-offbadge');
@@ -8571,10 +8582,18 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   /* ---- تسجيل عامل الخدمة ---- */
   if('serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('sw.js').then(function(reg){
+      navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
         SW_OK=true; _swReg=reg;
+        /* افحص وجود نسخة أحدث في كل تشغيل، وكل ساعة */
+        try{ reg.update(); }catch(e){}
+        setInterval(function(){ try{ reg.update(); }catch(e){} }, 3600000);
         console.log('✅ العمل بلا إنترنت مُفعّل');
       }).catch(function(e){ console.warn('SW register failed:', e); });
+    });
+    /* عند تولّي عامل خدمة جديد: أعد التحميل مرة واحدة لتظهر النسخة الجديدة فورًا */
+    var _swReloaded=false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(_swReloaded) return; _swReloaded=true; location.reload();
     });
     navigator.serviceWorker.addEventListener('message', function(ev){
       var d=ev.data||{};

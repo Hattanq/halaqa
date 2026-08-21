@@ -3,7 +3,7 @@
    يتيح عمل التطبيق بلا إنترنت ويجعل الفتحات التالية أسرع.
    لا يُعدَّل يدويًا إلا برفع رقم النسخة أدناه عند كل تحديث.
    ============================================================ */
-const SW_VERSION = 'hq-v3';
+const SW_VERSION = 'hq-v5';
 const SHELL_CACHE = SW_VERSION + '-shell';   /* الملفات الأساسية */
 const QURAN_CACHE = 'hq-quran';              /* المصحف — يبقى بين التحديثات */
 const FONT_CACHE  = 'hq-fonts';              /* الخطوط */
@@ -104,24 +104,31 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  /* ٣) صفحة التطبيق: الشبكة أولاً ليصل التحديث، والذاكرة عند انقطاعها */
+  /* ٣) صفحة التطبيق: تُجلب من الشبكة متجاوزةً ذاكرة المتصفح، والذاكرة عند انقطاع الاتصال.
+        بدون cache:'reload' قد يعيد سفاري نسخة HTML قديمة من ذاكرته الخاصة فلا يظهر التحديث. */
   if (req.mode === 'navigate' || (sameOrigin && /\.html$/.test(url.pathname)) || url.pathname === '/') {
     e.respondWith(
-      fetch(req).then(function (res) { return putIn(SHELL_CACHE, req, res); })
+      fetch(url.href, { cache: 'reload', credentials: 'same-origin' })
+        .then(function (res) { return putIn(SHELL_CACHE, req, res); })
         .catch(function () {
           return caches.match(req).then(function (hit) {
-            return hit || caches.match('./index.html') || caches.match('./');
+            if (hit) return hit;
+            return caches.match('./index.html').then(function (h2) {
+              return h2 || caches.match('./');
+            });
           });
         })
     );
     return;
   }
 
-  /* ٤) بقية ملفات الموقع (الأيقونة وغيرها): الذاكرة ثم الشبكة */
+  /* ٤) بقية ملفات الموقع: تُعرض من الذاكرة فورًا وتُحدَّث من الشبكة في الخلفية */
   if (sameOrigin) {
     e.respondWith(
       caches.match(req).then(function (hit) {
-        return hit || fetch(req).then(function (res) { return putIn(SHELL_CACHE, req, res); });
+        const net = fetch(req).then(function (res) { return putIn(SHELL_CACHE, req, res); })
+                              .catch(function () { return hit; });
+        return hit || net;
       })
     );
     return;
@@ -134,6 +141,27 @@ self.addEventListener('fetch', function (e) {
    يدعم الحالتين: ملف لكل سورة (quran/N.json) أو الملف الشامل (quran_hafs.json) */
 self.addEventListener('message', function (e) {
   const d = e.data || {};
+
+  /* تخطّي الانتظار وتفعيل النسخة الجديدة فورًا */
+  if (d.type === 'SW_SKIP_WAITING') { self.skipWaiting(); return; }
+
+  /* مسح القشرة كاملة عند تعلّق نسخة قديمة — المصحف والخطوط تبقى */
+  if (d.type === 'SW_RESET_SHELL') {
+    e.waitUntil(
+      caches.keys().then(function (keys) {
+        return Promise.all(keys.map(function (k) {
+          if (k === QURAN_CACHE || k === FONT_CACHE) return null;
+          return caches.delete(k);
+        }));
+      }).then(function () {
+        return self.clients.matchAll().then(function (cs) {
+          cs.forEach(function (c) { c.postMessage({ type: 'SW_RESET_DONE' }); });
+        });
+      })
+    );
+    return;
+  }
+
   if (d.type !== 'CACHE_QURAN') return;
 
   e.waitUntil((async function () {
