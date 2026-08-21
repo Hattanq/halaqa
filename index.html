@@ -8549,15 +8549,22 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-21 · 5';
-  document.addEventListener('DOMContentLoaded', function(){
+  window.HQ_BUILD='2026-08-21 · 6';
+  function hqBuildStamp(){
+    if(document.getElementById('hq-build')) return;
+    if(!document.body){ setTimeout(hqBuildStamp,80); return; }
     var t=document.createElement('div');
     t.id='hq-build';
     t.textContent='إصدار '+window.HQ_BUILD;
-    t.style.cssText='position:fixed;left:6px;bottom:4px;z-index:9;font-size:9px;'+
-      'color:rgba(255,255,255,.28);pointer-events:none;letter-spacing:.3px';
+    t.style.cssText='position:fixed;left:8px;bottom:8px;z-index:2147483647;font-size:12px;'+
+      'font-weight:700;color:#f0d060;background:rgba(0,0,0,.65);padding:3px 8px;'+
+      'border-radius:8px;pointer-events:none;letter-spacing:.3px;direction:rtl';
     document.body.appendChild(t);
-  });
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', hqBuildStamp); }
+  else { hqBuildStamp(); }
+  setTimeout(hqBuildStamp, 1500);
+  setTimeout(hqBuildStamp, 4000);
 
   /* ---- شارة «بلا إنترنت» ---- */
   function netBadge(){
