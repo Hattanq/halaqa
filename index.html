@@ -1593,7 +1593,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;min-height:100dvh;overflow:h
 .prof-form-input::placeholder { color:rgba(255,255,255,.25); }
 /* Hijri select */
 .hijri-picker { display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch;background:#0d504a;border-radius:12px;padding:6px;box-sizing:border-box; }
-.hijri-picker > div { display:block;background:rgba(255,255,255,.07);border:0;padding:0;margin:0;border-radius:8px;overflow:hidden;box-shadow:none;min-width:0; }
+.hijri-picker > div { display:block;background:none;border:0;padding:0;margin:0;border-radius:8px;box-shadow:none;min-width:0; }
 .age-auto-tag{font-size:.5rem;font-weight:700;color:#8ad3c8;background:rgba(138,211,200,.13);border:1px solid rgba(138,211,200,.25);border-radius:6px;padding:1px 5px;margin-inline-start:5px;vertical-align:middle}
 .age-slider-wrap.age-auto{justify-content:center;gap:7px}
 /* الضغطات المتتالية على الأزرار لا تُكبّر الشاشة */
@@ -1707,19 +1707,13 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 select.prof-form-input{appearance:none;-webkit-appearance:none;background-color:transparent;background:transparent;border:0;background-image:linear-gradient(45deg,transparent 50%,#9fd6cd 50%),linear-gradient(135deg,#9fd6cd 50%,transparent 50%);background-position:calc(0% + 14px) calc(50% + 1px),calc(0% + 19px) calc(50% + 1px);background-size:5px 5px,5px 5px;background-repeat:no-repeat}
 select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hijri-lbl { display:none; }
-.hijri-select,.hijri-picker select,.hijri-picker input {background:transparent !important;background-image:none !important;border:0 !important;border-radius:8px;color:#fff;font-size:15px;font-weight:600;font-family:inherit;padding:10px 2px;text-align:center;text-align-last:center;outline:none;cursor:pointer;direction:rtl;width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none !important;appearance:none !important;text-overflow:clip;white-space:nowrap;line-height:1.2;box-shadow:none; }
-.hijri-select:focus,.hijri-picker select:focus,.hijri-picker input:focus { box-shadow:0 0 0 2px rgba(201,162,39,.55) !important; }
+.hijri-select,.hijri-picker .hqsel-btn,.hijri-picker input {background:rgba(255,255,255,.07) !important;background-image:none !important;border:0 !important;border-radius:8px;color:#fff;font-size:15px;font-weight:600;font-family:inherit;padding:10px 2px;text-align:center;text-align-last:center;outline:none;cursor:pointer;direction:rtl;width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none !important;appearance:none !important;text-overflow:clip;white-space:nowrap;line-height:1.2;box-shadow:none; }
+.hijri-select:focus,.hijri-picker .hqsel-btn:focus,.hijri-picker input:focus { box-shadow:0 0 0 2px rgba(201,162,39,.55) !important; }
 .hijri-select option { background:#0d504a;color:#fff; }
-/* قشرة القوائم المنسدلة: سفاري iOS يرسم إطارًا مزدوجًا خاصًّا به حول <select>
-   ولا يستجيب لـ appearance:none، فنُخفي العنصر الأصلي فوق واجهة من صنعنا. */
-.sel-skin { position:relative;display:block;width:100%;background:#0d504a;border-radius:12px;overflow:hidden;box-sizing:border-box; }
-.sel-skin .sel-face { display:block;padding:13px 14px;color:#fff;font-size:16px;font-weight:600;
-  font-family:inherit;text-align:center;white-space:nowrap;overflow:hidden;line-height:1.2;direction:rtl; }
-.sel-skin > select { position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;margin:0;
-  border:0;background:transparent;font-size:16px;cursor:pointer; }
-.sel-skin:focus-within { box-shadow:0 0 0 2px rgba(201,162,39,.55); }
-.hijri-picker .sel-skin { background:transparent;border-radius:8px; }
-.hijri-picker .sel-skin .sel-face { padding:10px 2px;font-size:15px; }
+.hijri-picker .hqsel-btn .hqsel-cur { text-align:center; }
+.hijri-picker .hqsel-btn { padding:11px 6px;border-radius:8px; }
+.hijri-picker .hqsel-arrow { display:none; }
+.hqsel-btn.prof-form-input { background:#0d504a;border:0;display:flex; }
 /* Age slider */
 .age-slider-wrap { display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px; }
 .age-slider-btn { width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:1.1rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s cubic-bezier(.34,1.56,.64,1);-webkit-tap-highlight-color:transparent; }
@@ -1945,7 +1939,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 @media(hover:hover){.ev-dd-opt:hover{background:rgba(247,215,116,.1)}}
 .ev-dd-menu::-webkit-scrollbar{width:5px}.ev-dd-menu::-webkit-scrollbar-thumb{background:rgba(247,215,116,.35);border-radius:9px}
 /* ===== قائمة منسدلة عامة تحلّ محل <select> (تنسدل فوق المحتوى) ===== */
-.hqsel{position:relative;width:100%;min-width:0;flex:1 1 auto;box-sizing:border-box}
+.hqsel{position:relative;width:100%;min-width:0;max-width:none;flex:1 1 auto;box-sizing:border-box;background:none;border:0;padding:0;border-radius:0}
 .hqsel select{display:none}
 .hqsel-btn{width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;font-family:inherit;line-height:1.35}
 .hqsel-cur{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:inherit}
@@ -8559,7 +8553,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 7';
+  window.HQ_BUILD='2026-08-22 · 8';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -8575,53 +8569,6 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   else { hqBuildStamp(); }
   setTimeout(hqBuildStamp, 1500);
   setTimeout(hqBuildStamp, 4000);
-
-  /* ---- قشرة القوائم المنسدلة (تلتفّ حول كل <select> فور ظهوره) ---- */
-  var _skinBusy=false, _skinQueued=false;
-  function hqSkinSelects(){
-    if(_skinBusy) return;
-    _skinBusy=true;
-    try{
-      var list=document.querySelectorAll('select.prof-form-input, select.hijri-select');
-      for(var i=0;i<list.length;i++){
-        var sel=list[i];
-        if(sel.getAttribute('data-skinned')) continue;
-        sel.setAttribute('data-skinned','1');
-        var w=document.createElement('div');
-        w.className='sel-skin';
-        var face=document.createElement('span');
-        face.className='sel-face';
-        sel.parentNode.insertBefore(w, sel);
-        w.appendChild(face);
-        w.appendChild(sel);
-        (function(sel,face){
-          function sync(){ var o=sel.options[sel.selectedIndex]; face.textContent=o?o.text:''; }
-          sel.addEventListener('change', sync);
-          sel._hqSync=sync;
-          sync();
-        })(sel,face);
-      }
-    }catch(e){}
-    _skinBusy=false;
-  }
-  /* القيم تُضبط برمجيًا أحيانًا، فنُحدّث الواجهة دوريًا وبعد كل تغيّر في الصفحة */
-  function hqSyncSkins(){
-    var list=document.querySelectorAll('.sel-skin > select');
-    for(var i=0;i<list.length;i++){ if(list[i]._hqSync) list[i]._hqSync(); }
-  }
-  function hqSkinSoon(){
-    if(_skinQueued) return; _skinQueued=true;
-    setTimeout(function(){ _skinQueued=false; hqSkinSelects(); hqSyncSkins(); }, 30);
-  }
-  window.hqSkinSelects=hqSkinSelects;
-  function hqStartSkinner(){
-    if(!document.body){ setTimeout(hqStartSkinner,80); return; }
-    hqSkinSelects();
-    try{ new MutationObserver(hqSkinSoon).observe(document.body,{childList:true,subtree:true}); }
-    catch(e){ setInterval(hqSkinSoon, 800); }
-  }
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', hqStartSkinner); }
-  else { hqStartSkinner(); }
 
   /* ---- شارة «بلا إنترنت» ---- */
   function netBadge(){
