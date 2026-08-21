@@ -1645,6 +1645,14 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .hqacc-acts .hq-mini-btn{flex:1}
 .hqacc.pick{cursor:pointer}
 .hqacc.pick .hqacc-hd{cursor:pointer}
+.hqacc-plain{display:block !important;padding:6px 14px 12px}
+.hqacc-load{padding:14px 4px;text-align:center;color:#9abdba;font-size:.83rem;font-weight:700}
+.hqrk{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.06)}
+.hqrk:last-child{border-bottom:none}
+.hqrk-n{flex:none;width:22px;height:22px;border-radius:7px;background:rgba(201,162,39,.16);color:#f0c040;font-weight:900;font-size:.72rem;display:flex;align-items:center;justify-content:center}
+.hqrk-name{flex:1;min-width:0;font-weight:700;font-size:.86rem;color:#eef}
+.hqrk-sub{flex:none;font-size:.72rem;color:#9abdba;font-weight:700}
+.hqacc-val{text-align:right !important}
 .supp-card{background:linear-gradient(150deg,rgba(14,107,110,.5),rgba(10,61,63,.5));border:1px solid rgba(201,162,39,.25);border-radius:18px;padding:20px 16px;text-align:center;margin-bottom:14px}
 .supp-name{font-family:'Amiri',serif;font-size:1.45rem;color:#fff;font-weight:700;line-height:1.3}
 .supp-sub{font-size:.78rem;color:rgba(201,162,39,.85);font-weight:700;margin-top:5px}
@@ -6031,7 +6039,297 @@ function hqHubGo(hid){
   if(slot){ slot.style.display=''; slot.innerHTML='<button class="ex-back" onclick="modalBack()">‹ رجوع للإحصائيّات</button>'; }
 }
 
-function showAllHalqatStats(){ hqStatsHub(DB.halqat||[], 'إحصائيّات الحلقات', true); }
+// =====================================================
+//  إحصائيّات الجمعية — الشؤون التعليمية
+// =====================================================
+
+/* ---------- أدوات حساب مشتركة ---------- */
+
+/* صفحات مقطع واحد (kind: lesson|review) بين رقمين موحّدين — متزامنة عبر ذاكرة الصفحات */
+var _HQPG={};   /* مخزن أرقام صفحات الآيات */
+async function hqPagesOf(kind,firstN,lastN){
+  try{ return await hsPages(kind,firstN,lastN); }catch(e){ return null; }
+}
+/* صفحات طالب خلال مجموعة أيام */
+async function hqStuPages(sid,kind,days){
+  var fl=hsFirstLast(days||[],kind);
+  if(!fl.first||!fl.last) return 0;
+  var n=await hqPagesOf(kind,fl.first,fl.last);
+  return n||0;
+}
+/* كل طلاب حلقة */
+function hqStudentsOf(h){ return (h&&h.students)||[]; }
+
+/* إحصاء أيام: حضور/غياب/درجة/تجويد */
+function hqDaysStats(days){
+  var r={present:0,absent:0,late:0,score:0,tajSum:0,tajCnt:0};
+  (days||[]).forEach(function(d){
+    if(!d) return;
+    if(d.attend==='حاضر') r.present++;
+    else if(d.attend==='متأخر'){ r.present++; r.late++; }
+    else if(d.attend==='غائب') r.absent++;
+    if(d.tajweed && EV_TAJWEED[d.tajweed]!=null){ r.tajSum+=EV_TAJWEED[d.tajweed]; r.tajCnt++; }
+  });
+  var sc=evTermScore(days||[]);
+  r.score=Math.round((sc.lesson+sc.review+sc.tajweed+sc.attend+sc.behavior)*10)/10;
+  return r;
+}
+function hqTajWord(sum,cnt){
+  if(!cnt) return '—';
+  var avg=sum/cnt, best=HS_TAJ_LEVELS[0], bd=Infinity;
+  HS_TAJ_LEVELS.forEach(function(L){ var d=Math.abs(avg-L[1]); if(d<bd){ bd=d; best=L; } });
+  return best[0];
+}
+
+/* ---------- (١) إحصائيّات عامة للجمعية ---------- */
+function hqJamStats(halqat){
+  var r={halqat:halqat.length, supers:0, sectors:0, teachers:0,
+         students:0, regular:0, disc:0, kg:0, pri:0, mid:0, sec:0, uni:0,
+         asr:0, maghrib:0, days:0, lessonPages:0, reviewPages:0};
+  var supSet={}, secSet={}, tSet={};
+  halqat.forEach(function(h){
+    if(h.supervisorId) supSet[h.supervisorId]=1;
+    if(h.sector) secSet[h.sector]=1;
+    if(h.teacherName) tSet[h.teacherName]=1;
+    if(h.period==='فترة العصر') r.asr++;
+    else if(h.period==='فترة المغرب') r.maghrib++;
+    hqStudentsOf(h).forEach(function(st){
+      r.students++;
+      if(isDiscontinued(st)) r.disc++; else r.regular++;
+      var g=hsStage(st.grade);
+      if(g==='kg') r.kg++; else if(g==='pri') r.pri++;
+      else if(g==='mid') r.mid++; else if(g==='sec') r.sec++;
+      else if(g==='uni') r.uni++;
+    });
+  });
+  r.supers=Object.keys(supSet).length || hqSupers().length;
+  r.sectors=Object.keys(secSet).length;
+  r.teachers=Object.keys(tSet).length;
+  /* الأيام الدراسية = أكبر عدد أيام مسجّلة لطالب */
+  var mx=0;
+  halqat.forEach(function(h){ hqStudentsOf(h).forEach(function(st){
+    var n=hsTermDays(st.id).length; if(n>mx) mx=n; }); });
+  r.days=mx;
+  return r;
+}
+
+/* ---------- (٢) ترتيب الحلقات ---------- */
+/* يعيد [{name, val, sub}] مرتّبة تنازلياً */
+async function hqHalqaRank(halqat, metric){
+  var out=[];
+  for(var i=0;i<halqat.length;i++){
+    var h=halqat[i], studs=hqStudentsOf(h), val=0, sub='';
+    if(metric==='lesson'||metric==='review'){
+      for(var j=0;j<studs.length;j++){
+        val += await hqStuPages(studs[j].id, metric, hsTermDays(studs[j].id));
+      }
+      sub=arNum(val)+' صفحة';
+    } else if(metric==='present'||metric==='absent'){
+      var tot=0, hit=0;
+      studs.forEach(function(st){
+        var d=hqDaysStats(hsTermDays(st.id));
+        tot += (d.present+d.absent);
+        hit += (metric==='present')?d.present:d.absent;
+      });
+      val=hit;
+      var pc=tot?Math.round((hit/tot)*100):0;
+      sub=arNum(hit)+' يوم · '+arNum(pc)+'٪';
+    } else if(metric==='exam'){
+      studs.forEach(function(st){ val += exTermSum(st.id,1)||0; });
+      val=Math.round(val*10)/10;
+      sub=arNum(val)+' درجة';
+    }
+    out.push({name:h.name, val:val, sub:sub});
+  }
+  out.sort(function(a,b){ return b.val-a.val; });
+  return out;
+}
+
+var HQ_RANK_DEFS=[
+  {k:'lesson',  n:'أكثر حلقة تسميعاً للدرس'},
+  {k:'review',  n:'أكثر حلقة تسميعاً للمراجعة'},
+  {k:'present', n:'أكثر حلقة حضوراً'},
+  {k:'absent',  n:'أكثر حلقة غياباً'},
+  {k:'exam',    n:'أكثر حلقة تحصيلاً في اختبارات الجمعية'}
+];
+
+function hqRankToggle(el,metric){
+  var c=el.parentNode;
+  var box=c.parentNode;
+  var was=c.classList.contains('open');
+  if(box) Array.prototype.forEach.call(box.querySelectorAll('.hqacc.open'),function(x){ if(x!==c) x.classList.remove('open'); });
+  c.classList.toggle('open', !was);
+  if(was) return;
+  var body=c.querySelector('.hqacc-body');
+  if(!body || body.getAttribute('data-loaded')==='1') return;
+  body.innerHTML='<div class="hqacc-load">جارٍ الحساب…</div>';
+  hqHalqaRank(window._hqStatsHalqat||[], metric).then(function(list){
+    body.setAttribute('data-loaded','1');
+    if(!list.length){ body.innerHTML='<div class="hqacc-load">لا توجد بيانات</div>'; return; }
+    body.innerHTML=list.map(function(x,i){
+      return '<div class="hqrk"><span class="hqrk-n">'+arNum(i+1)+'</span>'+
+        '<span class="hqrk-name">'+hqEsc(x.name)+'</span>'+
+        '<span class="hqrk-sub">'+x.sub+'</span></div>';
+    }).join('');
+  }).catch(function(){ body.innerHTML='<div class="hqacc-load">تعذّر الحساب</div>'; });
+}
+
+/* ---------- (٣) إحصائيّات طالب ---------- */
+var HQ_PERIOD_KINDS=[
+  {k:'week',  n:'إحصائية بالأسابيع'},
+  {k:'month', n:'إحصائية بالشهور'},
+  {k:'term',  n:'إحصائية بالفصل كامل'}
+];
+var HQ_WEEKS_COUNT=18;      /* حتى تُربط ببطاقة الخط الزمني لاحقاً */
+var HQ_ORD=['','الأول','الثاني','الثالث','الرابع','الخامس','السادس','السابع','الثامن','التاسع','العاشر',
+  'الحادي عشر','الثاني عشر','الثالث عشر','الرابع عشر','الخامس عشر','السادس عشر','السابع عشر','الثامن عشر',
+  'التاسع عشر','العشرون'];
+function hqOrd(n){ return HQ_ORD[n]||arNum(n); }
+var HQ_DAYS_PER_WEEK=4;
+
+function hqSecSel(){
+  var secs={};
+  (DB.halqat||[]).forEach(function(h){ if(h.sector) secs[h.sector]=1; });
+  var list=HQ_SECTORS.filter(function(x){ return secs[x]; });
+  if(!list.length) list=HQ_SECTORS.slice();
+  return list;
+}
+function hqStuFillHalqat(){
+  var sec=(document.getElementById('sq-sector')||{}).value||'';
+  var el=document.getElementById('sq-halqa'); if(!el) return;
+  var hs=(DB.halqat||[]).filter(function(h){ return !sec || h.sector===sec; });
+  el.innerHTML='<option value="">— اختر الحلقة —</option>'+
+    hs.map(function(h){ return '<option value="'+hqEsc(h.id)+'">'+hqEsc(h.name)+'</option>'; }).join('');
+  hqStuFillStudents();
+}
+function hqStuFillStudents(){
+  var hid=(document.getElementById('sq-halqa')||{}).value||'';
+  var el=document.getElementById('sq-stu'); if(!el) return;
+  var h=(DB.halqat||[]).find(function(x){ return x.id===hid; });
+  var studs=hqStudentsOf(h);
+  el.innerHTML='<option value="">— اختر الطالب —</option>'+
+    studs.map(function(st){ return '<option value="'+hqEsc(st.id)+'">'+hqEsc(st.name||'')+'</option>'; }).join('');
+  hqStuClear();
+}
+function hqStuFillRange(){
+  var kind=(document.getElementById('sq-kind')||{}).value||'';
+  var el=document.getElementById('sq-range'); if(!el) return;
+  var o='<option value="">— اختر —</option>';
+  if(kind==='week'){ for(var i=1;i<=HQ_WEEKS_COUNT;i++) o+='<option value="'+i+'">الأسبوع '+hqOrd(i)+'</option>'; }
+  else if(kind==='month'){ for(var m=1;m<=4;m++) o+='<option value="'+m+'">الشهر '+hqOrd(m)+'</option>'; }
+  else if(kind==='term'){ o+='<option value="1">الفصل الحالي</option>'; }
+  el.innerHTML=o;
+  hqStuClear();
+}
+function hqStuClear(){ var r=document.getElementById('sq-result'); if(r) r.innerHTML=''; }
+
+/* أيام الطالب ضمن المدى المحدّد */
+function hqStuDays(sid,kind,idx){
+  var td=hsTermDays(sid);
+  idx=parseInt(idx,10)||1;
+  if(kind==='term') return td;
+  if(kind==='week'){ var a=(idx-1)*HQ_DAYS_PER_WEEK; return td.slice(a,a+HQ_DAYS_PER_WEEK); }
+  if(kind==='month'){ var per=HQ_DAYS_PER_WEEK*4, b=(idx-1)*per; return td.slice(b,b+per); }
+  return td;
+}
+
+async function hqStuShow(){
+  var sid=(document.getElementById('sq-stu')||{}).value||'';
+  var kind=(document.getElementById('sq-kind')||{}).value||'';
+  var idx=(document.getElementById('sq-range')||{}).value||'';
+  var box=document.getElementById('sq-result'); if(!box) return;
+  if(!sid){ showToast('اختر الطالب','error'); return; }
+  if(!kind||!idx){ showToast('اختر المدة والمطلوب','error'); return; }
+
+  box.innerHTML='<div class="hqacc-load">جارٍ الحساب…</div>';
+  var days=hqStuDays(sid,kind,idx);
+  var st=hqDaysStats(days);
+  var lp=await hqStuPages(sid,'lesson',days);
+  var rp=await hqStuPages(sid,'review',days);
+  box.innerHTML='<div class="hqacc" style="border-color:rgba(201,162,39,.3)"><div class="hqacc-body" style="display:block">'+
+    hqAccRow('الحضور', arNum(st.present)+' يوم')+
+    hqAccRow('الغياب', arNum(st.absent)+' يوم')+
+    hqAccRow('الدرجة', arNum(st.score))+
+    hqAccRow('التجويد', hqTajWord(st.tajSum,st.tajCnt))+
+    hqAccRow('صفحات الدرس', arNum(lp)+' صفحة')+
+    hqAccRow('صفحات المراجعة', arNum(rp)+' صفحة')+
+  '</div></div>';
+}
+
+/* ---------- الشاشة الرئيسية ---------- */
+function showAllHalqatStats(){
+  var halqat=DB.halqat||[];
+  if(!halqat.length){ openModal('إحصائيّات الجمعية','<div class="empty-state"><div class="empty-state-icon">📊</div>لا توجد حلقات بعد</div>'); return; }
+  window._hqStatsHalqat=halqat;
+  var g=hqJamStats(halqat);
+
+  /* (١) عامة */
+  var gen='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات عامة للجمعية</div>'+
+    '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
+      hqAccRow('عدد حلقات الجمعية', arNum(g.halqat))+
+      hqAccRow('عدد مشرفي الحلقات', arNum(g.supers))+
+      hqAccRow('عدد القطاعات', arNum(g.sectors))+
+      hqAccRow('عدد معلمي الحلقات', arNum(g.teachers))+
+      hqAccRow('عدد طلاب الحلقات', arNum(g.students))+
+      hqAccRow('عدد الطلاب المنتظمين', arNum(g.regular))+
+      hqAccRow('عدد الطلاب المنقطعين', arNum(g.disc))+
+      hqAccRow('عدد طلاب المرحلة الابتدائية', arNum(g.pri))+
+      hqAccRow('عدد طلاب المرحلة المتوسطة', arNum(g.mid))+
+      hqAccRow('عدد طلاب المرحلة الثانوية', arNum(g.sec))+
+      hqAccRow('عدد طلاب المرحلة الجامعية', arNum(g.uni))+
+      hqAccRow('عدد حلقات فترة العصر', arNum(g.asr))+
+      hqAccRow('عدد حلقات فترة المغرب', arNum(g.maghrib))+
+      hqAccRow('عدد الأيام الدراسية', arNum(g.days))+
+      '<div class="hqacc-row"><span class="hqacc-lbl">عدد صفحات الحفظ</span><span class="hqacc-val" id="hq-gp-lesson">…</span></div>'+
+      '<div class="hqacc-row"><span class="hqacc-lbl">عدد صفحات المراجعة</span><span class="hqacc-val" id="hq-gp-review">…</span></div>'+
+    '</div></div></div>';
+
+  /* (٢) ترتيب الحلقات */
+  var ranks='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات حلقات الجمعية</div>'+
+    HQ_RANK_DEFS.map(function(d){
+      return '<div class="hqacc">'+
+        '<div class="hqacc-hd" onclick="hqRankToggle(this,\''+d.k+'\')">'+
+          '<div class="hqacc-ttls"><div class="hqacc-t">'+d.n+'</div></div>'+
+          '<span class="hqacc-arw">▾</span></div>'+
+        '<div class="hqacc-body"></div></div>';
+    }).join('')+'</div>';
+
+  /* (٣) إحصائيّات الطلاب */
+  function sel(lbl,id,opts,on){
+    return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label>'+
+      '<select class="prof-form-input" id="'+id+'"'+(on?(' onchange="'+on+'"'):'')+'>'+opts+'</select></div>';
+  }
+  var stu='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات طلاب الجمعية</div>'+
+    '<div class="prof-form-wrap" style="padding:0"><div class="prof-form-grid">'+
+      sel('اختر القطاع','sq-sector','<option value="">— كل القطاعات —</option>'+
+        hqSecSel().map(function(x){ return '<option value="'+hqEsc(x)+'">'+hqEsc(x)+'</option>'; }).join(''),'hqStuFillHalqat()')+
+      sel('اختر الحلقة','sq-halqa','<option value="">— اختر الحلقة —</option>','hqStuFillStudents()')+
+      sel('اختر الطالب','sq-stu','<option value="">— اختر الطالب —</option>','hqStuClear()')+
+      sel('اختر مدة الإحصائية','sq-kind','<option value="">— اختر المدة —</option>'+
+        HQ_PERIOD_KINDS.map(function(x){ return '<option value="'+x.k+'">'+x.n+'</option>'; }).join(''),'hqStuFillRange()')+
+      sel('اختر المطلوب','sq-range','<option value="">— اختر —</option>','hqStuShow()')+
+    '</div></div>'+
+    '<div id="sq-result" style="margin-top:10px"></div>'+
+  '</div>';
+
+  openModal('إحصائيّات الجمعية','<div class="hs-wrap">'+gen+ranks+stu+'</div>');
+  setTimeout(hqStuFillHalqat,0);
+  /* صفحات الحفظ والمراجعة تُحسب بعد الفتح لأنها غير متزامنة */
+  (async function(){
+    var L=0,R=0;
+    for(var i=0;i<halqat.length;i++){
+      var studs=hqStudentsOf(halqat[i]);
+      for(var j=0;j<studs.length;j++){
+        var td=hsTermDays(studs[j].id);
+        L += await hqStuPages(studs[j].id,'lesson',td);
+        R += await hqStuPages(studs[j].id,'review',td);
+      }
+    }
+    var a=document.getElementById('hq-gp-lesson'), b=document.getElementById('hq-gp-review');
+    if(a) a.textContent=arNum(L)+' صفحة';
+    if(b) b.textContent=arNum(R)+' صفحة';
+  })();
+}
 
 function hqStatsOverview(halqat, title, extraTop, extraBottom){
   var prev=STATE.activeHid;
