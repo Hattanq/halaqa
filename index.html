@@ -1677,11 +1677,20 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .tl-pick-b{padding:16px;border-radius:14px;border:1px solid rgba(201,162,39,.4);background:linear-gradient(160deg,rgba(201,162,39,.22),rgba(201,162,39,.08));color:#f0d060;font:800 .95rem inherit;cursor:pointer;touch-action:manipulation}
 .tl-pick-b.alt{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#dbeae8}
 /* خانات اليوم/الشهر/السنة: أوسع ليظهر النص كاملاً */
-/* توسيع خانات التاريخ داخل نموذج الخط الزمني فقط */
-.tl-form .hijri-picker{grid-template-columns:.75fr 1.6fr 1fr;gap:7px}
-.tl-form .hijri-select{min-height:44px;font-size:.84rem;padding:9px 4px}
-.tl-hol .hijri-picker{grid-template-columns:.75fr 1.6fr 1fr;gap:7px}
-.tl-hol .hijri-select{min-height:44px;font-size:.84rem;padding:9px 4px}
+/* منتقي التاريخ الهجري: صفّ لكل خانة بعرض كامل */
+.tld{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:4px 12px}
+.tld-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.tld-row:last-child{border-bottom:none}
+.tld-lbl{flex:none;width:46px;font-size:.78rem;font-weight:800;color:#9abdba}
+.tld-sel{flex:1;min-width:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;color:#fff;font-size:16px;font-family:inherit;padding:10px 12px;
+  text-align:right;direction:rtl;outline:none;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,#9fd6cd 50%),linear-gradient(135deg,#9fd6cd 50%,transparent 50%);
+  background-position:calc(0% + 14px) calc(50% + 1px),calc(0% + 19px) calc(50% + 1px);
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.tld-sel:focus{border-color:rgba(201,162,39,.6);box-shadow:0 0 0 3px rgba(201,162,39,.1)}
+.tld-sel option{background:#0d504a;color:#fff}
 .tl-sec-hd{font-size:.8rem;font-weight:800;color:#f0c040;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(201,162,39,.22)}
 .tl-hol{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;margin-bottom:9px}
 .tl-hol-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.78rem;font-weight:800;color:#9abdba}
@@ -6111,6 +6120,28 @@ function tlDateStr(d,m,y){ return arNum(d)+' '+TL_HM[parseInt(m,10)-1]+' '+arNum
 /* تاريخ مختصر: ١٧-٣-١٤٤٨ */
 function tlShort(o){ return arNum(o.d)+'-'+arNum(o.m)+'-'+arNum(o.y); }
 
+/* منتقي تاريخ هجري: ثلاثة صفوف كاملة العرض — لا يقتطع النص إطلاقاً
+   pfx: بادئة المعرّفات · v: {d,m,y} القيم الحالية · cls: صنف إضافي للحقول */
+function tlDatePicker(pfx, v, cls){
+  cls=cls||'';
+  function opts(a,b,cur,lbl){
+    var o='';
+    for(var i=a;i<=b;i++){
+      o+='<option value="'+i+'"'+((cur&&parseInt(cur,10)===i)?' selected':'')+'>'+(lbl?lbl(i):arNum(i))+'</option>';
+    }
+    return o;
+  }
+  function row(lbl,id,inner){
+    return '<div class="tld-row"><span class="tld-lbl">'+lbl+'</span>'+
+           '<select class="tld-sel '+cls+'" id="'+id+'">'+inner+'</select></div>';
+  }
+  return '<div class="tld">'+
+    row('اليوم',  pfx+'d', opts(1,30, v&&v.d))+
+    row('الشهر',  pfx+'m', opts(1,12, v&&v.m, function(i){ return TL_HM[i-1]; }))+
+    row('السنة',  pfx+'y', opts(1448,1460, v&&v.y))+
+  '</div>';
+}
+
 /* ---- تحويل هجري ↔ يوم يوليوسي (التقويم الهجري الحسابي) ---- */
 function tlH2J(y,m,d){
   y=parseInt(y,10); m=parseInt(m,10); d=parseInt(d,10);
@@ -6173,11 +6204,6 @@ var _tlHolN=0;
 function tlHolRow(v){
   _tlHolN++;
   var id=_tlHolN;
-  function dsel(pfx,val,a,b,lbl){
-    var o=''; for(var i=a;i<=b;i++) o+='<option value="'+i+'"'+((val&&parseInt(val,10)===i)?' selected':'')+'>'+(lbl?lbl(i):arNum(i))+'</option>';
-    return o;
-  }
-  var yA=1448, yB=1460;
   return '<div class="tl-hol" id="tl-hol-'+id+'">'+
     '<div class="tl-hol-hd"><span>إجازة</span>'+
       '<button type="button" class="tl-hol-x" onclick="tlHolDel('+id+')">حذف</button></div>'+
@@ -6186,17 +6212,9 @@ function tlHolRow(v){
       TL_HOLIDAYS.map(function(x){ return '<option value="'+hqEsc(x)+'"'+((v&&v.name===x)?' selected':'')+'>'+hqEsc(x)+'</option>'; }).join('')+
       '</select></div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">التاريخ من</label>'+
-      '<div class="hijri-picker">'+
-        '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select tlh-fd">'+dsel('fd',v&&v.fromD,1,30)+'</select></div>'+
-        '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select tlh-fm">'+dsel('fm',v&&v.fromM,1,12,function(i){return TL_HM[i-1];})+'</select></div>'+
-        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select tlh-fy">'+dsel('fy',v&&v.fromY,yA,yB)+'</select></div>'+
-      '</div></div>'+
+      tlDatePicker('tlh'+id+'-f', v?{d:v.fromD,m:v.fromM,y:v.fromY}:null, 'tlh-from')+'</div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">التاريخ إلى</label>'+
-      '<div class="hijri-picker">'+
-        '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select tlh-td">'+dsel('td',v&&v.toD,1,30)+'</select></div>'+
-        '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select tlh-tm">'+dsel('tm',v&&v.toM,1,12,function(i){return TL_HM[i-1];})+'</select></div>'+
-        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select tlh-ty">'+dsel('ty',v&&v.toY,yA,yB)+'</select></div>'+
-      '</div></div>'+
+      tlDatePicker('tlh'+id+'-t', v?{d:v.toD,m:v.toM,y:v.toY}:null, 'tlh-to')+'</div>'+
   '</div>';
 }
 function tlHolAdd(){
@@ -6218,27 +6236,15 @@ function tlBuild(){
   var cur=tlActive();
   var key=(cur&&cur.term)||TL_TERMS[0].k;
   var ex=st[key]||cur||null;
-  function dsel(id,val,a,b,lbl){
-    var o=''; for(var i=a;i<=b;i++) o+='<option value="'+i+'"'+((val&&parseInt(val,10)===i)?' selected':'')+'>'+(lbl?lbl(i):arNum(i))+'</option>';
-    return '<select class="hijri-select" id="'+id+'">'+o+'</select>';
-  }
   var body='<div class="prof-form-wrap tl-form"><div class="prof-form-grid">'+
     '<div class="prof-form-field"><label class="prof-form-lbl">حدّد الفصل</label>'+
       '<select class="prof-form-input" id="tl-term">'+
       TL_TERMS.map(function(t){ return '<option value="'+t.k+'"'+((ex&&ex.term===t.k)?' selected':'')+'>'+t.n+'</option>'; }).join('')+
       '</select></div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ بداية الفصل</label>'+
-      '<div class="hijri-picker">'+
-        '<div><div class="hijri-lbl">اليوم</div>'+dsel('tl-fd',ex&&ex.fromD,1,30)+'</div>'+
-        '<div><div class="hijri-lbl">الشهر</div>'+dsel('tl-fm',ex&&ex.fromM,1,12,function(i){return TL_HM[i-1];})+'</div>'+
-        '<div><div class="hijri-lbl">السنة</div>'+dsel('tl-fy',ex&&ex.fromY,1448,1460)+'</div>'+
-      '</div></div>'+
+      tlDatePicker('tl-f', ex?{d:ex.fromD,m:ex.fromM,y:ex.fromY}:null)+'</div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ نهاية الفصل</label>'+
-      '<div class="hijri-picker">'+
-        '<div><div class="hijri-lbl">اليوم</div>'+dsel('tl-td',ex&&ex.toD,1,30)+'</div>'+
-        '<div><div class="hijri-lbl">الشهر</div>'+dsel('tl-tm',ex&&ex.toM,1,12,function(i){return TL_HM[i-1];})+'</div>'+
-        '<div><div class="hijri-lbl">السنة</div>'+dsel('tl-ty',ex&&ex.toY,1448,1460)+'</div>'+
-      '</div></div>'+
+      tlDatePicker('tl-t', ex?{d:ex.toD,m:ex.toM,y:ex.toY}:null)+'</div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">الأيام الدراسية للأسبوع</label>'+
       '<select class="prof-form-input" id="tl-dpw">'+
         '<option value="4"'+((ex&&ex.daysPerWeek==4)?' selected':'')+'>أربعة أيام</option>'+
@@ -6259,15 +6265,18 @@ function tlSave(){
     var term=V('tl-term');
     var fD=V('tl-fd'), fM=V('tl-fm'), fY=V('tl-fy');
     var tD=V('tl-td'), tM=V('tl-tm'), tY=V('tl-ty');
+    if(!fD||!tD){ showToast('أكمل تاريخي البداية والنهاية','error'); return; }
     if(tlSerial(tD,tM,tY) <= tlSerial(fD,fM,fY)){
       showToast('تاريخ النهاية يجب أن يكون بعد البداية','error'); return;
     }
     var hols=[];
     Array.prototype.forEach.call(document.querySelectorAll('#tl-hols .tl-hol'),function(el){
-      function G(c){ var x=el.querySelector('.'+c); return x?x.value:''; }
-      hols.push({name:G('tlh-name'),
-        fromD:G('tlh-fd'), fromM:G('tlh-fm'), fromY:G('tlh-fy'),
-        toD:G('tlh-td'),   toM:G('tlh-tm'),   toY:G('tlh-ty')});
+      function G(sel){ var x=el.querySelector(sel); return x?x.value:''; }
+      var f=el.querySelectorAll('.tlh-from'), t=el.querySelectorAll('.tlh-to');
+      if(f.length<3||t.length<3) return;
+      hols.push({name:G('.tlh-name'),
+        fromD:f[0].value, fromM:f[1].value, fromY:f[2].value,
+        toD:t[0].value,   toM:t[1].value,   toY:t[2].value});
     });
     var tName=(TL_TERMS.find(function(t){return t.k===term;})||{}).n||'';
     var obj={ term:term, termName:tName,
