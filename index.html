@@ -6151,12 +6151,16 @@ function tlWeeks(tl){
   if(!tl) return [];
   var start=tlH2J(tl.fromY,tl.fromM,tl.fromD);
   var end  =tlH2J(tl.toY,  tl.toM,  tl.toD);
+  if(!isFinite(start)||!isFinite(end)||end<start) return [];
   var per=parseInt(tl.daysPerWeek,10)||4;      /* ٤ = أحد→أربعاء · ٥ = أحد→خميس */
   /* أول أحد في أو بعد تاريخ البداية */
   var cur=start;
   while(tlWeekday(cur)!==0) cur++;
+  /* الإجازات الصالحة فقط — تاريخ ناقص يُتجاهل ولا يُعطّل الجدول */
   var hol=(tl.holidays||[]).map(function(x){
     return {n:x.name, a:tlH2J(x.fromY,x.fromM,x.fromD), b:tlH2J(x.toY,x.toM,x.toD)};
+  }).filter(function(h){
+    return isFinite(h.a) && isFinite(h.b) && h.b>=h.a;
   });
   var out=[], no=0, guard=0;
   while(cur<=end && guard++<200){
@@ -6256,14 +6260,18 @@ function tlSave(){
     if(tlSerial(tD,tM,tY) <= tlSerial(fD,fM,fY)){
       showToast('تاريخ النهاية يجب أن يكون بعد البداية','error'); return;
     }
-    var hols=[];
+    var hols=[], skipped=0;
     Array.prototype.forEach.call(document.querySelectorAll('#tl-hols .tl-hol'),function(el){
-      function G(sel){ var x=el.querySelector(sel); return x?x.value:''; }
-      var f=el.querySelectorAll('.tlh-from'), t=el.querySelectorAll('.tlh-to');
-      if(f.length<3||t.length<3) return;
-      hols.push({name:G('.tlh-name'),
-        fromD:f[0].value, fromM:f[1].value, fromY:f[2].value,
-        toD:t[0].value,   toM:t[1].value,   toY:t[2].value});
+      var rid=String(el.id||'').replace('tl-hol-','');
+      function byId(sfx){ var x=document.getElementById('tlh'+rid+'-'+sfx); return x?String(x.value||'').trim():''; }
+      var nEl=el.querySelector('.tlh-name');
+      var h={ name:nEl?nEl.value:'',
+        fromD:byId('fd'), fromM:byId('fm'), fromY:byId('fy'),
+        toD:byId('td'),   toM:byId('tm'),   toY:byId('ty') };
+      /* لا نحفظ إجازة ناقصة أو معكوسة التاريخ */
+      var a=tlH2J(h.fromY,h.fromM,h.fromD), b=tlH2J(h.toY,h.toM,h.toD);
+      if(!h.name || !isFinite(a) || !isFinite(b) || b<a){ skipped++; return; }
+      hols.push(h);
     });
     var tName=(TL_TERMS.find(function(t){return t.k===term;})||{}).n||'';
     var obj={ term:term, termName:tName,
@@ -6274,7 +6282,7 @@ function tlSave(){
     var st=tlStore();
     st[term]=obj; st.activeKey=term;
     save();
-    showToast('اعتُمد الخط الزمني · '+tName,'success');
+    showToast(skipped?('اعتُمد الخط الزمني · تُخطّيت '+arNum(skipped)+' إجازة ناقصة'):('اعتُمد الخط الزمني · '+tName), skipped?'info':'success');
     tlShow();
   }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
 }
@@ -6290,6 +6298,13 @@ function tlShow(){
   }
   var wk=tlWeeks(tl), per=tl.daysPerWeek||4;
   var studyWk=wk.length;
+  if(!studyWk){
+    openModal('الخط الزمني للجمعية',
+      '<div class="ev-susp-card"><div class="ev-susp-ttl">تعذّر بناء الجدول</div>'+
+      '<div class="ev-susp-sub">تحقّق من تاريخَي بداية الفصل ونهايته'+
+      (STATE.role==='admin'?' وأعد الاعتماد من «بناء الخط الزمني».':'.')+'</div></div>');
+    return;
+  }
 
   /* توزيع الأسابيع الدراسية على شهور — أربعة أسابيع لكل شهر */
   var months=[];
