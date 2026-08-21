@@ -1592,7 +1592,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;min-height:100dvh;overflow:h
 .prof-form-input:focus { border-color:rgba(201,162,39,.6);box-shadow:0 0 0 3px rgba(201,162,39,.1); }
 .prof-form-input::placeholder { color:rgba(255,255,255,.25); }
 /* Hijri select */
-.hijri-picker { display:grid;grid-template-columns:1fr 1.55fr 1.5fr;gap:7px; }
+.hijri-picker { display:grid;grid-template-columns:.92fr 1.5fr 1.32fr;gap:5px;align-items:stretch; }
+.hijri-picker > div { display:block;background:none;border:0;padding:0;margin:0;border-radius:0;box-shadow:none; }
 .age-auto-tag{font-size:.5rem;font-weight:700;color:#8ad3c8;background:rgba(138,211,200,.13);border:1px solid rgba(138,211,200,.25);border-radius:6px;padding:1px 5px;margin-inline-start:5px;vertical-align:middle}
 .age-slider-wrap.age-auto{justify-content:center;gap:7px}
 /* الضغطات المتتالية على الأزرار لا تُكبّر الشاشة */
@@ -1705,8 +1706,8 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .hq-day input{width:16px;height:16px;accent-color:#c9a227;flex:none}
 select.prof-form-input{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,#9fd6cd 50%),linear-gradient(135deg,#9fd6cd 50%,transparent 50%);background-position:calc(0% + 14px) calc(50% + 1px),calc(0% + 19px) calc(50% + 1px);background-size:5px 5px,5px 5px;background-repeat:no-repeat}
 .hijri-lbl { display:none; }
-.hijri-select {background:#0d504a;border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:600;font-family:inherit;padding:13px 4px;text-align:center;text-align-last:center;outline:none;cursor:pointer;direction:rtl;width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none;appearance:none;text-overflow:clip;line-height:1.2; }
-.hijri-select:focus { box-shadow:0 0 0 2px rgba(201,162,39,.55); }
+.hijri-select,.hijri-picker select,.hijri-picker input {background:#0d504a !important;background-image:none !important;border:0 !important;border-radius:12px;color:#fff;font-size:15px;font-weight:600;font-family:inherit;padding:12px 2px;text-align:center;text-align-last:center;outline:none;cursor:pointer;direction:rtl;width:100%;min-width:0;box-sizing:border-box;-webkit-appearance:none !important;appearance:none !important;text-overflow:clip;white-space:nowrap;line-height:1.2;box-shadow:none; }
+.hijri-select:focus,.hijri-picker select:focus,.hijri-picker input:focus { box-shadow:0 0 0 2px rgba(201,162,39,.55) !important; }
 .hijri-select option { background:#0d504a;color:#fff; }
 /* Age slider */
 .age-slider-wrap { display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px; }
