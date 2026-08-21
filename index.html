@@ -1667,16 +1667,21 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .tl-range{font-size:.8rem;color:rgba(201,162,39,.9);font-weight:700;margin-top:6px;direction:rtl}
 .tl-month{margin-bottom:12px}
 .tl-month-hd{font-size:.78rem;font-weight:800;color:#9abdba;margin-bottom:6px;padding-inline-start:2px}
-.tl-weeks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.tl-week{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 4px;text-align:center}
-.tl-week-d{font-size:.66rem;color:#bcd6d3;margin-top:2px;font-weight:700;line-height:1.45;direction:ltr;unicode-bidi:isolate}
-.tl-week-n{font-weight:900;font-size:.76rem;color:#f0d060}
+.tl-weeks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tl-week{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 8px;text-align:center}
+.tl-day{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:3px 4px;margin-top:3px;border-radius:7px;background:rgba(255,255,255,.05)}
+.tl-day-n{font-size:.6rem;font-weight:800;color:#9fd6cd;flex:none}
+.tl-day-d{font-size:.6rem;font-weight:700;color:#e4eeed;direction:ltr;unicode-bidi:isolate}
+.tl-week-n{font-weight:900;font-size:.8rem;color:#f0d060;margin-bottom:5px}
 .tl-pick{display:flex;flex-direction:column;gap:10px;padding:6px 2px}
 .tl-pick-b{padding:16px;border-radius:14px;border:1px solid rgba(201,162,39,.4);background:linear-gradient(160deg,rgba(201,162,39,.22),rgba(201,162,39,.08));color:#f0d060;font:800 .95rem inherit;cursor:pointer;touch-action:manipulation}
 .tl-pick-b.alt{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#dbeae8}
 /* خانات اليوم/الشهر/السنة: أوسع ليظهر النص كاملاً */
-.hijri-picker{grid-template-columns:.8fr 1.5fr 1fr !important;gap:7px !important}
-.hijri-select{width:100%;min-height:42px;font-size:.82rem !important;padding:8px 6px !important;text-align:center;text-align-last:center}
+/* توسيع خانات التاريخ داخل نموذج الخط الزمني فقط */
+.tl-form .hijri-picker{grid-template-columns:.75fr 1.6fr 1fr;gap:7px}
+.tl-form .hijri-select{min-height:44px;font-size:.84rem;padding:9px 4px}
+.tl-hol .hijri-picker{grid-template-columns:.75fr 1.6fr 1fr;gap:7px}
+.tl-hol .hijri-select{min-height:44px;font-size:.84rem;padding:9px 4px}
 .tl-sec-hd{font-size:.8rem;font-weight:800;color:#f0c040;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(201,162,39,.22)}
 .tl-hol{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;margin-bottom:9px}
 .tl-hol-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.78rem;font-weight:800;color:#9abdba}
@@ -6091,6 +6096,7 @@ var TL_TERMS=[
   {k:'1448-2', n:'الفصل الدراسي الثاني لعام 1448 هـ'}
 ];
 var TL_HOLIDAYS=['اليوم الوطني','يوم التأسيس','إجازة الربيع','إجازة الخريف'];
+var TL_DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 var TL_HM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
 
 function tlStore(){ if(!DB.timeline) DB.timeline={}; return DB.timeline; }
@@ -6143,8 +6149,13 @@ function tlWeeks(tl){
     }
     if(!isHol){
       no++;
+      var ds=[];
+      for(var k=0;k<per;k++){
+        var jd=cur+k;
+        ds.push({name:TL_DAYS[tlWeekday(jd)], date:tlJ2H(jd)});
+      }
       out.push({no:no, jdFrom:cur, jdTo:last,
-                from:tlJ2H(cur), to:tlJ2H(last)});
+                from:tlJ2H(cur), to:tlJ2H(last), days:ds});
     }
     cur+=7;                                    /* الأحد التالي */
   }
@@ -6211,7 +6222,7 @@ function tlBuild(){
     var o=''; for(var i=a;i<=b;i++) o+='<option value="'+i+'"'+((val&&parseInt(val,10)===i)?' selected':'')+'>'+(lbl?lbl(i):arNum(i))+'</option>';
     return '<select class="hijri-select" id="'+id+'">'+o+'</select>';
   }
-  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+  var body='<div class="prof-form-wrap tl-form"><div class="prof-form-grid">'+
     '<div class="prof-form-field"><label class="prof-form-lbl">حدّد الفصل</label>'+
       '<select class="prof-form-input" id="tl-term">'+
       TL_TERMS.map(function(t){ return '<option value="'+t.k+'"'+((ex&&ex.term===t.k)?' selected':'')+'>'+t.n+'</option>'; }).join('')+
@@ -6298,8 +6309,10 @@ function tlShow(){
         '<div class="tl-weeks">'+mm.map(function(w){
           return '<div class="tl-week">'+
             '<div class="tl-week-n">أسبوع '+arNum(w.no)+'</div>'+
-            '<div class="tl-week-d">'+tlShort(w.from)+'</div>'+
-            '<div class="tl-week-d">'+tlShort(w.to)+'</div>'+
+            (w.days||[]).map(function(x){
+              return '<div class="tl-day"><span class="tl-day-n">'+x.name+'</span>'+
+                     '<span class="tl-day-d">'+tlShort(x.date)+'</span></div>';
+            }).join('')+
           '</div>';
         }).join('')+'</div></div>';
     }).join('')+
