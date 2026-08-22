@@ -1685,7 +1685,7 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .tl-hol{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;margin-bottom:9px}
 .tl-hol-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.78rem;font-weight:800;color:#9abdba}
 .tl-hol-x{background:rgba(224,90,90,.14);border:1px solid rgba(224,90,90,.3);color:#f6a9a4;border-radius:8px;padding:4px 10px;font:700 .7rem inherit;cursor:pointer}
-.tl-add{display:inline-flex;align-items:center;gap:8px;width:auto;margin-top:6px;padding:8px 14px 8px 10px;border-radius:999px;border:1px solid rgba(247,215,116,.35);background:rgba(247,215,116,.10);color:#f7d774;font:800 .78rem inherit;cursor:pointer}
+.tl-add{display:flex;align-items:center;justify-content:center;gap:8px;width:auto;margin:10px auto 0;padding:8px 14px 8px 10px;border-radius:999px;border:1px solid rgba(247,215,116,.35);background:rgba(247,215,116,.10);color:#f7d774;font:800 .78rem inherit;cursor:pointer}
 .tl-add .tl-plus{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex:0 0 20px;border-radius:50%;background:#f7d774;color:#0b3a36;font:900 .9rem inherit;line-height:1}
 .tl-approve{display:block;width:auto;min-width:190px;margin:16px auto 0;padding:12px 26px;border-radius:14px;border:1px solid rgba(247,215,116,.55);background:linear-gradient(180deg,rgba(247,215,116,.20),rgba(247,215,116,.10));color:#f7d774;font:800 .92rem inherit;cursor:pointer}
 .hqacc-load{padding:14px 4px;text-align:center;color:#9abdba;font-size:.83rem;font-weight:700}
@@ -1701,9 +1701,10 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .hsfold.open .hsfold-arw{transform:rotate(180deg);color:#f7d774}
 .hsfold-body{display:none}
 .hsfold.open .hsfold-body{display:block;animation:hqAccIn .25s ease both}
-/* محاذاة الصفوف: التسمية يساراً والقيمة يميناً */
-.hqacc-row{flex-direction:row-reverse}
-.supp-row{flex-direction:row-reverse}
+/* محاذاة الصفوف: التسمية يميناً والقيمة يساراً، ومحاذاة النصّين إلى اليمين */
+.hqacc-row{flex-direction:row}
+.hqacc-lbl,.supp-lbl{text-align:right}
+.supp-row{flex-direction:row}
 .supp-val{text-align:right}
 .supp-card{background:linear-gradient(150deg,rgba(14,107,110,.5),rgba(10,61,63,.5));border:1px solid rgba(201,162,39,.25);border-radius:18px;padding:20px 16px;text-align:center;margin-bottom:14px}
 .supp-name{font-family:'Amiri',serif;font-size:1.45rem;color:#fff;font-weight:700;line-height:1.3}
@@ -1962,6 +1963,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hqsel.open{z-index:900}
 .hqsel-menu{display:none;position:absolute;top:calc(100% + 5px);right:0;left:0;z-index:9999;max-height:250px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#0f3b37;border:1px solid rgba(247,215,116,.32);border-radius:11px;box-shadow:0 14px 30px rgba(0,0,0,.55);direction:rtl}
 .hqsel.open .hqsel-menu{display:block}
+.hqsel-menu.hqsel-float{display:block !important}
 .hqsel-opt{font-family:'Cairo','Noto Sans Arabic',sans-serif;font-size:.78rem;font-weight:600;color:rgba(255,255,255,.92);background:#0f3b37;padding:11px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;direction:rtl}
 .hqsel-opt:last-child{border-bottom:none}
 .hqsel-opt.sel{background:rgba(247,215,116,.16);color:#f7d774}
@@ -3260,7 +3262,7 @@ function renderDash(){
       '<div class="menu-card mc-6" onclick="showSupervisorsData()"><div class="mc-icon">'+svgTeachH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات المشرفين</div></div>'+
       '<div class="menu-card mc-2" onclick="showTeachersData()"><div class="mc-icon">'+svgTeachH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات المعلمين</div></div>'+
       '<div class="menu-card mc-4" onclick="showHalqatList()"><div class="mc-icon">'+svgListH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات الحلقات</div></div>'+
-      '<div class="menu-card mc-7" onclick="tlOpen()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>'+
+      '<div class="menu-card mc-7" onclick="tlOpen()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="16" y="28" width="32" height="24" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M23 28v-6a9 9 0 0118 0v6" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="38" r="3.5" fill="white"/><line x1="32" y1="41" x2="32" y2="46" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
       '<div class="menu-card mc-5 mc-wide" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
     '</div>';
@@ -3277,15 +3279,15 @@ function renderDash(){
     var svgKey2='<svg viewBox="0 0 64 64" fill="none"><rect x="16" y="28" width="32" height="24" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M23 28v-7a9 9 0 0118 0v7" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="40" r="3.4" fill="white"/></svg>';
     var svgVisit2='<svg viewBox="0 0 64 64" fill="none"><path d="M32 6c-8.3 0-15 6.7-15 15 0 11.2 15 29 15 29s15-17.8 15-29c0-8.3-6.7-15-15-15z" stroke="white" stroke-width="3" stroke-linejoin="round" fill="rgba(255,255,255,.1)"/><circle cx="32" cy="21" r="5.5" stroke="white" stroke-width="2.8"/></svg>';
     wrap.innerHTML='<div class="menu-grid">'+
-      '<div class="menu-card mc-1" onclick="showAddHalqa()"><div class="mc-icon">'+svgAddH2+'</div><div class="mc-accent"></div><div class="mc-label">إضافة حلقة</div></div>'+
       '<div class="menu-card mc-2" onclick="showAddTeacher()"><div class="mc-icon">'+svgAddH2+'</div><div class="mc-accent"></div><div class="mc-label">إضافة معلم</div></div>'+
-      '<div class="menu-card mc-4" onclick="supHalqatList()"><div class="mc-icon">'+svgListH2+'</div><div class="mc-accent"></div><div class="mc-label">بيانات الحلقات</div></div>'+
-      '<div class="menu-card mc-5 mc-wide" onclick="supStats()"><div class="mc-icon">'+svgStatH2+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيّات الحلقات</div></div>'+
+      '<div class="menu-card mc-1" onclick="showAddHalqa()"><div class="mc-icon">'+svgAddH2+'</div><div class="mc-accent"></div><div class="mc-label">إضافة حلقة</div></div>'+
       '<div class="menu-card mc-2" onclick="supTeachersData()"><div class="mc-icon">'+svgTeachH2+'</div><div class="mc-accent"></div><div class="mc-label">بيانات المعلمين</div></div>'+
-      '<div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>'+
+      '<div class="menu-card mc-4" onclick="supHalqatList()"><div class="mc-icon">'+svgListH2+'</div><div class="mc-accent"></div><div class="mc-label">بيانات الحلقات</div></div>'+
       '<div class="menu-card mc-1" onclick="supVisitOpen()"><div class="mc-icon">'+svgVisit2+'</div><div class="mc-accent"></div><div class="mc-label">زيارة الحلقات</div></div>'+
       '<div class="menu-card mc-3" onclick="supExamPick()"><div class="mc-icon">'+svgExam2+'</div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>'+
+      '<div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon">'+svgKey2+'</div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
+      '<div class="menu-card mc-5 mc-wide" onclick="supStats()"><div class="mc-icon">'+svgStatH2+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الحلقة</div></div>'+
     '</div>';
     return;
   }
@@ -3309,7 +3311,7 @@ function renderDash(){
       <div class="menu-card mc-5" onclick="showRankTable(null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطلاب</div></div>
       <div class="menu-card mc-3" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
       <div class="menu-card mc-3" onclick="hqOfflineOpen()"><div class="mc-icon">${HQ_SVG_OFFLINE}</div><div class="mc-accent"></div><div class="mc-label">العمل بلا إنترنت</div></div>
-      <div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>
+      <div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>
       <div class="menu-card mc-6 mc-soon" onclick="remComingSoon()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="24" y="8" width="16" height="28" rx="8" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M17 30a15 15 0 0030 0" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="32" y1="45" x2="32" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="23" y1="54" x2="41" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">التسميع عن بُعد<span class="mc-soon-tag">قريباً</span></div></div>
       <div class="menu-card mc-5 mc-wide" onclick="showHalqaStats()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="10" y="34" width="10" height="20" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="27" y="22" width="10" height="32" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="44" y="12" width="10" height="42" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><path d="M8 54h48" stroke="white" stroke-width="2.6" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">إحصائيّات الحلقة</div></div>
 </div>`;
@@ -3334,7 +3336,7 @@ function renderDash(){
       <div class="menu-card mc-3" onclick="showRankTable(window._ds?window._ds.id:null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطالب</div></div>
       <div class="menu-card mc-4" onclick="showStudentPlan(window._dp, window._ds?window._ds.id:'')"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">عرض الخطط</div></div>
       <div class="menu-card mc-5" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
-      <div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>
+      <div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>
       ${STATE.role==='student' ? '<div class="menu-card mc-6 mc-soon" onclick="remComingSoon()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="24" y="8" width="16" height="28" rx="8" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M17 30a15 15 0 0030 0" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="32" y1="45" x2="32" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="23" y1="54" x2="41" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">التسميع عن بُعد<span class="mc-soon-tag">قريباً</span></div></div>' : ''}
       ${(function(){
         var msgSVG='<svg viewBox="0 0 64 64" fill="none"><rect x="8" y="14" width="48" height="34" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M8 20l24 16 24-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>';
@@ -5575,9 +5577,9 @@ function hqInfoOf(h){
 
 function showAddHalqa(){
   function fld(lbl,id,ph){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label><input class="prof-form-input" id="'+id+'" type="text" placeholder="'+ph+'"></div>'; }
-  function sel(lbl,id,arr,ph){
+  function sel(lbl,id,arr,ph,on){
     return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label>'+
-      '<select class="prof-form-input" id="'+id+'"><option value="">'+ph+'</option>'+
+      '<select class="prof-form-input" id="'+id+'"'+(on?(' onchange="'+on+'"'):'')+'><option value="">'+ph+'</option>'+
       arr.map(function(o){ return '<option value="'+hqEsc(o.v!=null?o.v:o)+'">'+hqEsc(o.n!=null?o.n:o)+'</option>'; }).join('')+
       '</select></div>';
   }
@@ -5595,16 +5597,37 @@ function showAddHalqa(){
     sel('فترة الحلقة','ah-period',HQ_PERIODS,'اختر الفترة')+
     daysBox+
     fld('مقرّ الحلقة','ah-venue','اسم الجامع')+
-    sel('قطاع الحلقة','ah-sector',HQ_SECTORS,'اختر القطاع')+
     (_lockSup
-      ? '<div class="prof-form-field"><label class="prof-form-lbl">مشرف الحلقة</label>'+
+      /* حساب المشرف: القطاع والمشرف معلومان — يُعبّآن تلقائيًا */
+      ? '<div class="prof-form-field"><label class="prof-form-lbl">قطاع الحلقة</label>'+
+        '<input class="prof-form-input" id="ah-sector" type="text" value="'+hqEsc(hqSuperSector(_lockSup))+'" readonly style="opacity:.75"></div>'+
+        '<div class="prof-form-field"><label class="prof-form-lbl">مشرف الحلقة</label>'+
         '<input class="prof-form-input" id="ah-super" type="text" value="'+hqEsc(hqSuperName(_lockSup))+'" data-sup="'+hqEsc(_lockSup)+'" readonly style="opacity:.75"></div>'
-      : sel('مشرف الحلقة','ah-super',supers.map(function(v){ return {v:v.id,n:v.name}; }),
-        supers.length?'اختر المشرف':'لا يوجد مشرفون — أضِفهم أولاً'))+
+      /* الشؤون التعليمية: المشرف يتبع القطاع المختار */
+      : sel('قطاع الحلقة','ah-sector',HQ_SECTORS,'اختر القطاع','ahSyncSup()')+
+        sel('مشرف الحلقة','ah-super',[],'اختر القطاع أولاً'))+
     '</div>'+
     '<button class="prof-form-save" onclick="saveNewHalqa()" style="margin-top:16px;">✅ فتح الحلقة</button>'+
   '</div>';
   openModal('➕ إضافة حلقة', body);
+  if(!_lockSup) setTimeout(ahSyncSup,0);
+}
+/* قطاع مشرف بعينه */
+function hqSuperSector(sid){
+  var v=hqSupers().find(function(x){ return x.id===sid; });
+  return (v&&v.sector)||'';
+}
+/* تعبئة مشرف الحلقة تلقائيًا حسب القطاع المختار */
+function ahSyncSup(){
+  var secEl=document.getElementById('ah-sector'), supEl=document.getElementById('ah-super');
+  if(!secEl||!supEl||supEl.tagName!=='SELECT') return;
+  var sec=(secEl.value||'').trim();
+  var list=hqSupers().filter(function(v){ return sec && (v.sector||'')===sec; });
+  var ph = !sec ? 'اختر القطاع أولاً' : (list.length?'اختر المشرف':'لا يوجد مشرف لهذا القطاع');
+  supEl.innerHTML='<option value="">'+hqEsc(ph)+'</option>'+
+    list.map(function(v){ return '<option value="'+hqEsc(v.id)+'">'+hqEsc(v.name)+'</option>'; }).join('');
+  supEl.value=(list.length===1)?list[0].id:'';
+  try{ supEl.dispatchEvent(new Event('change',{bubbles:false})); }catch(e){}
 }
 function saveNewHalqa(){
   try{
@@ -6275,7 +6298,7 @@ function hqHubGo(hid){
 var HQ_SVG_TL='<svg viewBox="0 0 64 64" fill="none"><rect x="9" y="14" width="46" height="40" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.08)"/><line x1="9" y1="26" x2="55" y2="26" stroke="white" stroke-width="2.6"/><line x1="21" y1="8" x2="21" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="43" y1="8" x2="43" y2="18" stroke="white" stroke-width="3" stroke-linecap="round"/><rect x="17" y="33" width="8" height="7" rx="2" fill="rgba(255,255,255,.85)"/><rect x="30" y="33" width="8" height="7" rx="2" fill="rgba(255,255,255,.45)"/><rect x="43" y="33" width="4" height="7" rx="2" fill="rgba(255,255,255,.45)"/></svg>';
 
 // =====================================================
-//  الخط الزمني للجمعية
+//  الخط الزمني
 // =====================================================
 var TL_TERMS=[
   {k:'1448-1', n:'الفصل الدراسي الأول لعام 1448 هـ'},
@@ -6474,7 +6497,7 @@ function tlHolDel(id){ var e=document.getElementById('tl-hol-'+id); if(e) e.remo
 
 function tlOpen(){
   if(STATE.role!=='admin'){ tlShow(); return; }
-  openModal('الخط الزمني للجمعية',
+  openModal('الخط الزمني',
     '<div class="tl-pick">'+
       '<button class="tl-pick-b" onclick="tlBuild()">بناء الخط الزمني</button>'+
       '<button class="tl-pick-b alt" onclick="tlShow()">عرض الخط الزمني</button>'+
@@ -6501,11 +6524,11 @@ function tlBuild(){
       '</select></div>'+
     '</div>'+
     '<div class="tl-sec-hd">إجازات الفصل الدراسي</div>'+
-    '<div id="tl-hols">'+((ex&&ex.holidays&&ex.holidays.length)?ex.holidays.map(function(x){return tlHolRow(x);}).join(''):tlHolRow(null, ex?{d:ex.fromD,m:ex.fromM,y:ex.fromY}:null))+'</div>'+
+    '<div id="tl-hols"></div>'+   /* يبدأ فارغًا دائمًا — تُضاف الإجازات يدويًا */
     '<button class="tl-add" type="button" onclick="tlHolAdd()"><span class="tl-plus">+</span><span>إضافة إجازة</span></button>'+
     '<button class="tl-approve" type="button" onclick="tlSave()">اعتماد الخط الزمني</button>'+
   '</div>';
-  openModal('الخط الزمني للجمعية', body);
+  openModal('الخط الزمني', body);
 }
 
 function tlSave(){
@@ -6556,7 +6579,7 @@ function tlSave(){
 function tlShow(){
   var tl=tlActive();
   if(!tl){
-    openModal('الخط الزمني للجمعية',
+    openModal('الخط الزمني',
       '<div class="ev-susp-card"><div class="ev-susp-ttl">لم يُعتمد بعد</div>'+
       '<div class="ev-susp-sub">'+(STATE.role==='admin'?'ابنِ الخط الزمني واعتمده أولاً.':'الشؤون التعليمية لم تعتمد الخط الزمني للفصل بعد.')+'</div></div>');
     return;
@@ -6564,7 +6587,7 @@ function tlShow(){
   var wk=tlWeeks(tl), per=tl.daysPerWeek||4;
   var studyWk=wk.length;
   if(!studyWk){
-    openModal('الخط الزمني للجمعية',
+    openModal('الخط الزمني',
       '<div class="ev-susp-card"><div class="ev-susp-ttl">تعذّر بناء الجدول</div>'+
       '<div class="ev-susp-sub">تحقّق من تاريخَي بداية الفصل ونهايته'+
       (STATE.role==='admin'?' وأعد الاعتماد من «بناء الخط الزمني».':'.')+'</div></div>');
@@ -6610,7 +6633,7 @@ function tlShow(){
         return hqAccRow(x.name, tlDateStr(x.fromD,x.fromM,x.fromY)+' ← '+tlDateStr(x.toD,x.toM,x.toY));
       }).join('')+'</div></div></div>'):'');
 
-  openModal('الخط الزمني للجمعية','<div class="hs-wrap">'+body+'</div>');
+  openModal('الخط الزمني','<div class="hs-wrap">'+body+'</div>');
 }
 
 // =====================================================
@@ -7997,8 +8020,35 @@ function hqSelLabel(s){
   var o=s.options[s.selectedIndex];
   return o?o.text:'\u2014';
 }
+function hqSelMenuOf(wrap){ return wrap._hqMenu||wrap.querySelector('.hqsel-menu'); }
+/* إرجاع القائمة إلى مكانها داخل الغلاف */
+function hqSelDock(wrap){
+  var m=wrap&&wrap._hqMenu; if(!m) return;
+  m.classList.remove('hqsel-float');
+  m.removeAttribute('style');
+  if(m.parentNode!==wrap) wrap.appendChild(m);
+}
+/* إخراج القائمة إلى طبقة عائمة على مستوى الصفحة حتى لا يقصّها أي صندوق */
+function hqSelFloat(wrap){
+  var m=wrap&&wrap._hqMenu, btn=wrap&&wrap.querySelector('.hqsel-btn');
+  if(!m||!btn) return;
+  if(m.parentNode!==document.body) document.body.appendChild(m);
+  m.classList.add('hqsel-float');
+  var r=btn.getBoundingClientRect();
+  var vh=window.innerHeight||document.documentElement.clientHeight;
+  var below=vh-r.bottom-12, above=r.top-12;
+  var down=(below>=170)||(below>=above);
+  var maxH=Math.min(260, Math.max(120, down?below:above));
+  m.style.position='fixed';
+  m.style.left=Math.max(6,r.left)+'px';
+  m.style.width=r.width+'px';
+  m.style.maxHeight=maxH+'px';
+  m.style.zIndex='100000';
+  if(down){ m.style.top=(r.bottom+5)+'px'; m.style.bottom='auto'; }
+  else    { m.style.bottom=(vh-r.top+5)+'px'; m.style.top='auto'; }
+}
 function hqSelBuildMenu(wrap){
-  var s=wrap.querySelector('select'), menu=wrap.querySelector('.hqsel-menu');
+  var s=wrap.querySelector('select'), menu=hqSelMenuOf(wrap);
   if(!s||!menu) return;
   var h='';
   for(var i=0;i<s.options.length;i++){
@@ -8013,7 +8063,14 @@ function hqSelSync(wrap){
 }
 function hqSelCloseAll(except){
   var op=document.querySelectorAll('.hqsel.open');
-  for(var i=0;i<op.length;i++){ if(op[i]!==except) op[i].classList.remove('open'); }
+  for(var i=0;i<op.length;i++){ if(op[i]!==except){ op[i].classList.remove('open'); hqSelDock(op[i]); } }
+  /* تنظيف أي قائمة عائمة بقي غلافها خارج الصفحة (نافذة أُغلقت) */
+  var fl=document.querySelectorAll('body > .hqsel-menu.hqsel-float');
+  for(var j=0;j<fl.length;j++){
+    var w=fl[j]._hqWrap;
+    if(!w||!document.body.contains(w)){ if(fl[j].parentNode) fl[j].parentNode.removeChild(fl[j]); }
+    else if(!w.classList.contains('open')) hqSelDock(w);
+  }
 }
 function hqSelToggle(wrap){
   var isOpen=wrap.classList.contains('open');
@@ -8021,7 +8078,8 @@ function hqSelToggle(wrap){
   if(!isOpen){
     hqSelBuildMenu(wrap);                 /* يُبنى عند الفتح ليواكب أي تغيير في الخيارات */
     wrap.classList.add('open');
-    var m=wrap.querySelector('.hqsel-menu'), sel=m?m.querySelector('.hqsel-opt.sel'):null;
+    hqSelFloat(wrap);
+    var m=hqSelMenuOf(wrap), sel=m?m.querySelector('.hqsel-opt.sel'):null;
     if(sel&&m) m.scrollTop=Math.max(0, sel.offsetTop-m.clientHeight/2+sel.offsetHeight/2);
   }
 }
@@ -8030,6 +8088,7 @@ function hqSelPick(wrap,i){
   s.selectedIndex=i;
   hqSelSync(wrap);
   wrap.classList.remove('open');
+  hqSelDock(wrap);
   try{ s.dispatchEvent(new Event('change',{bubbles:true})); }   /* لتشغيل onchange الأصلي */
   catch(e){ if(typeof s.onchange==='function') s.onchange(); }
 }
@@ -8049,6 +8108,7 @@ function hqSelEnhance(root){
       var menu=document.createElement('div');
       menu.className='hqsel-menu';
       wrap.appendChild(btn); wrap.appendChild(menu);
+      wrap._hqMenu=menu; menu._hqWrap=wrap;
       btn.addEventListener('click',function(ev){ ev.stopPropagation(); if(s.disabled) return; hqSelToggle(wrap); });
       menu.addEventListener('click',function(ev){
         var t=ev.target; while(t&&t!==menu&&!t.classList.contains('hqsel-opt')) t=t.parentNode;
@@ -8063,6 +8123,13 @@ function hqSelEnhance(root){
   function start(){
     hqSelEnhance(document);
     document.addEventListener('click',function(){ hqSelCloseAll(); },false);
+    /* القائمة العائمة تُغلق مع أي تمرير أو تغيّر في المقاس */
+    document.addEventListener('scroll',function(ev){
+      var t=ev.target;
+      if(t&&t.classList&&t.classList.contains('hqsel-menu')) return;
+      hqSelCloseAll();
+    },true);
+    window.addEventListener('resize',function(){ hqSelCloseAll(); },false);
     if(window.MutationObserver){
       var pend=false;
       new MutationObserver(function(){
@@ -8800,7 +8867,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 14';
+  window.HQ_BUILD='2026-08-22 · 17';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
