@@ -1964,6 +1964,9 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hqsel-menu{display:none;position:absolute;top:calc(100% + 5px);right:0;left:0;z-index:9999;max-height:250px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#0f3b37;border:1px solid rgba(247,215,116,.32);border-radius:11px;box-shadow:0 14px 30px rgba(0,0,0,.55);direction:rtl}
 .hqsel.open .hqsel-menu{display:block}
 .hqsel-menu.hqsel-float{display:block !important}
+.hqrow-body.hqrow-float{display:block !important;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  background:#0f3b37;border:1px solid rgba(247,215,116,.32);border-radius:11px;box-shadow:0 14px 30px rgba(0,0,0,.55);
+  padding:4px 10px;direction:rtl}
 .hqsel-opt{font-family:'Cairo','Noto Sans Arabic',sans-serif;font-size:.78rem;font-weight:600;color:rgba(255,255,255,.92);background:#0f3b37;padding:11px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;direction:rtl}
 .hqsel-opt:last-child{border-bottom:none}
 .hqsel-opt.sel{background:rgba(247,215,116,.16);color:#f7d774}
@@ -5736,6 +5739,7 @@ function showAddTeacher(){
   for(var d=1;d<=30;d++) dOpts+='<option value="'+d+'">'+d+'</option>';
   for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'">'+hM[mo]+'</option>';
   function fld(lbl,id,ph,tp){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label><input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" placeholder="'+ph+'"></div>'; }
+  var yOpts=''; for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'">'+_y+'</option>';
   var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
     fld('اسم المعلم','te-name','الاسم كاملاً')+
     fld('الهوية / الإقامة','te-nid','رقم الهوية أو الإقامة')+
@@ -5743,7 +5747,7 @@ function showAddTeacher(){
       '<div class="hijri-picker">'+
         '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select" id="te-bDay">'+dOpts+'</select></div>'+
         '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select" id="te-bMonth">'+mOpts+'</select></div>'+
-        '<div><div class="hijri-lbl">السنة</div><input class="hijri-select" id="te-bYear" type="text" inputmode="numeric" placeholder="1400" maxlength="4"></div>'+
+        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select" id="te-bYear"><option value="">السنة</option>'+yOpts+'</select></div>'+
       '</div>'+
     '</div>'+
     fld('رقم الجوال','te-phone','05xxxxxxxx','tel')+
@@ -5816,6 +5820,7 @@ function showAddSupervisor(){
   for(var d=1;d<=30;d++) dOpts+='<option value="'+d+'">'+d+'</option>';
   for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'">'+hM[mo]+'</option>';
   function fld(lbl,id,ph,tp){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label><input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" placeholder="'+ph+'"></div>'; }
+  var yOpts=''; for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'">'+_y+'</option>';
   var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
     fld('اسم مشرف الحلقات','sv-name','الاسم كاملاً')+
     fld('الهوية / الإقامة','sv-nid','رقم الهوية أو الإقامة')+
@@ -5823,7 +5828,7 @@ function showAddSupervisor(){
       '<div class="hijri-picker">'+
         '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select" id="sv-bDay">'+dOpts+'</select></div>'+
         '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select" id="sv-bMonth">'+mOpts+'</select></div>'+
-        '<div><div class="hijri-lbl">السنة</div><input class="hijri-select" id="sv-bYear" type="text" inputmode="numeric" placeholder="1400" maxlength="4"></div>'+
+        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select" id="sv-bYear"><option value="">السنة</option>'+yOpts+'</select></div>'+
       '</div>'+
     '</div>'+
     fld('الجنسية','sv-nat','مثال: سعودي')+
@@ -5954,6 +5959,7 @@ function supEditOpen(){
   for(var d=1;d<=30;d++) dOpts+='<option value="'+d+'"'+((parseInt(v.bDay,10)===d)?' selected':'')+'>'+arNum(d)+'</option>';
   for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'"'+((parseInt(v.bMonth,10)===mo+1)?' selected':'')+'>'+hM[mo]+'</option>';
   function fld(lbl,id,val,tp){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label><input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" value="'+hqEsc(val||'')+'"></div>'; }
+  var yOpts=''; for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'"'+((''+_y)===(''+(v.bYear||''))?' selected':'')+'>'+_y+'</option>';
   var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
     fld('الاسم','se-name',v.name)+
     fld('الهوية / الإقامة','se-nid',v.nationalId)+
@@ -5961,7 +5967,7 @@ function supEditOpen(){
       '<div class="hijri-picker">'+
         '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select" id="se-bDay">'+dOpts+'</select></div>'+
         '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select" id="se-bMonth">'+mOpts+'</select></div>'+
-        '<div><div class="hijri-lbl">السنة</div><input class="hijri-select" id="se-bYear" type="text" inputmode="numeric" maxlength="4" value="'+hqEsc(v.bYear||'')+'" placeholder="1400"></div>'+
+        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select" id="se-bYear"><option value="">السنة</option>'+yOpts+'</select></div>'+
       '</div></div>'+
     fld('الجنسية','se-nat',v.nationality)+
     fld('الجوال','se-phone',v.phone,'tel')+
@@ -6033,10 +6039,63 @@ function showSupervisorsData(){
     var details=hqAccRow('اسم المشرف',v.name)+hqAccRow('الهوية / الإقامة',v.nationalId)+hqAccRow('تاريخ الميلاد',v.birthDate)+
       hqAccRow('الجنسية',v.nationality)+hqAccRow('جوال المشرف',v.phone)+hqAccRow('قطاع المشرف',v.sector)+
       hqAccRow('عدد الحلقات',arNum(n))+hqAccRow('اسم المستخدم',u?u.username:'')+hqAccRow('كلمة المرور','•••••••• (مُشفّرة)');
+    var nv=(DB.visits||[]).filter(function(x){ return x.supId===v.id; }).length;
     return hqFlatSec(v.name, details,
+      '<button class="hq-mini-btn view" onclick="supVisitsFollow(\''+v.id+'\')">متابعة زيارات المشرف'+(nv?(' ('+arNum(nv)+')'):'')+'</button>'+
       '<button class="hq-mini-btn del" onclick="supDelete(\''+v.id+'\')">حذف</button>');
   }).join('');
   openModal('بيانات المشرفين','<div class="hs-wrap">'+rows+'</div>');
+}
+
+/* ---------- متابعة زيارات مشرف بعينه ---------- */
+function supVisitsOf(sid){
+  return (DB.visits||[]).filter(function(x){ return x.supId===sid; })
+    .sort(function(a,b){ return (a.ts||0)-(b.ts||0); });   /* الأولى ثم الثانية ثم الثالثة */
+}
+function supVisitsFollow(sid){
+  var v=hqSupers().find(function(x){ return x.id===sid; })||{};
+  var list=supVisitsOf(sid);
+  if(!list.length){
+    openModal('متابعة زيارات '+(v.name||'المشرف'),
+      '<div class="empty-state"><div class="empty-state-icon">📍</div>لم يسجّل هذا المشرف أي زيارة بعد</div>');
+    return;
+  }
+  window._svFollow=list;
+  var opts=list.map(function(x,i){
+    var lbl=(x.visitNo||('زيارة '+arNum(i+1)))+' — '+(x.halqaName||'')+' — '+(x.date||'');
+    return '<option value="'+i+'">'+hqEsc(lbl)+'</option>';
+  }).join('');
+  var body='<div class="hs-wrap">'+
+    '<div class="prof-form-field" style="margin-bottom:12px">'+
+      '<label class="prof-form-lbl">اختر الزيارة</label>'+
+      '<select class="prof-form-input" id="sv-follow-pick" onchange="supVisitsFollowShow()">'+opts+'</select>'+
+    '</div>'+
+    '<div id="sv-follow-box"></div>'+
+  '</div>';
+  openModal('متابعة زيارات '+(v.name||'المشرف'), body);
+  setTimeout(supVisitsFollowShow,0);
+}
+function supVisitsFollowShow(){
+  var box=document.getElementById('sv-follow-box'); if(!box) return;
+  var list=window._svFollow||[];
+  var i=parseInt((document.getElementById('sv-follow-pick')||{}).value,10)||0;
+  var x=list[i]; if(!x){ box.innerHTML=''; return; }
+  var tot=(parseInt(x.present,10)||0)+(parseInt(x.absent,10)||0);
+  box.innerHTML='<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
+    hqAccRow('رقم الزيارة',x.visitNo)+
+    hqAccRow('تاريخ الزيارة',x.date)+
+    hqAccRow('الحلقة',x.halqaName)+
+    hqAccRow('مقرّ الحلقة',x.venue)+
+    hqAccRow('القطاع',x.sector)+
+    hqAccRow('الفترة',x.period)+
+    hqAccRow('حضور المعلّم',x.teacherPresent)+
+    hqAccRow('الطلاب الحاضرون',arNum(parseInt(x.present,10)||0))+
+    hqAccRow('الطلاب الغائبون',arNum(parseInt(x.absent,10)||0))+
+    hqAccRow('إجمالي الطلاب',arNum(tot))+
+    hqAccRow('تقييم الزيارة',x.star)+
+    hqAccRow('ملاحظات المشرف',x.notes)+
+  '</div></div>';
+  hqSelEnhance(box);
 }
 
 function showTeachersData(){
@@ -6754,14 +6813,49 @@ var HQ_RANK_DEFS=[
   {k:'exam',    n:'أكثر حلقة تحصيلاً في اختبارات الجمعية'}
 ];
 
+/* ---- قائمة الترتيب: طبقة عائمة تنسدل لأعلى بلا إزاحة لما تحتها ---- */
+function hqRowBodyOf(row){ if(!row) return null; if(!row._hqBody) row._hqBody=row.querySelector('.hqrow-body'); return row._hqBody; }
+function hqRowDock(row){
+  var b=row&&row._hqBody; if(!b) return;
+  b.classList.remove('hqrow-float'); b.removeAttribute('style');
+  if(b.parentNode!==row) row.appendChild(b);
+}
+function hqRowFloat(row){
+  var b=hqRowBodyOf(row), hd=row&&row.querySelector('.hqrow-hd');
+  if(!b||!hd) return;
+  if(b.parentNode!==document.body) document.body.appendChild(b);
+  b.classList.add('hqrow-float');
+  var r=hd.getBoundingClientRect();
+  var vh=window.innerHeight||document.documentElement.clientHeight;
+  var above=r.top-12, below=vh-r.bottom-12;
+  var up=(above>=160)||(above>=below);       /* الأصل: الانسدال لأعلى */
+  b.style.position='fixed';
+  b.style.left=Math.max(8,r.left)+'px';
+  b.style.right='auto';
+  b.style.width=r.width+'px';
+  b.style.maxHeight=Math.max(140,(up?above:below))+'px';
+  if(up){ b.style.bottom=(vh-r.top+4)+'px'; b.style.top='auto'; }
+  else  { b.style.top=(r.bottom+4)+'px';   b.style.bottom='auto'; }
+  b.style.zIndex='100000';
+}
+function hqRowCloseAll(except){
+  var op=document.querySelectorAll('.hqrow.open');
+  for(var i=0;i<op.length;i++){ if(op[i]!==except){ op[i].classList.remove('open'); hqRowDock(op[i]); } }
+  var fl=document.querySelectorAll('body > .hqrow-body.hqrow-float');
+  for(var j=0;j<fl.length;j++){
+    var w=fl[j]._hqRow;
+    if(!w||!document.body.contains(w)){ if(fl[j].parentNode) fl[j].parentNode.removeChild(fl[j]); }
+    else if(!w.classList.contains('open')) hqRowDock(w);
+  }
+}
 function hqRankToggle(el,metric){
   var c=el.parentNode;
-  var box=c.parentNode;
   var was=c.classList.contains('open');
-  if(box) Array.prototype.forEach.call(box.querySelectorAll('.hqrow.open'),function(x){ if(x!==c) x.classList.remove('open'); });
+  hqRowCloseAll(c);
   c.classList.toggle('open', !was);
-  if(was) return;
-  var body=c.querySelector('.hqrow-body');
+  if(was){ hqRowDock(c); return; }
+  var body=hqRowBodyOf(c); if(body) body._hqRow=c;
+  hqRowFloat(c);
   if(!body || body.getAttribute('data-loaded')==='1') return;
   body.innerHTML='<div class="hqacc-load">جارٍ الحساب…</div>';
   hqHalqaRank(window._hqStatsHalqat||[], metric).then(function(list){
@@ -6772,7 +6866,8 @@ function hqRankToggle(el,metric){
         '<span class="hqrk-name">'+hqEsc(x.name)+'</span>'+
         '<span class="hqrk-sub">'+x.sub+'</span></div>';
     }).join('');
-  }).catch(function(){ body.innerHTML='<div class="hqacc-load">تعذّر الحساب</div>'; });
+    hqRowFloat(c);
+  }).catch(function(){ body.innerHTML='<div class="hqacc-load">تعذّر الحساب</div>'; hqRowFloat(c); });
 }
 
 /* ---------- (٣) إحصائيّات طالب ---------- */
@@ -6894,7 +6989,7 @@ function showAllHalqatStats(){
     '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
     HQ_RANK_DEFS.map(function(d){
       return '<div class="hqrow">'+
-        '<div class="hqrow-hd" onclick="hqRankToggle(this,\''+d.k+'\')">'+
+        '<div class="hqrow-hd" onclick="event.stopPropagation();hqRankToggle(this,\''+d.k+'\')">'+
           '<span class="hqacc-lbl">'+d.n+'</span>'+
           '<span class="hqrow-arw">▾</span></div>'+
         '<div class="hqrow-body"></div></div>';
@@ -8041,7 +8136,9 @@ function hqSelFloat(wrap){
   var maxH=Math.min(260, Math.max(120, down?below:above));
   m.style.position='fixed';
   m.style.left=Math.max(6,r.left)+'px';
+  m.style.right='auto';           /* بدونها يفوز right:0 في اتجاه RTL فتقفز القائمة لحافة الشاشة */
   m.style.width=r.width+'px';
+  m.style.minWidth='0';
   m.style.maxHeight=maxH+'px';
   m.style.zIndex='100000';
   if(down){ m.style.top=(r.bottom+5)+'px'; m.style.bottom='auto'; }
@@ -8126,10 +8223,15 @@ function hqSelEnhance(root){
     /* القائمة العائمة تُغلق مع أي تمرير أو تغيّر في المقاس */
     document.addEventListener('scroll',function(ev){
       var t=ev.target;
-      if(t&&t.classList&&t.classList.contains('hqsel-menu')) return;
-      hqSelCloseAll();
+      if(t&&t.classList&&(t.classList.contains('hqsel-menu')||t.classList.contains('hqrow-body'))) return;
+      hqSelCloseAll(); hqRowCloseAll();
     },true);
-    window.addEventListener('resize',function(){ hqSelCloseAll(); },false);
+    window.addEventListener('resize',function(){ hqSelCloseAll(); hqRowCloseAll(); },false);
+    document.addEventListener('click',function(ev){
+      var t=ev.target;
+      if(t&&t.closest&&t.closest('.hqrow-body')) return;
+      hqRowCloseAll();
+    },false);
     if(window.MutationObserver){
       var pend=false;
       new MutationObserver(function(){
@@ -8867,7 +8969,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 17';
+  window.HQ_BUILD='2026-08-22 · 18';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
