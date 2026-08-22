@@ -1234,6 +1234,8 @@ textarea.fc { resize: vertical; min-height: 70px; }
 .mc-4{background:linear-gradient(145deg,#0a3446 0%,#0e5d76 50%,#1289a4 100%);box-shadow:0 8px 28px rgba(14,93,118,.55)}
 .mc-5{background:linear-gradient(145deg,#0a3a52 0%,#0f6d94 50%,#159dc4 100%);box-shadow:0 8px 28px rgba(10,58,82,.55)}
 .mc-6{background:linear-gradient(145deg,#082e28 0%,#0d5147 50%,#147a6b 100%);box-shadow:0 8px 28px rgba(8,46,40,.55)}
+.mc-7{background:linear-gradient(145deg,#0b4038 0%,#11736a 50%,#17a394 100%);box-shadow:0 8px 28px rgba(11,64,56,.55)}
+.mc-7:hover{transform:translateY(-8px) scale(1.03);box-shadow:0 20px 40px rgba(17,115,106,.65)}
 .mc-1:hover{transform:translateY(-8px) scale(1.03);box-shadow:0 20px 40px rgba(12,92,54,.65)}
 .mc-2:hover{transform:translateY(-8px) scale(1.03);box-shadow:0 20px 40px rgba(14,107,110,.65)}
 .mc-3:hover{transform:translateY(-8px) scale(1.03);box-shadow:0 20px 40px rgba(18,133,124,.65)}
@@ -1693,6 +1695,16 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .hqrk-name{flex:1;min-width:0;font-weight:700;font-size:.86rem;color:#eef}
 .hqrk-sub{flex:none;font-size:.72rem;color:#9abdba;font-weight:700}
 .hqacc-val{text-align:right !important}
+/* أقسام قابلة للطي — العنوان الرئيسي مفتاح للمعلومات تحته */
+.hsfold-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;touch-action:manipulation}
+.hsfold-arw{flex:none;color:#9abdba;font-size:.95rem;font-weight:700;transition:transform .25s,color .25s}
+.hsfold.open .hsfold-arw{transform:rotate(180deg);color:#f7d774}
+.hsfold-body{display:none}
+.hsfold.open .hsfold-body{display:block;animation:hqAccIn .25s ease both}
+/* محاذاة الصفوف: التسمية يساراً والقيمة يميناً */
+.hqacc-row{flex-direction:row-reverse}
+.supp-row{flex-direction:row-reverse}
+.supp-val{text-align:right}
 .supp-card{background:linear-gradient(150deg,rgba(14,107,110,.5),rgba(10,61,63,.5));border:1px solid rgba(201,162,39,.25);border-radius:18px;padding:20px 16px;text-align:center;margin-bottom:14px}
 .supp-name{font-family:'Amiri',serif;font-size:1.45rem;color:#fff;font-weight:700;line-height:1.3}
 .supp-sub{font-size:.78rem;color:rgba(201,162,39,.85);font-weight:700;margin-top:5px}
@@ -3238,19 +3250,19 @@ function renderDash(){
     var svgAddH='<svg viewBox="0 0 64 64" fill="none"><circle cx="26" cy="24" r="11" stroke="white" stroke-width="3"/><path d="M8 54c0-10 8-18 18-18s18 8 18 18" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="34" x2="50" y2="50" stroke="white" stroke-width="3.5" stroke-linecap="round"/><line x1="42" y1="42" x2="58" y2="42" stroke="white" stroke-width="3.5" stroke-linecap="round"/></svg>';
     var svgListH='<svg viewBox="0 0 64 64" fill="none"><rect x="10" y="12" width="44" height="12" rx="3" stroke="white" stroke-width="2.8" fill="rgba(255,255,255,.08)"/><rect x="10" y="28" width="44" height="12" rx="3" stroke="white" stroke-width="2.8" fill="rgba(255,255,255,.08)"/><rect x="10" y="44" width="44" height="12" rx="3" stroke="white" stroke-width="2.8" fill="rgba(255,255,255,.08)"/></svg>';
     var svgStatH='<svg viewBox="0 0 64 64" fill="none"><rect x="10" y="34" width="10" height="20" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="27" y="22" width="10" height="32" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="44" y="12" width="10" height="42" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><path d="M8 54h48" stroke="white" stroke-width="2.6" stroke-linecap="round"/></svg>';
-    var svgTeachH='<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="20" r="10" stroke="white" stroke-width="3"/><path d="M14 52c0-10 8-18 18-18s18 8 18 18" stroke="white" stroke-width="3" stroke-linecap="round"/><path d="M44 30l10-5-10-5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var svgTeachH='<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="20" r="10" stroke="white" stroke-width="3"/><path d="M14 52c0-10 8-18 18-18s18 8 18 18" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>';
     var svgSupH='<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="19" r="10" stroke="white" stroke-width="3"/><path d="M13 53c0-10.5 8.5-19 19-19s19 8.5 19 19" stroke="white" stroke-width="3" stroke-linecap="round"/><path d="M32 6l3.2 6.5 7.2 1-5.2 5.1 1.2 7.1L32 22.4l-6.4 3.3 1.2-7.1-5.2-5.1 7.2-1z" stroke="white" stroke-width="2" fill="rgba(255,255,255,.12)"/></svg>';
     var _hc=(DB.halqat||[]).length;
     wrap.innerHTML='<div class="menu-grid">'+
+      '<div class="menu-card mc-3" onclick="showAddSupervisor()"><div class="mc-icon">'+svgAddH+'</div><div class="mc-accent"></div><div class="mc-label">إضافة مشرف</div></div>'+
+      '<div class="menu-card mc-2" onclick="showAddTeacher()"><div class="mc-icon">'+svgAddH+'</div><div class="mc-accent"></div><div class="mc-label">إضافة معلم</div></div>'+
       '<div class="menu-card mc-1" onclick="showAddHalqa()"><div class="mc-icon">'+svgAddH+'</div><div class="mc-accent"></div><div class="mc-label">إضافة حلقة</div></div>'+
-      '<div class="menu-card mc-2" onclick="showAddTeacher()"><div class="mc-icon">'+svgAddH+'</div><div class="mc-accent"></div><div class="mc-label">إضافة معلم حلقة</div></div>'+
-      '<div class="menu-card mc-3" onclick="showAddSupervisor()"><div class="mc-icon">'+svgAddH+'</div><div class="mc-accent"></div><div class="mc-label">إضافة مشرف حلقات</div></div>'+
-      '<div class="menu-card mc-4" onclick="showHalqatList()"><div class="mc-icon">'+svgListH+'</div><div class="mc-accent"></div><div class="mc-label">عرض الحلقات ('+_hc+')</div></div>'+
+      '<div class="menu-card mc-6" onclick="showSupervisorsData()"><div class="mc-icon">'+svgTeachH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات المشرفين</div></div>'+
+      '<div class="menu-card mc-2" onclick="showTeachersData()"><div class="mc-icon">'+svgTeachH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات المعلمين</div></div>'+
+      '<div class="menu-card mc-4" onclick="showHalqatList()"><div class="mc-icon">'+svgListH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات الحلقات</div></div>'+
       '<div class="menu-card mc-7" onclick="tlOpen()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>'+
-      '<div class="menu-card mc-5" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
-      '<div class="menu-card mc-2" onclick="showTeachersData()"><div class="mc-icon">'+svgTeachH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات معلمي الحلقات</div></div>'+
-      '<div class="menu-card mc-6" onclick="showSupervisorsData()"><div class="mc-icon">'+svgTeachH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات مشرفي الحلقات</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="16" y="28" width="32" height="24" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M23 28v-6a9 9 0 0118 0v6" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="38" r="3.5" fill="white"/><line x1="32" y1="41" x2="32" y2="46" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
+      '<div class="menu-card mc-5 mc-wide" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
     '</div>';
     return;
   }
@@ -3266,10 +3278,10 @@ function renderDash(){
     var svgVisit2='<svg viewBox="0 0 64 64" fill="none"><path d="M32 6c-8.3 0-15 6.7-15 15 0 11.2 15 29 15 29s15-17.8 15-29c0-8.3-6.7-15-15-15z" stroke="white" stroke-width="3" stroke-linejoin="round" fill="rgba(255,255,255,.1)"/><circle cx="32" cy="21" r="5.5" stroke="white" stroke-width="2.8"/></svg>';
     wrap.innerHTML='<div class="menu-grid">'+
       '<div class="menu-card mc-1" onclick="showAddHalqa()"><div class="mc-icon">'+svgAddH2+'</div><div class="mc-accent"></div><div class="mc-label">إضافة حلقة</div></div>'+
-      '<div class="menu-card mc-2" onclick="showAddTeacher()"><div class="mc-icon">'+svgAddH2+'</div><div class="mc-accent"></div><div class="mc-label">إضافة معلم حلقة</div></div>'+
-      '<div class="menu-card mc-4" onclick="supHalqatList()"><div class="mc-icon">'+svgListH2+'</div><div class="mc-accent"></div><div class="mc-label">عرض الحلقات ('+_my.length+')</div></div>'+
+      '<div class="menu-card mc-2" onclick="showAddTeacher()"><div class="mc-icon">'+svgAddH2+'</div><div class="mc-accent"></div><div class="mc-label">إضافة معلم</div></div>'+
+      '<div class="menu-card mc-4" onclick="supHalqatList()"><div class="mc-icon">'+svgListH2+'</div><div class="mc-accent"></div><div class="mc-label">بيانات الحلقات</div></div>'+
       '<div class="menu-card mc-5 mc-wide" onclick="supStats()"><div class="mc-icon">'+svgStatH2+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيّات الحلقات</div></div>'+
-      '<div class="menu-card mc-2" onclick="supTeachersData()"><div class="mc-icon">'+svgTeachH2+'</div><div class="mc-accent"></div><div class="mc-label">بيانات معلمي الحلقات</div></div>'+
+      '<div class="menu-card mc-2" onclick="supTeachersData()"><div class="mc-icon">'+svgTeachH2+'</div><div class="mc-accent"></div><div class="mc-label">بيانات المعلمين</div></div>'+
       '<div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني للجمعية</div></div>'+
       '<div class="menu-card mc-1" onclick="supVisitOpen()"><div class="mc-icon">'+svgVisit2+'</div><div class="mc-accent"></div><div class="mc-label">زيارة الحلقات</div></div>'+
       '<div class="menu-card mc-3" onclick="supExamPick()"><div class="mc-icon">'+svgExam2+'</div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>'+
@@ -5625,16 +5637,27 @@ function saveNewHalqa(){
 }
 function showHalqatList(){
   var halqat=DB.halqat||[];
-  if(!halqat.length){ openModal('عرض الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات بعد</div>'); return; }
+  if(!halqat.length){ openModal('بيانات الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات بعد</div>'); return; }
   var rows=halqat.map(function(h){ return hqHalqaAcc(h,true); }).join('');
-  openModal('عرض الحلقات','<div class="hs-wrap">'+rows+'</div>');
+  openModal('بيانات الحلقات','<div class="hs-wrap">'+rows+'</div>');
+}
+/* قسم قابل للطي: العنوان الرئيسي يفتح/يغلق ما تحته — التصميم كما هو */
+function hqFoldSec(title,inner,open){
+  return '<div class="hs-sec hsfold'+(open?' open':'')+'">'+
+    '<div class="hs-sec-hd hsfold-hd" onclick="hqFoldToggle(this)">'+
+      '<span>'+hqEsc(title||'—')+'</span><span class="hsfold-arw">▾</span></div>'+
+    '<div class="hsfold-body">'+inner+'</div></div>';
+}
+function hqFoldToggle(el){
+  var box=el&&el.parentNode; if(!box) return;
+  box.classList.toggle('open');
 }
 /* قسم مسطّح بنفس تصميم «إحصائيّات عامة للجمعية» */
 function hqFlatSec(title,rows,acts){
-  return '<div class="hs-sec"><div class="hs-sec-hd">'+hqEsc(title||'—')+'</div>'+
+  return hqFoldSec(title,
     '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+rows+
       (acts?('<div class="hqacc-acts">'+acts+'</div>'):'')+
-    '</div></div></div>';
+    '</div></div>');
 }
 /* بطاقة حلقة — بتصميم الإحصائيّات المسطّح */
 function hqHalqaAcc(h,canDelete){
@@ -5706,7 +5729,7 @@ function showAddTeacher(){
     '</div>'+
     '<button class="prof-form-save" onclick="saveNewTeacher()" style="margin-top:16px;">إضافة المعلم</button>'+
   '</div>';
-  openModal('➕ إضافة معلم حلقة', body);
+  openModal('➕ إضافة معلم', body);
 }
 function saveNewTeacher(){
   try{
@@ -5791,7 +5814,7 @@ function showAddSupervisor(){
     '</div>'+
     '<button class="prof-form-save" onclick="saveNewSupervisor()" style="margin-top:16px;">إضافة المشرف</button>'+
   '</div>';
-  openModal('➕ إضافة مشرف حلقات', body);
+  openModal('➕ إضافة مشرف', body);
 }
 function saveNewSupervisor(){
   try{
@@ -5980,7 +6003,7 @@ function hqAccToggle(hd){
 /* بيانات مشرفي الحلقات — بنفس شكل بيانات المعلمين */
 function showSupervisorsData(){
   var list=hqSupers();
-  if(!list.length){ openModal('بيانات مشرفي الحلقات','<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد مشرفون بعد</div>'); return; }
+  if(!list.length){ openModal('بيانات المشرفين','<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد مشرفون بعد</div>'); return; }
   var rows=list.map(function(v){
     var u=null; for(var k in DB.users){ if(DB.users[k]&&DB.users[k].supId===v.id){ u=DB.users[k]; break; } }
     var n=(DB.halqat||[]).filter(function(h){ return h.supervisorId===v.id; }).length;
@@ -5990,14 +6013,14 @@ function showSupervisorsData(){
     return hqFlatSec(v.name, details,
       '<button class="hq-mini-btn del" onclick="supDelete(\''+v.id+'\')">حذف</button>');
   }).join('');
-  openModal('بيانات مشرفي الحلقات','<div class="hs-wrap">'+rows+'</div>');
+  openModal('بيانات المشرفين','<div class="hs-wrap">'+rows+'</div>');
 }
 
 function showTeachersData(){
   var list=hqTeachers();
-  if(!list.length){ openModal('بيانات معلمي الحلقات','<div class="empty-state"><div class="empty-state-icon">👤</div>لا يوجد معلمون بعد</div>'); return; }
+  if(!list.length){ openModal('بيانات المعلمين','<div class="empty-state"><div class="empty-state-icon">👤</div>لا يوجد معلمون بعد</div>'); return; }
   var rows=list.map(function(t){ return hqTeacherCard(t, hqTeacherHalqaNames(t.id), true); }).join('');
-  openModal('بيانات معلمي الحلقات','<div class="hs-wrap">'+rows+'</div>');
+  openModal('بيانات المعلمين','<div class="hs-wrap">'+rows+'</div>');
 }
 function tdToggle(hdr){
   var panel=hdr.nextElementSibling; if(!panel) return;
@@ -6043,15 +6066,15 @@ function supIsSup(){ return STATE.role==='supervisor'; }
 
 function supHalqatList(){
   var my=supMyHalqat();
-  if(!my.length){ openModal('عرض الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
+  if(!my.length){ openModal('بيانات الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
   var rows=my.map(function(h){ return hqHalqaAcc(h,false); }).join('');
-  openModal('عرض الحلقات', '<div class="hs-wrap">'+rows+'</div>');
+  openModal('بيانات الحلقات', '<div class="hs-wrap">'+rows+'</div>');
 }
 
 function supTeachersData(){
   var my=supMyHalqat();
-  if(!my.length){ openModal('بيانات معلمي الحلقات','<div class="empty-state"><div class="empty-state-icon">👤</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
-  openModal('بيانات معلمي الحلقات','<div class="hs-wrap">'+hqTeacherRows(my)+'</div>');
+  if(!my.length){ openModal('بيانات المعلمين','<div class="empty-state"><div class="empty-state-icon">👤</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
+  openModal('بيانات المعلمين','<div class="hs-wrap">'+hqTeacherRows(my)+'</div>');
 }
 
 /* اختبارات الجمعية للمشرف: يختار الحلقة أولاً ثم تُفتح كواجهة المعلم */
@@ -6295,6 +6318,28 @@ function tlDatePicker(pfx, v, cls){
     cell('السنة',  pfx+'y', opts(1448,1460, v&&v.y))+
   '</div>';
 }
+
+/* ترقيم بطاقات لوحة كل حساب تلقائيًا */
+function hqNumberCards(){
+  try{
+    var w=document.getElementById('dash-content'); if(!w) return;
+    var cards=w.querySelectorAll('.menu-card');
+    for(var i=0;i<cards.length;i++){
+      var b=cards[i].querySelector(':scope > .mc-badge');
+      if(!b){ b=document.createElement('div'); b.className='mc-badge'; cards[i].insertBefore(b,cards[i].firstChild); }
+      b.textContent=(typeof arNum==='function')?arNum(i+1):String(i+1);
+    }
+  }catch(e){}
+}
+(function hqCardsWatch(){
+  function start(){
+    var w=document.getElementById('dash-content');
+    if(!w){ setTimeout(start,300); return; }
+    hqNumberCards();
+    try{ new MutationObserver(hqNumberCards).observe(w,{childList:true}); }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+})();
 
 /* ---- تحويل هجري ↔ يوم يوليوسي ----
    أطوال أشهر ١٤٤٨ الفعلية من تقويم أم القرى (لا التناوب الحسابي ٣٠/٢٩):
@@ -6796,12 +6841,12 @@ async function hqStuShow(){
 /* ---------- الشاشة الرئيسية ---------- */
 function showAllHalqatStats(){
   var halqat=DB.halqat||[];
-  if(!halqat.length){ openModal('إحصائيّات الجمعية','<div class="empty-state"><div class="empty-state-icon">📊</div>لا توجد حلقات بعد</div>'); return; }
+  if(!halqat.length){ openModal('إحصائيات وتقارير الجمعية','<div class="empty-state"><div class="empty-state-icon">📊</div>لا توجد حلقات بعد</div>'); return; }
   window._hqStatsHalqat=halqat;
   var g=hqJamStats(halqat);
 
   /* (١) عامة */
-  var gen='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات عامة للجمعية</div>'+
+  var gen=hqFoldSec('إحصائيّات عامة للجمعية',
     '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
       hqAccRow('عدد حلقات الجمعية', arNum(g.halqat))+
       hqAccRow('عدد مشرفي الحلقات', arNum(g.supers))+
@@ -6819,10 +6864,10 @@ function showAllHalqatStats(){
       hqAccRow('عدد الأيام الدراسية', arNum(g.days))+
       '<div class="hqacc-row"><span class="hqacc-lbl">عدد صفحات الحفظ</span><span class="hqacc-val" id="hq-gp-lesson">…</span></div>'+
       '<div class="hqacc-row"><span class="hqacc-lbl">عدد صفحات المراجعة</span><span class="hqacc-val" id="hq-gp-review">…</span></div>'+
-    '</div></div></div>';
+    '</div></div>');
 
   /* (٢) ترتيب الحلقات */
-  var ranks='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات حلقات الجمعية</div>'+
+  var ranks=hqFoldSec('إحصائيّات حلقات الجمعية',
     '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
     HQ_RANK_DEFS.map(function(d){
       return '<div class="hqrow">'+
@@ -6830,14 +6875,14 @@ function showAllHalqatStats(){
           '<span class="hqacc-lbl">'+d.n+'</span>'+
           '<span class="hqrow-arw">▾</span></div>'+
         '<div class="hqrow-body"></div></div>';
-    }).join('')+'</div></div></div>';
+    }).join('')+'</div></div>');
 
   /* (٣) إحصائيّات الطلاب */
   function sel(lbl,id,opts,on){
     return '<div class="hqfld"><label class="hqacc-lbl">'+lbl+'</label>'+
       '<select class="hqsel" id="'+id+'"'+(on?(' onchange="'+on+'"'):'')+'>'+opts+'</select></div>';
   }
-  var stu='<div class="hs-sec"><div class="hs-sec-hd">إحصائيّات طلاب الجمعية</div>'+
+  var stu=hqFoldSec('إحصائيّات طلاب الجمعية',
     '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
       sel('اختر القطاع','sq-sector','<option value="">— كل القطاعات —</option>'+
         hqSecSel().map(function(x){ return '<option value="'+hqEsc(x)+'">'+hqEsc(x)+'</option>'; }).join(''),'hqStuFillHalqat()')+
@@ -6848,10 +6893,9 @@ function showAllHalqatStats(){
       sel('اختر المطلوب','sq-range','<option value="">— اختر —</option>','hqStuClear()')+
       '<button class="tl-fetch" onclick="hqStuShow()">جلب البيانات</button>'+
       '<div id="sq-result"></div>'+
-    '</div></div>'+
-  '</div>';
+    '</div></div>');
 
-  openModal('إحصائيّات الجمعية','<div class="hs-wrap">'+gen+ranks+stu+'</div>');
+  openModal('إحصائيات وتقارير الجمعية','<div class="hs-wrap">'+gen+ranks+stu+'</div>');
   setTimeout(hqStuFillHalqat,0);
   /* صفحات الحفظ والمراجعة تُحسب بعد الفتح لأنها غير متزامنة */
   (async function(){
@@ -8756,7 +8800,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 12';
+  window.HQ_BUILD='2026-08-22 · 14';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -9082,7 +9126,14 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .hq-mini-btn{font-family:inherit;font-weight:700;font-size:.74rem;padding:7px 12px;border-radius:10px;cursor:pointer;border:1px solid;transition:transform .1s ease,background .15s ease}
 .hq-mini-btn:active{transform:scale(.95)}
 .hq-mini-btn.view{color:#8ffff6;background:rgba(59,246,230,.12);border-color:rgba(59,246,230,.35)}
-.hq-mini-btn.del{color:#f3a5a5;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.32)}
+.hq-mini-btn.del{color:#ff9e93;background:rgba(255,94,84,.14);border-color:rgba(255,94,84,.42)}
+/* ترقيم بطاقات القائمة — أعلى يسار البطاقة */
+.menu-card>.mc-badge{position:absolute;top:11px;left:11px;width:25px;height:25px;border-radius:9px;
+  background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center;z-index:3;
+  font-size:.68rem;font-weight:900;color:rgba(255,255,255,.9);letter-spacing:0;
+  text-shadow:0 1px 4px rgba(0,0,0,.35);transition:transform .3s,background .3s}
+.menu-card:hover>.mc-badge{transform:scale(1.08);background:rgba(0,0,0,.28)}
 .hs-sec{margin-top:16px}
 .hs-sec-hd{font-family:'Cairo','Noto Sans Arabic',sans-serif;font-size:.82rem;font-weight:800;color:#f7d774;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(201,162,39,.18)}
 .hs-bar-row{margin-bottom:11px}
