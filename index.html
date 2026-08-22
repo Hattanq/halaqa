@@ -2725,7 +2725,8 @@ function cloudGetCID(){
   catch(e){ return 'c0'; }
 }
 var _cloudLastTs=0, _cloudTimer=null, _cloudPending=false, _cloudFirst=true, _cloudReconciled=false, _cloudErrShown=false;
-function cloudBlob(){ return JSON.stringify({halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], teachers:DB.teachers||[], visits:DB.visits||[], timeline:DB.timeline||{}}); }
+var HQ_SEED_ID='seed-2026-08-22';
+function cloudBlob(){ return JSON.stringify({seed:HQ_SEED_ID, halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], teachers:DB.teachers||[], visits:DB.visits||[], timeline:DB.timeline||{}}); }
 function cloudSize(o){ try{ var n=(o.halqat||[]).length; (o.halqat||[]).forEach(function(h){ n+=((h.students||[]).length)*3; }); n+=Object.keys(o.users||{}).length; return n; }catch(e){ return 0; } }
 function _cloudOnHome(){
   try{
@@ -2778,6 +2779,7 @@ function cloudApply(val){
   if(!val||!val.data) return false;
   var obj; try{ obj=JSON.parse(val.data); }catch(e){ return false; }
   if(!obj||!obj.halqat) return false;
+  if(obj.seed!==HQ_SEED_ID) return false;   /* بيانات ما قبل التعبئة التجريبية — تُتجاهل */
   DB.halqat=obj.halqat; if(obj.users) DB.users=obj.users;
   if(obj.supervisors) DB.supervisors=obj.supervisors;
   if(obj.teachers) DB.teachers=obj.teachers;
@@ -2808,6 +2810,7 @@ function cloudFirstReconcile(val){
   if(val && val.data){
     var remote=null; try{ remote=JSON.parse(val.data); }catch(e){}
     var localObj={halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], teachers:DB.teachers||[], visits:DB.visits||[], timeline:DB.timeline||{}};
+    if(remote && remote.seed!==HQ_SEED_ID){ _cloudReconciled=true; _cloudDoPush(); return; }   /* السحابة قديمة → استبدلها */
     if(remote && cloudSize(remote) >= cloudSize(localObj)){ _cloudReconciled=true; if(cloudApply(val)){ cloudRerender(); cloudSetStatus('updated'); } else cloudSetStatus('synced'); }
     else { _cloudReconciled=true; _cloudDoPush(); }        /* المحلي أغنى → ارفعه */
   } else { _cloudReconciled=true; _cloudDoPush(); }          /* لا توجد بيانات سحابية → ارفع المحلي */
@@ -2896,12 +2899,75 @@ function seedUsers(){
     if(!DB.users[pk]) DB.users[pk]={username:'p'+s.code,pw:hqPw('123'),name:'ولي أمر '+s.name.split(' ')[0],role:'parent',sid:s.id,display:'ولي الأمر',hid:_hid};
     else if(!DB.users[pk].hid) DB.users[pk].hid=_hid;
   });
-  DB.users.teacher={username:'a',pw:hqPw('a'),name:'هتّان قرنفلة',role:'teacher',display:'معلم الحلقة',hid:'h1'};
+  try{ if(localStorage.getItem('hq_seed')!==HQ_SEED_ID)
+    DB.users.teacher={username:'a',pw:hqPw('a'),name:'هتّان قرنفلة',role:'teacher',display:'معلم الحلقة',hid:'h1'};
+  }catch(e){}
   DB.users.admin={username:'edu',pw:hqPw('edu123'),name:'الشؤون التعليمية',role:'admin',display:'مدير الجمعية',hid:''};
   save();
 }
 migrateHalqat();
 seedUsers();
+
+// =====================================================
+//  تعبئة بيانات تجريبية — مسح شامل ثم إنشاء (مرة واحدة)
+// =====================================================
+var HQ_SEED_SUP=['مشرف ١|1204531789|17|2|1384|المندق|aa','مشرف ٢|1925148060|1|6|1392|بني حسن|ab','مشرف ٣|1235842581|29|6|1399|دوس|ac'];
+var HQ_SEED_TCH=['معلم ١|2633452182|17|1|1398|ad','معلم ٢|2549415786|27|6|1399|ae','معلم ٣|1802646953|10|10|1386|af','معلم ٤|1952669586|2|6|1412|ag','معلم ٥|1599814855|9|11|1395|ah','معلم ٦|1479259704|14|7|1404|ai','معلم ٧|1472760722|7|8|1411|aj','معلم ٨|1620271479|4|3|1407|ak','معلم ٩|2229270602|20|5|1391|al','معلم ١٠|2427437163|16|4|1413|am'];
+var HQ_SEED_HAL=['حلقة ١|1|1|جامع ١|بني حسن|1','حلقة ٢|7|0|جامع ٢|المندق|0','حلقة ٣|6|0|جامع ٣|المندق|0','حلقة ٤|5|1|جامع ٤|المندق|0','حلقة ٥|9|0|جامع ٥|دوس|2','حلقة ٦|3|1|جامع ٦|دوس|2','حلقة ٧|8|1|جامع ٧|دوس|2','حلقة ٨|2|1|جامع ٨|المندق|0','حلقة ٩|4|1|جامع ٩|دوس|2','حلقة ١٠|0|1|جامع ١٠|بني حسن|1'];
+var HQ_SEED_STU=['طالب ١|2143625197|20|12|1441|3|0|an|gh','طالب ٢|1919714027|20|10|1443|2|0|ao|gi','طالب ٣|1106420292|26|10|1443|1|0|ap|gj','طالب ٤|2135162500|18|8|1434|0|0|aq|gk','طالب ٥|1004992654|20|6|1443|2|0|ar|gl','طالب ٦|1208644580|3|3|1430|1|0|as|gm','طالب ٧|1225800349|2|7|1442|3|0|at|gn','طالب ٨|1364591231|4|6|1441|3|0|au|go','طالب ٩|2500537540|20|12|1435|2|0|av|gp','طالب ١٠|1250225777|8|3|1440|2|0|aw|gq','طالب ١١|2991875333|15|7|1443|0|0|ax|gr','طالب ١٢|1291524930|7|10|1438|3|0|ay|gs','طالب ١٣|2009688489|8|6|1436|3|0|az|gt','طالب ١٤|2460807746|7|9|1439|0|0|ba|gu','طالب ١٥|1674066188|7|8|1439|2|0|bb|gv','طالب ١٦|1545572675|23|6|1438|1|1|bc|gw','طالب ١٧|2829965479|7|10|1431|1|1|bd|gx','طالب ١٨|2057588816|27|9|1439|2|1|be|gy','طالب ١٩|1017640476|28|9|1442|2|1|bf|gz','طالب ٢٠|1300242744|21|5|1434|2|1|bg|ha','طالب ٢١|2636882795|5|8|1443|2|1|bh|hb','طالب ٢٢|1083908667|21|5|1432|0|1|bi|hc','طالب ٢٣|2968464825|4|4|1442|0|1|bj|hd','طالب ٢٤|2361986423|25|5|1430|2|1|bk|he','طالب ٢٥|2059647795|15|2|1441|0|1|bl|hf','طالب ٢٦|2540841490|13|2|1437|0|1|bm|hg','طالب ٢٧|1088887872|21|2|1440|2|1|bn|hh','طالب ٢٨|1821898775|6|3|1435|3|1|bo|hi','طالب ٢٩|1694608930|10|3|1434|2|1|bp|hj','طالب ٣٠|2181538177|25|12|1443|2|1|bq|hk','طالب ٣١|2403860153|1|11|1430|2|2|br|hl','طالب ٣٢|2514867076|4|8|1433|1|2|bs|hm','طالب ٣٣|2841115778|12|8|1433|3|2|bt|hn','طالب ٣٤|1440376773|2|7|1443|0|2|bu|ho','طالب ٣٥|1822267160|8|3|1436|0|2|bv|hp','طالب ٣٦|2461637427|19|10|1430|3|2|bw|hq','طالب ٣٧|2329770018|2|5|1442|1|2|bx|hr','طالب ٣٨|2394940011|26|8|1442|1|2|by|hs','طالب ٣٩|2832262757|11|4|1443|3|2|bz|ht','طالب ٤٠|1818711187|18|8|1436|3|2|ca|hu','طالب ٤١|1743855876|1|2|1442|3|2|cb|hv','طالب ٤٢|2420117997|27|11|1441|2|2|cc|hw','طالب ٤٣|1366448746|3|12|1439|0|2|cd|hx','طالب ٤٤|1851193378|21|3|1439|0|2|ce|hy','طالب ٤٥|1662635051|18|7|1443|1|2|cf|hz','طالب ٤٦|2735337882|18|12|1436|1|3|cg|ia','طالب ٤٧|1216970370|7|6|1435|0|3|ch|ib','طالب ٤٨|1586754860|18|10|1436|0|3|ci|ic','طالب ٤٩|2947177740|16|4|1440|3|3|cj|id','طالب ٥٠|2825807567|8|8|1432|2|3|ck|ie','طالب ٥١|1435841738|2|3|1432|2|3|cl|if','طالب ٥٢|2962536945|5|6|1433|2|3|cm|ig','طالب ٥٣|1762927910|2|6|1430|0|3|cn|ih','طالب ٥٤|1017165344|9|2|1435|2|3|co|ii','طالب ٥٥|1728166744|14|7|1439|0|3|cp|ij','طالب ٥٦|1262985380|29|12|1443|2|3|cq|ik','طالب ٥٧|1646406256|19|11|1433|0|3|cr|il','طالب ٥٨|1674348821|25|10|1434|2|3|cs|im','طالب ٥٩|1791737419|12|10|1439|0|3|ct|in','طالب ٦٠|1509675397|1|11|1439|0|3|cu|io','طالب ٦١|1325286300|26|7|1438|3|4|cv|ip','طالب ٦٢|1384466059|8|4|1431|2|4|cw|iq','طالب ٦٣|1791258451|6|10|1432|0|4|cx|ir','طالب ٦٤|1136650963|9|6|1441|1|4|cy|is','طالب ٦٥|2288666055|21|7|1439|0|4|cz|it','طالب ٦٦|2984305827|14|12|1436|3|4|da|iu','طالب ٦٧|2586706783|14|10|1435|1|4|db|iv','طالب ٦٨|2416990216|13|11|1436|3|4|dc|iw','طالب ٦٩|2671359532|3|7|1432|1|4|dd|ix','طالب ٧٠|2768971448|22|12|1440|3|4|de|iy','طالب ٧١|1118476072|22|6|1442|3|4|df|iz','طالب ٧٢|1140953134|13|8|1442|3|4|dg|ja','طالب ٧٣|1859731067|6|11|1431|2|4|dh|jb','طالب ٧٤|1796986134|12|9|1430|1|4|di|jc','طالب ٧٥|2623129916|18|8|1433|1|4|dj|jd','طالب ٧٦|2505327791|18|9|1432|2|5|dk|je','طالب ٧٧|1372665473|15|6|1443|2|5|dl|jf','طالب ٧٨|2024803016|4|9|1430|3|5|dm|jg','طالب ٧٩|1704332251|13|2|1432|1|5|dn|jh','طالب ٨٠|2394202363|9|6|1432|1|5|do|ji','طالب ٨١|2040813668|13|4|1435|3|5|dp|jj','طالب ٨٢|2848890682|12|9|1440|1|5|dq|jk','طالب ٨٣|2954493021|10|3|1439|0|5|dr|jl','طالب ٨٤|1096757552|18|6|1434|2|5|ds|jm','طالب ٨٥|2197625619|23|5|1440|0|5|dt|jn','طالب ٨٦|2757371199|12|5|1433|1|5|du|jo','طالب ٨٧|1889213168|28|6|1430|0|5|dv|jp','طالب ٨٨|2920062311|20|11|1437|3|5|dw|jq','طالب ٨٩|1924085201|28|2|1435|3|5|dx|jr','طالب ٩٠|1798020067|2|9|1436|1|5|dy|js','طالب ٩١|2007014694|26|11|1441|0|6|dz|jt','طالب ٩٢|1533289844|10|7|1442|3|6|ea|ju','طالب ٩٣|2306136129|19|3|1430|2|6|eb|jv','طالب ٩٤|1613589379|3|8|1440|2|6|ec|jw','طالب ٩٥|1034359929|16|9|1443|1|6|ed|jx','طالب ٩٦|1712468903|22|4|1434|2|6|ee|jy','طالب ٩٧|1298743722|10|10|1437|1|6|ef|jz','طالب ٩٨|2418599084|25|3|1440|0|6|eg|ka','طالب ٩٩|1633436489|23|7|1434|1|6|eh|kb','طالب ١٠٠|2158209108|18|5|1440|2|6|ei|kc','طالب ١٠١|1145686292|17|6|1442|3|6|ej|kd','طالب ١٠٢|1283234476|2|5|1435|2|6|ek|ke','طالب ١٠٣|2068122135|15|6|1439|1|6|el|kf','طالب ١٠٤|2519786497|18|4|1436|2|6|em|kg','طالب ١٠٥|1526977653|24|4|1438|0|6|en|kh','طالب ١٠٦|1258011018|26|3|1441|0|7|eo|ki','طالب ١٠٧|1920500524|1|10|1441|0|7|ep|kj','طالب ١٠٨|2578668430|10|5|1435|0|7|eq|kk','طالب ١٠٩|1100460118|20|10|1432|1|7|er|kl','طالب ١١٠|1347590376|12|9|1430|1|7|es|km','طالب ١١١|2977726661|24|2|1442|2|7|et|kn','طالب ١١٢|2555660217|18|12|1442|3|7|eu|ko','طالب ١١٣|1935834724|15|5|1436|3|7|ev|kp','طالب ١١٤|2910593564|26|8|1438|1|7|ew|kq','طالب ١١٥|1833336201|19|7|1435|0|7|ex|kr','طالب ١١٦|2835031262|23|11|1436|1|7|ey|ks','طالب ١١٧|1854464796|24|2|1441|2|7|ez|kt','طالب ١١٨|2668745392|6|3|1432|0|7|fa|ku','طالب ١١٩|1682567010|12|11|1435|1|7|fb|kv','طالب ١٢٠|2816275524|26|11|1439|2|7|fc|kw','طالب ١٢١|1109091770|16|9|1441|2|8|fd|kx','طالب ١٢٢|2806075432|16|9|1438|0|8|fe|ky','طالب ١٢٣|2625906330|4|8|1439|2|8|ff|kz','طالب ١٢٤|1595731956|9|2|1432|1|8|fg|la','طالب ١٢٥|2599392820|12|11|1440|0|8|fh|lb','طالب ١٢٦|1321983420|28|4|1436|1|8|fi|lc','طالب ١٢٧|1046644103|9|9|1433|3|8|fj|ld','طالب ١٢٨|2911283933|21|8|1435|1|8|fk|le','طالب ١٢٩|2288122726|27|9|1440|1|8|fl|lf','طالب ١٣٠|1244764691|7|11|1431|2|8|fm|lg','طالب ١٣١|2270235103|13|12|1433|1|8|fn|lh','طالب ١٣٢|2920958816|12|10|1443|1|8|fo|li','طالب ١٣٣|2982494158|19|7|1432|3|8|fp|lj','طالب ١٣٤|1178953213|20|2|1441|3|8|fq|lk','طالب ١٣٥|1871995441|25|11|1431|3|8|fr|ll','طالب ١٣٦|2596046696|21|4|1442|1|9|fs|lm','طالب ١٣٧|1456035779|4|5|1438|3|9|ft|ln','طالب ١٣٨|2564080669|14|2|1431|0|9|fu|lo','طالب ١٣٩|2185565907|2|10|1435|1|9|fv|lp','طالب ١٤٠|1930231986|29|2|1434|2|9|fw|lq','طالب ١٤١|2487521204|17|9|1435|2|9|fx|lr','طالب ١٤٢|2547253187|4|6|1432|2|9|fy|ls','طالب ١٤٣|1577318157|7|8|1431|0|9|fz|lt','طالب ١٤٤|1207171199|9|4|1439|1|9|ga|lu','طالب ١٤٥|2945625952|19|4|1437|0|9|gb|lv','طالب ١٤٦|2533727940|10|1|1434|3|9|gc|lw','طالب ١٤٧|1397574598|22|8|1432|0|9|gd|lx','طالب ١٤٨|2256307897|25|11|1443|3|9|ge|ly','طالب ١٤٩|1537429064|13|1|1441|3|9|gf|lz','طالب ١٥٠|2660014633|14|11|1442|2|9|gg|ma'];
+function hqSeedDemo(){
+  var HM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+  var NAT=['سعودي','مصري','يمني','سوداني'];
+  var PER=['فترة العصر','فترة المغرب'];
+  var DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء'];
+  function bstr(d,m,y){ return d+' '+HM[parseInt(m,10)-1]+' '+y+'هـ'; }
+  /* (١) مسح شامل — تبقى حسابات الشؤون التعليمية فقط */
+  DB.halqat=[]; DB.teachers=[]; DB.supervisors=[]; DB.visits=[];
+  Object.keys(DB.users).forEach(function(k){ if(!DB.users[k]||DB.users[k].role!=='admin') delete DB.users[k]; });
+  if(!Object.keys(DB.users).length) DB.users.admin={username:'edu',pw:hqPw('edu123'),name:'الشؤون التعليمية',role:'admin',display:'مدير الجمعية',hid:''};
+  /* (٢) المشرفون */
+  HQ_SEED_SUP.forEach(function(row,i){
+    var f=row.split('|'), id='sup_d'+(i+1);
+    DB.supervisors.push({ id:id, name:f[0], nationalId:f[1], bDay:f[2], bMonth:f[3], bYear:f[4],
+      birthDate:bstr(f[2],f[3],f[4]), nationality:'سعودي', phone:'', sector:f[5] });
+    DB.users['sup_'+id]={username:f[6],pw:hqPw(f[6]),name:f[0],role:'supervisor',display:'مشرف الحلقات',supId:id};
+  });
+  /* (٣) المعلمون */
+  HQ_SEED_TCH.forEach(function(row,i){
+    var f=row.split('|'), id='tch_d'+(i+1);
+    DB.teachers.push({ id:id, name:f[0], nid:f[1], bDay:f[2], bMonth:f[3], bYear:f[4],
+      birthDate:bstr(f[2],f[3],f[4]), nat:'سعودي', phone:'', username:f[5] });
+    DB.users['tc_'+id]={username:f[5],pw:hqPw(f[5]),name:f[0],role:'teacher',display:'معلم الحلقة',tid:id,hid:''};
+  });
+  /* (٤) الحلقات */
+  HQ_SEED_HAL.forEach(function(row,i){
+    var f=row.split('|'), hid='h_d'+(i+1);
+    var t=DB.teachers[parseInt(f[1],10)]||{}, sv=DB.supervisors[parseInt(f[5],10)]||{};
+    DB.halqat.push({ id:hid, name:f[0], teacherId:t.id||'', teacherName:t.name||'', teacherUser:t.username||'',
+      period:PER[parseInt(f[2],10)]||PER[0], days:DAYS.slice(0), venue:f[3], sector:f[4],
+      supervisorId:sv.id||'', supervisorName:sv.name||'',
+      students:[], sessions:[], grades:[], plans:{}, attend:{}, recitation:{}, evals:{}, mistakes:{}, exams:{}, suspend:{} });
+    for(var uk in DB.users){ if(DB.users[uk]&&DB.users[uk].tid===t.id&&!DB.users[uk].hid) DB.users[uk].hid=hid; }
+  });
+  /* (٥) الطلاب */
+  HQ_SEED_STU.forEach(function(row,i){
+    var f=row.split('|'), h=DB.halqat[parseInt(f[6],10)]; if(!h) return;
+    var code='st'+(i+1), sid='sid_d'+(i+1);
+    h.students.push({ id:sid, code:code, name:f[0], nationalId:f[1],
+      birthDate:bstr(f[2],f[3],f[4]), bDay:f[2], bMonth:f[3], bYear:f[4],
+      age:(typeof hijriAge==='function'?hijriAge(f[4],f[3],f[2]):0),
+      nationality:NAT[parseInt(f[5],10)]||NAT[0], phone:'', guardianPhone:'', grade:'',
+      level:'مبتدئ', memorized:0, notes:'', joinDate:'', targetSurah:'' });
+    DB.users['st_'+code]={username:f[7],pw:hqPw(f[7]),name:f[0],role:'student',sid:sid,display:'طالب',hid:h.id};
+    DB.users['par_'+code]={username:f[8],pw:hqPw(f[8]),name:'ولي أمر '+f[0],role:'parent',sid:sid,display:'ولي الأمر',hid:h.id};
+  });
+  STATE.activeHid=DB.halqat[0].id;
+  setActiveHalqa(STATE.activeHid);
+  try{ localStorage.setItem('hq_seed',HQ_SEED_ID); }catch(e){}
+  save();
+}
+try{ if(localStorage.getItem('hq_seed')!==HQ_SEED_ID) hqSeedDemo(); }catch(e){}
+
 
 // =====================================================
 //  HIJRI
@@ -6230,16 +6296,42 @@ function tlDatePicker(pfx, v, cls){
   '</div>';
 }
 
-/* ---- تحويل هجري ↔ يوم يوليوسي (التقويم الهجري الحسابي) ---- */
-function tlH2J(y,m,d){
-  y=parseInt(y,10); m=parseInt(m,10); d=parseInt(d,10);
+/* ---- تحويل هجري ↔ يوم يوليوسي ----
+   أطوال أشهر ١٤٤٨ الفعلية من تقويم أم القرى (لا التناوب الحسابي ٣٠/٢٩):
+   محرم ٢٩ · صفر ٣٠ · ربيع الأول ٢٩ · ربيع الآخر ٣٠ · جمادى الأولى ٣٠ · جمادى الآخرة ٢٩
+   رجب ٣٠ · شعبان ٣٠ · رمضان ٢٩ · شوال ٣٠ · ذو القعدة ٢٩ · ذو الحجة ٢٩   (المجموع ٣٥٤)
+   المرساة: ١ محرم ١٤٤٨ = ١٦ يونيو ٢٠٢٦م (JDN 2461208) — ويوافقها ١ رمضان = ٨ فبراير ٢٠٢٧م
+   وخارج ١٤٤٨ يُستعمل الحساب التقريبي القديم. */
+var TL_UQ_Y=1448, TL_UQ_START=2461208;
+var TL_UQ_LEN=[29,30,29,30,30,29,30,30,29,30,29,29];
+var TL_UQ_END=(function(){ var t=TL_UQ_START; for(var i=0;i<12;i++) t+=TL_UQ_LEN[i]; return t; })();
+function tlH2Jc(y,m,d){
   return Math.floor(d + Math.ceil(29.5*(m-1)) + (y-1)*354 + Math.floor((3+11*y)/30) + 1948439.5) - 1;
 }
+function tlH2J(y,m,d){
+  y=parseInt(y,10); m=parseInt(m,10); d=parseInt(d,10);
+  if(!isFinite(y)||!isFinite(m)||!isFinite(d)) return NaN;
+  if(y===TL_UQ_Y && m>=1 && m<=12){
+    var jd=TL_UQ_START;
+    for(var i=1;i<m;i++) jd+=TL_UQ_LEN[i-1];
+    return jd+d-1;
+  }
+  return tlH2Jc(y,m,d);
+}
 function tlJ2H(jd){
-  jd=Math.floor(jd)+0.5;
-  var y=Math.floor((30*(jd-1948439.5)+10646)/10631);
-  var m=Math.min(12, Math.ceil((jd-(29+tlH2J(y,1,1)))/29.5)+1);
-  var d=jd-tlH2J(y,m,1)+1;
+  jd=Math.floor(jd);
+  if(!isFinite(jd)) return {y:0,m:1,d:1};
+  if(jd>=TL_UQ_START && jd<TL_UQ_END){
+    var acc=TL_UQ_START;
+    for(var m0=1;m0<=12;m0++){
+      if(jd<acc+TL_UQ_LEN[m0-1]) return {y:TL_UQ_Y, m:m0, d:jd-acc+1};
+      acc+=TL_UQ_LEN[m0-1];
+    }
+  }
+  var j=jd+0.5;
+  var y=Math.floor((30*(j-1948439.5)+10646)/10631);
+  var m=Math.min(12, Math.ceil((j-(29+tlH2Jc(y,1,1)))/29.5)+1);
+  var d=j-tlH2Jc(y,m,1)+1;
   return {y:y, m:m, d:Math.floor(d)};
 }
 /* ٠ = الأحد */
@@ -8664,7 +8756,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 10';
+  window.HQ_BUILD='2026-08-22 · 12';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
