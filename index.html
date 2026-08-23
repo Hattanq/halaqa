@@ -1973,9 +1973,21 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hqsel-menu{display:none;position:absolute;top:calc(100% + 5px);right:0;left:0;z-index:9999;max-height:250px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#0f3b37;border:1px solid rgba(247,215,116,.32);border-radius:11px;box-shadow:0 14px 30px rgba(0,0,0,.55);direction:rtl}
 .hqsel.open .hqsel-menu{display:block}
 .hqsel-menu.hqsel-float{display:block !important}
-.tl-week.tl-week-hol{opacity:.72;border:1px dashed rgba(247,215,116,.35);background:rgba(255,255,255,.03)}
+.tl-danger{
+  width:100%; margin:10px 0 8px; padding:12px 14px;
+  border-radius:13px; cursor:pointer;
+  font-family:inherit; font-size:.9rem; font-weight:800;
+  color:#ff9e93; background:rgba(255,94,84,.12);
+  border:1px solid rgba(255,94,84,.42);
+  transition:background-color .2s, transform .1s;
+}
+.tl-danger:active{ transform:scale(.985); }
+@media(hover:hover){ .tl-danger:hover{ background:rgba(255,94,84,.2); } }
+.tl-week.tl-week-hol{opacity:.78;border:1px dashed rgba(247,215,116,.35);background:rgba(255,255,255,.03)}
 .tl-week.tl-week-hol .tl-week-n{color:#e0b35c}
-.tl-week.tl-week-hol .tl-day{opacity:.7}
+/* يوم إجازة داخل أسبوع دراسي: حدّ متقطّع ولون خافت */
+.tl-day.tl-day-hol{border:1px dashed rgba(247,215,116,.4);background:rgba(255,255,255,.03);opacity:.7}
+.tl-day.tl-day-hol .tl-day-n,.tl-day.tl-day-hol .tl-day-d{color:#cfa96a}
 .tl-day.tl-today{position:relative;background:rgba(247,215,116,.16);border:1px solid rgba(247,215,116,.6);
   box-shadow:0 0 0 2px rgba(247,215,116,.18),0 0 18px rgba(247,215,116,.35);border-radius:9px;
   animation:tlGlow 2.2s ease-in-out infinite}
@@ -6705,14 +6717,17 @@ function tlWeeks(tl){
   while(tlWeekday(cur)!==0) cur++;
   var hol=tlHolRanges(tl,start,end);
   /* كل أسابيع الفصل قبل خصم الإجازات */
+  function _isHolDay(jd){
+    for(var q=0;q<hol.length;q++){ if(jd>=hol[q].a && jd<=hol[q].b) return true; }
+    return false;
+  }
   var all=[], guard=0;
   while(cur<=end && guard++<200){
     var last=cur+per-1;                        /* آخر يوم دراسي في الأسبوع */
-    var isHol=false;
-    for(var i=0;i<hol.length;i++){
-      if(!(hol[i].b<cur || hol[i].a>last)){ isHol=true; break; }
-    }
-    all.push({jdFrom:cur, jdTo:last, hol:isHol});
+    var hd=0;
+    for(var k0=0;k0<per;k0++){ if(_isHolDay(cur+k0)) hd++; }
+    /* الأسبوع لا يُحذف إلا إذا كانت أيامه الدراسية كلها إجازة */
+    all.push({jdFrom:cur, jdTo:last, hol:(hd===per), holDays:hd});
     cur+=7;                                    /* الأحد التالي */
   }
   var kept=all.filter(function(w){ return !w.hol; }), ignored=false;
@@ -6722,9 +6737,9 @@ function tlWeeks(tl){
     var ds=[];
     for(var k=0;k<per;k++){
       var jd=w.jdFrom+k;
-      ds.push({name:TL_DAYS[tlWeekday(jd)], date:tlJ2H(jd)});
+      ds.push({name:TL_DAYS[tlWeekday(jd)], date:tlJ2H(jd), hol:(!ignored && _isHolDay(jd))});
     }
-    return {no:i+1, jdFrom:w.jdFrom, jdTo:w.jdTo,
+    return {no:i+1, jdFrom:w.jdFrom, jdTo:w.jdTo, holDays:(ignored?0:(w.holDays||0)),
             from:tlJ2H(w.jdFrom), to:tlJ2H(w.jdTo), days:ds};
   });
   out.holWeeks   = ignored ? 0 : (all.length-kept.length);
@@ -6735,11 +6750,12 @@ function tlWeeks(tl){
     var ds=[];
     for(var k2=0;k2<per;k2++){
       var jd2=w.jdFrom+k2;
-      ds.push({name:TL_DAYS[tlWeekday(jd2)], date:tlJ2H(jd2)});
+      ds.push({name:TL_DAYS[tlWeekday(jd2)], date:tlJ2H(jd2), hol:(!ignored && _isHolDay(jd2))});
     }
     var isH = ignored ? false : !!w.hol;
     if(!isH) _n++;
-    return {no:isH?0:_n, hol:isH, jdFrom:w.jdFrom, jdTo:w.jdTo,
+    return {no:isH?0:_n, hol:isH, holDays:(ignored?0:(w.holDays||0)),
+            jdFrom:w.jdFrom, jdTo:w.jdTo,
             from:tlJ2H(w.jdFrom), to:tlJ2H(w.jdTo), days:ds};
   });
   return out;
@@ -6815,11 +6831,33 @@ function tlBuild(){
     '<div class="tl-sec-hd">إجازات الفصل الدراسي</div>'+
     '<div id="tl-hols"></div>'+   /* يبدأ فارغًا دائمًا — تُضاف الإجازات يدويًا */
     '<button class="tl-add" type="button" onclick="tlHolAdd()"><span class="tl-plus">+</span><span>إضافة إجازة</span></button>'+
+    '<button class="tl-danger" type="button" onclick="tlWipeAsk()">حذف الخط الزمني</button>'+
     '<button class="tl-approve" type="button" onclick="tlSave()">اعتماد الخط الزمني</button>'+
   '</div>';
   openModal('الخط الزمني', body);
 }
 
+/* حذف كل الخطوط الزمنية: المعتمَد والمعلَّق والقديم */
+function tlWipeAsk(){
+  var st=tlStore();
+  var n=0; for(var k in st){ if(k!=='activeKey' && st[k]) n++; }
+  if(!n){ showToast('لا يوجد خط زمني محفوظ','info'); return; }
+  openModal('حذف الخط الزمني',
+    '<div style="padding:6px 4px 2px;text-align:center">'+
+    '<div style="font-size:2rem;margin-bottom:8px">⚠️</div>'+
+    '<div style="font-weight:800;margin-bottom:6px">حذف كل الخطوط الزمنية؟</div>'+
+    '<div style="color:#fbbf24;font-size:.85rem;margin-bottom:12px">'+
+      'سيُحذف '+arNum(n)+' خط زمني — المعتمَد والمعلَّق والقديم. لا يمكن التراجع.</div>'+
+    '<button class="prof-form-save" style="background:#b91c1c" onclick="tlWipeGo()">تأكيد الحذف</button>'+
+    '</div>');
+}
+function tlWipeGo(){
+  DB.timeline={};
+  save();
+  showToast('حُذفت كل الخطوط الزمنية','success');
+  closeModal();
+  if(typeof renderDash==='function') renderDash();
+}
 function tlSave(){
   try{
     function V(id){ var e=document.getElementById(id); return e?e.value:''; }
@@ -6925,7 +6963,7 @@ function tlShow(){
             '<div class="tl-week-n">'+(w.hol?'أسبوع إجازة':('أسبوع '+arNum(w.no)))+'</div>'+
             (w.days||[]).map(function(x){
               var _t=(isFinite(_markJd) && tlH2J(x.date.y,x.date.m,x.date.d)===_markJd);
-              return '<div class="tl-day'+(_t?' tl-today':'')+'"'+(_t?' id="tl-today-cell"':'')+'>'+
+              return '<div class="tl-day'+(x.hol?' tl-day-hol':'')+(_t?' tl-today':'')+'"'+(_t?' id="tl-today-cell"':'')+'>'+
                      '<span class="tl-day-n">'+x.name+'</span>'+
                      '<span class="tl-day-d">'+tlShort(x.date)+'</span>'+
                      (_t?('<span class="tl-today-tag">'+(_markExact?'اليوم':'أقرب يوم')+'</span>'):'')+'</div>';
@@ -6936,7 +6974,8 @@ function tlShow(){
     '<div class="hqacc" style="margin:14px 0 0"><div class="hqacc-body hqacc-plain">'+
       hqAccRow('الأيام الدراسية للأسبوع', arNum(per)+' أيام')+
       hqAccRow('عدد الأسابيع الدراسية', arNum(studyWk))+
-      hqAccRow('عدد الأيام الدراسية', arNum(studyWk*per))+
+      hqAccRow('عدد الأيام الدراسية', arNum(Math.max(0, studyWk*per - wk.reduce(function(a,w){ return a+(w.holDays||0); },0))))+
+      hqAccRow('أيام إجازة داخل الأسابيع', arNum(wk.reduce(function(a,w){ return a+(w.holDays||0); },0)))+
       hqAccRow('عدد الإجازات', arNum((tl.holidays||[]).length))+
       hqAccRow('أسابيع حُذفت للإجازات', arNum(wk.holWeeks||0))+
     '</div></div>'+
@@ -9422,7 +9461,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 28';
+  window.HQ_BUILD='2026-08-22 · 29';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
