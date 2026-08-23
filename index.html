@@ -6972,15 +6972,13 @@ function hqRowFloat(row){
   b.classList.add('hqrow-float');
   var r=hd.getBoundingClientRect();
   var vh=window.innerHeight||document.documentElement.clientHeight;
-  var above=r.top-12, below=vh-r.bottom-12;
-  var up=(above>=160)||(above>=below);       /* الأصل: الانسدال لأعلى */
+  var below=vh-r.bottom-14;                  /* الانسدال لأسفل دائمًا */
   b.style.position='fixed';
   b.style.left=Math.max(8,r.left)+'px';
   b.style.right='auto';
   b.style.width=r.width+'px';
-  b.style.maxHeight=Math.max(140,(up?above:below))+'px';
-  if(up){ b.style.bottom=(vh-r.top+4)+'px'; b.style.top='auto'; }
-  else  { b.style.top=(r.bottom+4)+'px';   b.style.bottom='auto'; }
+  b.style.maxHeight=Math.max(110, below)+'px';
+  b.style.top=(r.bottom+4)+'px'; b.style.bottom='auto';
   b.style.zIndex='100000';
 }
 function hqRowCloseAll(except){
@@ -7159,6 +7157,7 @@ function showAllHalqatStats(){
     '</div></div>');
 
   openModal('إحصائيات وتقارير الجمعية','<div class="hs-wrap">'+gen+ranks+stu+'</div>');
+  hqModalTall();
   setTimeout(hqStuFillHalqat,0);
   /* صفحات الحفظ والمراجعة تُحسب بعد الفتح لأنها غير متزامنة */
   (async function(){
@@ -8285,15 +8284,13 @@ function evDDFloat(dd){
   m.classList.add('ev-dd-float');
   var r=btn.getBoundingClientRect();
   var vh=window.innerHeight||document.documentElement.clientHeight;
-  var below=vh-r.bottom-12, above=r.top-12;
-  var down=(below>=170)||(below>=above);
+  var below=vh-r.bottom-14;                  /* الانسدال لأسفل دائمًا */
   m.style.position='fixed';
   m.style.left=Math.max(6,r.left)+'px';
   m.style.right='auto';
   m.style.width=r.width+'px';
-  m.style.maxHeight=Math.max(130, Math.min(300, down?below:above))+'px';
-  if(down){ m.style.top=(r.bottom+5)+'px'; m.style.bottom='auto'; }
-  else    { m.style.bottom=(vh-r.top+5)+'px'; m.style.top='auto'; }
+  m.style.maxHeight=Math.min(300, Math.max(96, below))+'px';
+  m.style.top=(r.bottom+5)+'px'; m.style.bottom='auto';
   m.style.zIndex='100000';
 }
 function evDDCloseAll(except){
@@ -8350,18 +8347,15 @@ function hqSelFloat(wrap){
   m.classList.add('hqsel-float');
   var r=btn.getBoundingClientRect();
   var vh=window.innerHeight||document.documentElement.clientHeight;
-  var below=vh-r.bottom-12, above=r.top-12;
-  var down=(below>=170)||(below>=above);
-  var maxH=Math.min(260, Math.max(120, down?below:above));
+  var below=vh-r.bottom-14;       /* الانسدال لأسفل دائمًا */
   m.style.position='fixed';
   m.style.left=Math.max(6,r.left)+'px';
   m.style.right='auto';           /* بدونها يفوز right:0 في اتجاه RTL فتقفز القائمة لحافة الشاشة */
   m.style.width=r.width+'px';
   m.style.minWidth='0';
-  m.style.maxHeight=maxH+'px';
+  m.style.maxHeight=Math.min(260, Math.max(96, below))+'px';
   m.style.zIndex='100000';
-  if(down){ m.style.top=(r.bottom+5)+'px'; m.style.bottom='auto'; }
-  else    { m.style.bottom=(vh-r.top+5)+'px'; m.style.top='auto'; }
+  m.style.top=(r.bottom+5)+'px'; m.style.bottom='auto';
 }
 function hqSelBuildMenu(wrap){
   var s=wrap.querySelector('select'), menu=hqSelMenuOf(wrap);
@@ -9188,7 +9182,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 21';
+  window.HQ_BUILD='2026-08-22 · 22';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
