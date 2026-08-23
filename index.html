@@ -6920,10 +6920,27 @@ function hqJamStats(halqat){
 
 /* ---------- (٢) ترتيب الحلقات ---------- */
 /* يعيد [{name, val, sub}] مرتّبة تنازلياً */
+/* بيانات التقييم مخزّنة داخل كل حلقة، و DB.evals يشير إلى الحلقة النشِطة فقط.
+   لذا نُبدّل مؤشّرات DB مؤقتاً إلى الحلقة المطلوبة ثم نُعيدها. */
+async function hqWithHalqaA(h, fn){
+  if(!h) return await fn();
+  var sv={evals:DB.evals, exams:DB.exams, students:DB.students, suspend:DB.suspend,
+          plans:DB.plans, attend:DB.attend, mistakes:DB.mistakes, recitation:DB.recitation};
+  DB.evals=h.evals||{};   DB.exams=h.exams||{};   DB.students=h.students||[];
+  DB.suspend=h.suspend||{}; DB.plans=h.plans||{}; DB.attend=h.attend||{};
+  DB.mistakes=h.mistakes||{}; DB.recitation=h.recitation||{};
+  try{ return await fn(); }
+  finally{
+    DB.evals=sv.evals; DB.exams=sv.exams; DB.students=sv.students; DB.suspend=sv.suspend;
+    DB.plans=sv.plans; DB.attend=sv.attend; DB.mistakes=sv.mistakes; DB.recitation=sv.recitation;
+  }
+}
 async function hqHalqaRank(halqat, metric){
   var out=[];
   for(var i=0;i<halqat.length;i++){
-    var h=halqat[i], studs=hqStudentsOf(h), val=0, sub='';
+    var h=halqat[i];
+    var _r=await hqWithHalqaA(h, async function(){
+    var studs=hqStudentsOf(h), val=0, sub='';
     if(metric==='lesson'||metric==='review'){
       for(var j=0;j<studs.length;j++){
         val += await hqStuPages(studs[j].id, metric, hsTermDays(studs[j].id));
@@ -6944,7 +6961,9 @@ async function hqHalqaRank(halqat, metric){
       val=Math.round(val*10)/10;
       sub=arNum(val)+' درجة';
     }
-    out.push({name:h.name, val:val, sub:sub});
+    return {val:val, sub:sub};
+    });
+    out.push({name:h.name, val:_r.val, sub:_r.sub});
   }
   out.sort(function(a,b){ return b.val-a.val; });
   return out;
@@ -7085,10 +7104,15 @@ async function hqStuShow(){
   if(!kind||!idx){ showToast('اختر المدة والمطلوب','error'); return; }
 
   box.innerHTML='<div class="hqacc-load">جارٍ الحساب…</div>';
-  var days=hqStuDays(sid,kind,idx);
-  var st=hqDaysStats(days);
-  var lp=await hqStuPages(sid,'lesson',days);
-  var rp=await hqStuPages(sid,'review',days);
+  var _hid=(document.getElementById('sq-halqa')||{}).value||'';
+  var _h=(DB.halqat||[]).find(function(x){ return x.id===_hid; });
+  var _o=await hqWithHalqaA(_h, async function(){
+    var days=hqStuDays(sid,kind,idx);
+    return { st:hqDaysStats(days),
+             lp:await hqStuPages(sid,'lesson',days),
+             rp:await hqStuPages(sid,'review',days) };
+  });
+  var st=_o.st, lp=_o.lp, rp=_o.rp;
   box.innerHTML='<div class="hqres">'+
     hqAccRow('الحضور', arNum(st.present)+' يوم')+
     hqAccRow('الغياب', arNum(st.absent)+' يوم')+
@@ -8037,7 +8061,7 @@ function evJPDD(id,kind,part,curVal,curLabel,opts,locked){
     +'<div class="ev-dd-menu">'+opts+'</div></div>';
 }
 function evJPPick(opt){
-  var dd=opt.parentNode.parentNode;
+  var dd=evDDOwner(opt); if(!dd) return;
   var v=opt.getAttribute('data-v');
   dd.setAttribute('data-val', v);
   var cur=dd.querySelector('.ev-dd-cur'); if(cur) cur.textContent=opt.textContent;
@@ -8314,8 +8338,13 @@ function evDDToggle(btn){
     if(host) host.classList.add('dd-front');
   }
 }
+/* بعد تعويم القائمة إلى body لم يعد أب الأب هو الغلاف — نُرجعه من المرجع المحفوظ */
+function evDDOwner(opt){
+  var m=opt&&opt.parentNode; if(!m) return null;
+  return m._evDD || m.parentNode || null;
+}
 function evDDPick(opt){
-  var dd=opt.parentNode.parentNode;
+  var dd=evDDOwner(opt); if(!dd) return;
   dd.setAttribute('data-val', opt.getAttribute('data-v'));
   var cur=dd.querySelector('.ev-dd-cur'); if(cur) cur.textContent=opt.textContent;
   var sels=dd.querySelectorAll('.ev-dd-opt.sel'); for(var i=0;i<sels.length;i++) sels[i].classList.remove('sel');
@@ -9182,7 +9211,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 22';
+  window.HQ_BUILD='2026-08-22 · 23';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
