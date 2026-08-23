@@ -2902,7 +2902,15 @@ function cloudFirstReconcile(val){
     var remote=null; try{ remote=JSON.parse(val.data); }catch(e){}
     var localObj={halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], teachers:DB.teachers||[], visits:DB.visits||[], tmsgs:DB.tmsgs||{}, timeline:DB.timeline||{}};
     if(remote && remote.seed!==HQ_SEED_ID){ _cloudReconciled=true; _cloudDoPush(); return; }   /* السحابة قديمة → استبدلها */
-    if(remote && cloudSize(remote) >= cloudSize(localObj)){ _cloudReconciled=true; if(cloudApply(val)){ cloudRerender(); cloudSetStatus('updated'); } else cloudSetStatus('synced'); }
+    if(remote && cloudSize(remote) >= cloudSize(localObj)){
+      _cloudReconciled=true;
+      if(cloudApply(val)){
+        cloudSetStatus('updated');
+        /* أول لقطة غالباً مطابقة للمحلي — لا نُعيد الرسم إلا إذا اختلف فعلاً */
+        var _sg=cloudViewSig();
+        if(_sg!==_cloudSig){ _cloudSig=_sg; cloudRerender(); }
+      } else cloudSetStatus('synced');
+    }
     else { _cloudReconciled=true; _cloudDoPush(); }        /* المحلي أغنى → ارفعه */
   } else { _cloudReconciled=true; _cloudDoPush(); }          /* لا توجد بيانات سحابية → ارفع المحلي */
 }
@@ -7173,12 +7181,25 @@ function hqStuFillRange(){
 function hqStuClear(){ var r=document.getElementById('sq-result'); if(r) r.innerHTML=''; }
 
 /* أيام الطالب مع تواريخها (اليوم اليوليوسي) لا بترتيبها فقط */
+/* اليوم اليوليوسي من مكوّنات التاريخ مباشرة.
+   القسمة على الطابع الزمني كانت تُنقص يوماً كاملاً في المناطق شرق غرينتش
+   (منتصف ليل الرياض = التاسعة مساءً بتوقيت غرينتش لليوم السابق). */
+function hqJdYMD(y,m,d){
+  y=parseInt(y,10); m=parseInt(m,10)||1; d=parseInt(d,10)||1;
+  if(!isFinite(y)) return NaN;
+  var a=Math.floor((14-m)/12), yy=y+4800-a, mm=m+12*a-3;
+  return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-Math.floor(yy/100)+Math.floor(yy/400)-32045;
+}
+function hqJdOfKey(k){
+  var pp=String(k).split('-');
+  return hqJdYMD(pp[0], pp[1], pp[2]);
+}
 function evEntryList(sid){
   var rec=DB.evals&&DB.evals[sid]; if(!rec||!rec.days) return [];
   return Object.keys(rec.days)
-    .sort(function(a,b){ return evParseKey(a)-evParseKey(b); })
+    .sort(function(a,b){ return hqJdOfKey(a)-hqJdOfKey(b); })
     .map(function(k){
-      return { k:k, jd:Math.floor(evParseKey(k)/86400000)+2440588, d:rec.days[k] };
+      return { k:k, jd:hqJdOfKey(k), d:rec.days[k] };
     });
 }
 /* أيام الطالب ضمن المدى المحدّد — تُحدَّد بتاريخ الأسبوع في الخط الزمني
@@ -9377,7 +9398,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 26';
+  window.HQ_BUILD='2026-08-22 · 27';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
