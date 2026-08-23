@@ -1973,6 +1973,9 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hqsel-menu{display:none;position:absolute;top:calc(100% + 5px);right:0;left:0;z-index:9999;max-height:250px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#0f3b37;border:1px solid rgba(247,215,116,.32);border-radius:11px;box-shadow:0 14px 30px rgba(0,0,0,.55);direction:rtl}
 .hqsel.open .hqsel-menu{display:block}
 .hqsel-menu.hqsel-float{display:block !important}
+.tl-week.tl-week-hol{opacity:.72;border:1px dashed rgba(247,215,116,.35);background:rgba(255,255,255,.03)}
+.tl-week.tl-week-hol .tl-week-n{color:#e0b35c}
+.tl-week.tl-week-hol .tl-day{opacity:.7}
 .tl-day.tl-today{position:relative;background:rgba(247,215,116,.16);border:1px solid rgba(247,215,116,.6);
   box-shadow:0 0 0 2px rgba(247,215,116,.18),0 0 18px rgba(247,215,116,.35);border-radius:9px;
   animation:tlGlow 2.2s ease-in-out infinite}
@@ -5795,8 +5798,9 @@ function saveNewHalqa(){
 function showHalqatList(){
   var halqat=DB.halqat||[];
   if(!halqat.length){ openModal('بيانات الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات بعد</div>'); return; }
-  var rows=halqat.map(function(h){ return hqHalqaAcc(h,true); }).join('');
+  var rows=halqat.map(function(h,i){ return hqHalqaAcc(h,true,i+1); }).join('');
   openModal('بيانات الحلقات','<div class="hs-wrap">'+rows+'</div>');
+  hqModalTall();
 }
 /* قسم قابل للطي: العنوان الرئيسي يفتح/يغلق ما تحته — التصميم كما هو */
 function hqFoldSec(title,inner,open){
@@ -5826,7 +5830,7 @@ function hqFlatSec(title,rows,acts,idx,tag){
   '</div>';
 }
 /* بطاقة حلقة — بتصميم الإحصائيّات المسطّح */
-function hqHalqaAcc(h,canDelete){
+function hqHalqaAcc(h,canDelete,idx){
   var n=(h.students||[]).length;
   var reg=(h.students||[]).filter(function(x){ return !isDiscontinued(x); }).length;
   var body=
@@ -5840,7 +5844,7 @@ function hqHalqaAcc(h,canDelete){
     hqAccRow('المنتظمون', arNum(reg));
   var acts='<button class="hq-mini-btn view" onclick="adminViewHalqa(\''+h.id+'\')">الإحصائيّات</button>'+
     (canDelete?('<button class="hq-mini-btn del" onclick="adminDeleteHalqa(\''+h.id+'\')">حذف</button>'):'');
-  return hqFlatSec(h.name, body, acts);
+  return hqFlatSec(h.name, body, acts, idx, h.sector||'');
 }
 function adminViewHalqa(hid){ setActiveHalqa(hid); showHalqaStats(); }
 
@@ -6358,14 +6362,16 @@ function supIsSup(){ return STATE.role==='supervisor'; }
 function supHalqatList(){
   var my=supMyHalqat();
   if(!my.length){ openModal('بيانات الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
-  var rows=my.map(function(h){ return hqHalqaAcc(h,false); }).join('');
+  var rows=my.map(function(h,i){ return hqHalqaAcc(h,false,i+1); }).join('');
   openModal('بيانات الحلقات', '<div class="hs-wrap">'+rows+'</div>');
+  hqModalTall();
 }
 
 function supTeachersData(){
   var my=supMyHalqat();
   if(!my.length){ openModal('بيانات المعلمين','<div class="empty-state"><div class="empty-state-icon">👤</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
   openModal('بيانات المعلمين','<div class="hs-wrap">'+hqTeacherRows(my)+'</div>');
+  hqModalTall();
 }
 
 /* اختبارات الجمعية للمشرف: يختار الحلقة أولاً ثم تُفتح كواجهة المعلم */
@@ -6723,6 +6729,19 @@ function tlWeeks(tl){
   });
   out.holWeeks   = ignored ? 0 : (all.length-kept.length);
   out.holIgnored = ignored;
+  /* التسلسل الكامل للعرض: أسابيع الدراسة وأسابيع الإجازة معاً، حتى لا تظهر فجوة صامتة */
+  var _n=0;
+  out.all = all.map(function(w){
+    var ds=[];
+    for(var k2=0;k2<per;k2++){
+      var jd2=w.jdFrom+k2;
+      ds.push({name:TL_DAYS[tlWeekday(jd2)], date:tlJ2H(jd2)});
+    }
+    var isH = ignored ? false : !!w.hol;
+    if(!isH) _n++;
+    return {no:isH?0:_n, hol:isH, jdFrom:w.jdFrom, jdTo:w.jdTo,
+            from:tlJ2H(w.jdFrom), to:tlJ2H(w.jdTo), days:ds};
+  });
   return out;
 }
 /* عدد أيام الدراسة الفعلية (الإجازات مخصومة أصلاً) */
@@ -6885,9 +6904,14 @@ function tlShow(){
     if(!isFinite(_markJd)&&_all.length) _markJd=_all[_all.length-1];
   }
 
-  /* توزيع الأسابيع الدراسية على شهور — أربعة أسابيع لكل شهر */
-  var months=[];
-  for(var i=0;i<wk.length;i+=4) months.push(wk.slice(i,i+4));
+  /* توزيع الأسابيع على شهور — أربعة أسابيع دراسية لكل شهر،
+     وأسابيع الإجازة تُعرض في موضعها ولا تُحتسب ضمن الأربعة */
+  var _seq=wk.all||wk, months=[], _cm=[], _cc=0;
+  for(var i=0;i<_seq.length;i++){
+    _cm.push(_seq[i]);
+    if(!_seq[i].hol){ _cc++; if(_cc===4){ months.push(_cm); _cm=[]; _cc=0; } }
+  }
+  if(_cm.length) months.push(_cm);
 
   var body='<div class="tl-head">'+
       '<div class="tl-term">'+hqEsc(tl.termName||'')+'</div>'+
@@ -6897,8 +6921,8 @@ function tlShow(){
       return '<div class="tl-month">'+
         '<div class="tl-month-hd">الشهر '+hqOrd(i+1)+'</div>'+
         '<div class="tl-weeks">'+mm.map(function(w){
-          return '<div class="tl-week">'+
-            '<div class="tl-week-n">أسبوع '+arNum(w.no)+'</div>'+
+          return '<div class="tl-week'+(w.hol?' tl-week-hol':'')+'">'+
+            '<div class="tl-week-n">'+(w.hol?'أسبوع إجازة':('أسبوع '+arNum(w.no)))+'</div>'+
             (w.days||[]).map(function(x){
               var _t=(isFinite(_markJd) && tlH2J(x.date.y,x.date.m,x.date.d)===_markJd);
               return '<div class="tl-day'+(_t?' tl-today':'')+'"'+(_t?' id="tl-today-cell"':'')+'>'+
@@ -9398,7 +9422,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 27';
+  window.HQ_BUILD='2026-08-22 · 28';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
