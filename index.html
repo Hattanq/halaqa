@@ -2843,6 +2843,41 @@ function cloudApply(val){
   return true;
 }
 function cloudModalOpen(){ var bg=document.getElementById('modalBg'); return !!(bg && (bg.classList.contains('open')||bg.style.display==='flex')); }
+var _cloudSig='';
+/* بصمة الجزء الذي يعرضه هذا الحساب فقط — تغيير في حلقة أخرى لا يعنيه */
+function cloudViewSig(){
+  try{
+    if(typeof STATE==='undefined' || !STATE.user) return '';
+    var r=STATE.role, u=STATE.user, p=[];
+    var ah=(DB.halqat||[]).find(function(x){ return x.id===STATE.activeHid; });
+    if(r==='admin'){
+      p.push((DB.halqat||[]).map(function(h){
+        return h.id+'~'+(h.name||'')+'~'+((h.students||[]).length)+'~'+(h.teacherId||'')+'~'+(h.supervisorId||'')+'~'+(h.sector||'');
+      }).join(','));
+      p.push((DB.teachers||[]).length+'/'+(DB.supervisors||[]).length+'/'+(DB.visits||[]).length);
+    } else if(r==='supervisor'){
+      var my=[]; try{ my=supMyHalqat(u.supId)||[]; }catch(e){}
+      p.push(my.map(function(h){ return h.id+'~'+(h.name||'')+'~'+((h.students||[]).length)+'~'+(h.teacherId||''); }).join(','));
+      p.push((DB.visits||[]).filter(function(v){ return v.supId===u.supId; }).length);
+      p.push((DB.teachers||[]).length);
+    } else if(r==='teacher'){
+      p.push(ah?JSON.stringify({
+        s:(ah.students||[]).map(function(x){ return x.id+'~'+(x.name||''); }),
+        e:ah.evals||{}, x:ah.exams||{}, pl:ah.plans||{}, sp:ah.suspend||{},
+        m:Object.keys(ah.mistakes||{}).length
+      }):'');
+      p.push(JSON.stringify((DB.tmsgs||{})[u.tid||'']||[]).length);
+    } else {
+      var sid=u.sid||'';
+      p.push(ah?JSON.stringify({
+        e:(ah.evals||{})[sid]||null, m:(ah.mistakes||{})[sid]||null,
+        x:(ah.exams||{})[sid]||null, pl:(ah.plans||{})[sid]||null
+      }):'');
+    }
+    p.push(JSON.stringify(DB.timeline||{}).length);
+    return p.join('|');
+  }catch(e){ return 'x'+Date.now(); }
+}
 function cloudRerender(){
   try{
     if(cloudModalOpen()){ _cloudPending=true; return; }
@@ -2852,7 +2887,12 @@ function cloudRerender(){
       if(hh) hh.textContent=(STATE.role==='admin')?'الشؤون التعليمية':(STATE.role==='supervisor'?'مشرف الحلقات':(_ah?_ah.name:'الحلقة'));
       var hs=document.getElementById('hdr-sname');
       if(hs && STATE.role==='teacher' && _ah) hs.textContent=_ah.teacherName||'';
-      if(STATE.page && typeof renderPage==='function') renderPage(STATE.page);
+      if(typeof hdrRefreshStudentStats==='function') hdrRefreshStudentStats();
+      if(STATE.page && typeof renderPage==='function'){
+        var _pw=document.querySelector('.pages-wrap'), _sc=_pw?_pw.scrollTop:0;   /* لا تقفز الصفحة */
+        renderPage(STATE.page);
+        if(_pw) _pw.scrollTop=_sc;
+      }
     }
   }catch(e){}
 }
@@ -2874,7 +2914,12 @@ function cloudInit(){
     if(_cloudFirst){ _cloudFirst=false; cloudFirstReconcile(val); return; }
     if(val && val.cid===cloudGetCID()){ cloudSetStatus('synced'); return; }   /* صدى تغييرنا نحن */
     if(val && val.ts && val.ts<=_cloudLastTs) return;
-    if(cloudApply(val)){ cloudRerender(); cloudSetStatus('updated'); }
+    if(cloudApply(val)){
+      cloudSetStatus('updated');
+      /* لا نُعيد رسم الصفحة إلا إذا مسّ التغييرُ ما يعرضه هذا الحساب فعلاً */
+      var _sg=cloudViewSig();
+      if(_sg!==_cloudSig){ _cloudSig=_sg; cloudRerender(); }
+    }
   });
   /* مهلة احتياطية: لو تأخّرت أول لقطة (اتصال بطيء) نسمح بالرفع لاحقاً */
   setTimeout(function(){
@@ -3093,17 +3138,20 @@ window.addEventListener('DOMContentLoaded',()=>{
   // تحديث بيانات المعلم دائماً
   /* أُزيل إعادة ضبط حساب المعلم (كان يفرض a/a في كل فتح) — الاسم فقط */
   if(DB.users.teacher && !DB.users.teacher.name){ DB.users.teacher.name='هتّان قرنفلة'; save(); }
+  /* جلسة محفوظة؟ نختصر شاشة البدء وندخل مباشرة بلا وميض لشاشة الدخول */
+  var _hasSess=false; try{ var _se=lsGet('hq_sess',null); _hasSess=!!(_se&&_se.u&&DB.users[_se.u]); }catch(e){}
   setTimeout(()=>{
     document.getElementById('splash').classList.add('hiding');
     setTimeout(()=>{
       document.getElementById('splash').style.display='none';
+      if(hqRestoreSession()) return;
       const ls=document.getElementById('loginScreen');
       ls.classList.remove('hidden');
       ls.style.display='flex';
       // تأكيد تحميل الصور مرة ثانية بعد ظهور loginScreen
       initImages();
-    },700);
-  },2600);
+    },_hasSess?260:700);
+  }, _hasSess?700:2600);
 });
 
 // =====================================================
@@ -3113,6 +3161,30 @@ function selRole(r){
   STATE.loginRole=r;
   ['teacher','student','parent','admin','supervisor'].forEach(x=>{const el=document.getElementById('rb-'+x);if(el)el.classList.toggle('active',x===r);});
   document.getElementById('li-err').textContent='';
+}
+/* استئناف آخر جلسة بعد تحديث الصفحة */
+function hqRestoreSession(){
+  try{
+    var se=lsGet('hq_sess',null); if(!se||!se.u) return false;
+    var found=DB.users[se.u];
+    if(!found || found.role!==se.r) return false;
+    STATE.user=found; STATE.role=found.role; STATE.loginRole=found.role;
+    if(found.role==='admin'){ setActiveHalqa((DB.halqat[0]||{}).id); }
+    else if(found.role==='supervisor'){
+      var _my=supMyHalqat(found.supId);
+      setActiveHalqa((_my[0]||DB.halqat[0]||{}).id);
+    }
+    else if(found.role==='teacher'){
+      var _th=found.tid?(DB.halqat||[]).find(function(x){ return x.teacherId===found.tid; }):null;
+      setActiveHalqa((_th&&_th.id)||found.hid||'h1');
+    }
+    else { setActiveHalqa(found.hid||'h1'); }
+    var ls=document.getElementById('loginScreen');
+    if(ls){ ls.classList.add('hidden'); ls.style.display='none'; }
+    if(window.hqArmIdle) hqArmIdle();
+    launchApp();
+    return true;
+  }catch(e){ return false; }
 }
 function doLogin(){
   const u=document.getElementById('li-user').value.trim().toLowerCase();
@@ -3133,6 +3205,8 @@ function doLogin(){
     if(_n||window.__hqUpgraded){ window.__hqUpgraded=false; save(); } }catch(e){}
   if(window.hqArmIdle) hqArmIdle();
   STATE.user=found; STATE.role=found.role;
+  try{ var _uk=null; for(var _k in DB.users){ if(DB.users[_k]===found){ _uk=_k; break; } }
+       if(_uk) lsSave('hq_sess',{u:_uk, r:found.role, t:Date.now()}); }catch(e){}
   if(found.role==='admin'){ setActiveHalqa((DB.halqat[0]||{}).id); }
   else if(found.role==='supervisor'){
     var _my=supMyHalqat(found.supId);
@@ -3148,6 +3222,7 @@ function doLogin(){
   launchApp();
 }
 function doLogout(){
+  try{ localStorage.removeItem('hq_sess'); }catch(e){}
   STATE.user=null; STATE.role=null;
   document.getElementById('mainApp').classList.remove('active');
   var fb=document.getElementById('fabBtn'); if(fb) fb.style.display='none';
@@ -3200,7 +3275,27 @@ function initImages(){
   cp('img-student','role-img-student');
   cp('img-parent','role-img-parent');
 }
+/* إحصاءات رأس الطالب: الدرس القادم والمراجعة القادمة والترتيب.
+   مستخرجة لتُحدَّث فور وصول تقييم جديد من المعلّم بلا تحديث للصفحة. */
+function hdrRefreshStudentStats(){
+  try{
+    var u=STATE.user; if(!u) return;
+    if(STATE.role!=='student' && STATE.role!=='parent') return;
+    var st=DB.students.find(function(x){ return x.id===u.sid || x.code===u.username; });
+    if(!st) return;
+    var _rec=(DB.evals&&DB.evals[st.id])||{}, _prog=_rec.progress||{lesson:0,review:0};
+    var lEl=document.getElementById('hdr-stat-lesson');
+    if(lEl){ var _pl=upFromLinear(Math.min(UNIFIED_MAXDAY,(_prog.lesson||0)+1)); lEl.innerHTML=hdrStatTxt(_pl); }
+    var vEl=document.getElementById('hdr-stat-review');
+    if(vEl){ var _pr=upFromLinear(Math.min(UNIFIED_MAXDAY,(_prog.review||0)+1)); vEl.innerHTML=hdrStatTxt(_pr); }
+    var rankList=DB.students.map(function(x){ return {id:x.id, t:evCurrentScore(x.id).score.total}; })
+                            .sort(function(a,b){ return b.t-a.t; });
+    var rEl=document.getElementById('hdr-stat-rank');
+    if(rEl) rEl.textContent=(rankList.findIndex(function(x){ return x.id===st.id; })+1)||'—';
+  }catch(e){}
+}
 function launchApp(){
+  try{ _cloudSig=cloudViewSig(); }catch(e){}
   document.getElementById('mainApp').classList.add('active');
   setHeaderDate();
   initImages();
@@ -3219,14 +3314,7 @@ function launchApp(){
     if(wb2) wb2.textContent='مرحباً بالقارئ';
     const sn=document.getElementById('hdr-sname');
     if(sn) sn.textContent=(STATE.role==='student'?u.name:'ولي أمر '+u.name.split(' ')[0]);
-    const sid=DB.students.find(s=>s.id===u.sid||s.code===u.username);
-    if(sid){
-      const _rec=(DB.evals&&DB.evals[sid.id])||{}; const _prog=_rec.progress||{lesson:0,review:0};
-      const lEl=document.getElementById('hdr-stat-lesson'); if(lEl){ const _pl=upFromLinear(Math.min(UNIFIED_MAXDAY,(_prog.lesson||0)+1)); lEl.innerHTML=hdrStatTxt(_pl); }
-      const vEl=document.getElementById('hdr-stat-review'); if(vEl){ const _pr=upFromLinear(Math.min(UNIFIED_MAXDAY,(_prog.review||0)+1)); vEl.innerHTML=hdrStatTxt(_pr); }
-      const rankList=DB.students.map(function(st){ return {id:st.id, t:evCurrentScore(st.id).score.total}; }).sort(function(a,b){ return b.t-a.t; });
-      const rEl=document.getElementById('hdr-stat-rank'); if(rEl) rEl.textContent=(rankList.findIndex(x=>x.id===sid.id)+1)||'—';
-    }
+    hdrRefreshStudentStats();
   } else if(STATE.role==='teacher'){
     if(sec) sec.classList.add('active');
     var wb=document.getElementById('hdr-welcome-badge');
@@ -7084,15 +7172,53 @@ function hqStuFillRange(){
 }
 function hqStuClear(){ var r=document.getElementById('sq-result'); if(r) r.innerHTML=''; }
 
-/* أيام الطالب ضمن المدى المحدّد */
+/* أيام الطالب مع تواريخها (اليوم اليوليوسي) لا بترتيبها فقط */
+function evEntryList(sid){
+  var rec=DB.evals&&DB.evals[sid]; if(!rec||!rec.days) return [];
+  return Object.keys(rec.days)
+    .sort(function(a,b){ return evParseKey(a)-evParseKey(b); })
+    .map(function(k){
+      return { k:k, jd:Math.floor(evParseKey(k)/86400000)+2440588, d:rec.days[k] };
+    });
+}
+/* أيام الطالب ضمن المدى المحدّد — تُحدَّد بتاريخ الأسبوع في الخط الزمني
+   لا بترتيب الأيام المسجّلة، وإلا صار «الأسبوع الثاني» يعني «التسميع الخامس». */
 function hqStuDays(sid,kind,idx){
-  var td=hsTermDays(sid);
   idx=parseInt(idx,10)||1;
-  if(kind==='term') return td;
-  var dpw=hqDaysPerWeek();
-  if(kind==='week'){ var a=(idx-1)*dpw; return td.slice(a,a+dpw); }
-  if(kind==='month'){ var per=dpw*4, b=(idx-1)*per; return td.slice(b,b+per); }
-  return td;
+  var tl=(typeof tlActive==='function')?tlActive():null;
+  var wk=null;
+  try{ wk=tl?tlWeeks(tl):null; }catch(e){ wk=null; }
+
+  if(!wk||!wk.length){                       /* لا خط زمني معتمَد — السلوك القديم */
+    var td=hsTermDays(sid), dpw=hqDaysPerWeek();
+    if(kind==='term') return td;
+    if(kind==='week'){ var a=(idx-1)*dpw; return td.slice(a,a+dpw); }
+    if(kind==='month'){ var per=dpw*4, b=(idx-1)*per; return td.slice(b,b+per); }
+    return td;
+  }
+
+  if(kind==='term') return hsTermDays(sid);   /* الفصل كامل: كل ما سُجّل */
+
+  /* مدى الأسبوع تقويميّ ومتّصل: من بداية أسبوعه حتى ما قبل بداية الذي يليه،
+     فيدخل فيه ما سُجّل في الأيام غير الدراسية أيضاً ولا يسقط أي يوم بين أسبوعين. */
+  function _span(i){
+    if(!wk[i]) return null;
+    var lo=(i===0)?(wk[0].jdFrom-6):wk[i].jdFrom;
+    var hi=(i+1<wk.length)?(wk[i+1].jdFrom-1):(wk[i].jdFrom+6);
+    return {lo:lo, hi:hi};
+  }
+  var lo, hi;
+  if(kind==='week'){
+    var sp=_span(idx-1); if(!sp) return [];
+    lo=sp.lo; hi=sp.hi;
+  } else if(kind==='month'){
+    var a2=(idx-1)*4, sa=_span(a2); if(!sa) return [];
+    var sb=_span(Math.min(wk.length-1, a2+3));
+    lo=sa.lo; hi=sb.hi;
+  } else return hsTermDays(sid);
+  return evEntryList(sid)
+    .filter(function(e){ return isFinite(e.jd) && e.jd>=lo && e.jd<=hi; })
+    .map(function(e){ return e.d; });
 }
 
 async function hqStuShow(){
@@ -9189,17 +9315,57 @@ function arNum(n){ return String(n); }
 
 function ageStr(a){ a=parseInt(a,10)||0; if(!a) return ''; var w=(a>=3&&a<=10)?'سنوات':'سنة'; return a+' '+w; }
 
-/* محاولة ملء الشاشة عند أول تفاعل */
+/* أُلغيت خاصية ملء الشاشة عند أول تفاعل بناءً على الطلب */
+
+/* ===== السحب للأسفل = تحديث الصفحة (Pull to refresh) ===== */
 (function(){
-  function reqFS(){
-    var el=document.documentElement;
-    var fn=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
-    var active=document.fullscreenElement||document.webkitFullscreenElement;
-    if(fn&&!active){ try{ var r=fn.call(el); if(r&&r.catch) r.catch(function(){}); }catch(e){} }
+  var startY=0, pulling=false, dist=0, ind=null;
+  var TH=78;                                   /* مسافة السحب اللازمة */
+  function host(){
+    var m=document.getElementById('modalBg');
+    if(m && (m.classList.contains('open')||m.style.display==='flex')) return null;   /* لا داخل النوافذ */
+    return document.querySelector('.pages-wrap');
   }
-  window.addEventListener('pointerdown',reqFS,{once:true,passive:true});
-  window.addEventListener('click',reqFS,{once:true});
+  function ensureInd(){
+    if(ind) return ind;
+    ind=document.createElement('div');
+    ind.id='ptrInd'; ind.className='ptr-ind';
+    ind.innerHTML='<span class="ptr-spin"></span>';
+    document.body.appendChild(ind);
+    return ind;
+  }
+  function setInd(d,ready){
+    var e=ensureInd();
+    e.style.transform='translateX(-50%) translateY('+Math.min(d*0.55,64)+'px)';
+    e.style.opacity=String(Math.min(1,d/TH));
+    e.classList.toggle('ready',!!ready);
+  }
+  function reset(){
+    if(ind){ ind.style.transform='translateX(-50%) translateY(-60px)'; ind.style.opacity='0'; ind.classList.remove('ready'); }
+    pulling=false; dist=0;
+  }
+  document.addEventListener('touchstart',function(ev){
+    var h=host(); if(!h) return;
+    if(h.scrollTop>0) return;
+    if(ev.touches.length!==1) return;
+    startY=ev.touches[0].clientY; pulling=true; dist=0;
+  },{passive:true});
+  document.addEventListener('touchmove',function(ev){
+    if(!pulling) return;
+    var h=host(); if(!h || h.scrollTop>0){ reset(); return; }
+    dist=ev.touches[0].clientY-startY;
+    if(dist<=0){ reset(); return; }
+    setInd(dist, dist>=TH);
+  },{passive:true});
+  document.addEventListener('touchend',function(){
+    if(!pulling) return;
+    var go=dist>=TH;
+    if(go){ setInd(TH,true); if(ind) ind.classList.add('spin'); setTimeout(function(){ location.reload(); },160); }
+    else reset();
+    pulling=false; dist=0;
+  },{passive:true});
 })();
+
 </script>
 <script>
 var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0 011.6-21.9A15 15 0 0144 24.5 10 10 0 0143 44z" stroke="white" stroke-width="3" stroke-linejoin="round" fill="rgba(255,255,255,.1)"/><path d="M32 34v13" stroke="white" stroke-width="3.2" stroke-linecap="round"/><path d="M26 42l6 6 6-6" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -9211,7 +9377,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 23';
+  window.HQ_BUILD='2026-08-22 · 26';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -9405,9 +9571,23 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   .mis-page{ font-size:1.35rem; line-height:2.4; }
 }
 
-/* ── شاشات عريضة جداً: لا نمدّ المحتوى بلا حدّ ── */
+/* ── شاشات عريضة جداً ── */
 @media (min-width:1600px){
-  :root{ --hq-max: 1140px; }
+  :root{ --hq-max: 1400px; }
+}
+
+/* ── سطح المكتب: الرأس والبطاقات تمتدّ لعرض الشاشة مع هامش يسير ── */
+@media (min-width:1000px){
+  :root{ --hq-max: none; }
+  #appHeader{ max-width:none; width:100%; padding-inline:16px; }
+  #appHeader .hdr-card{ max-width:none; margin-inline:0; }
+  .pages-wrap{ max-width:none; padding-inline:16px; }
+  .pages-wrap > .page{ max-width:none; margin-inline:0; }
+  .menu-grid{ max-width:none; margin-inline:0; }
+  .bottom-nav{ left:50%; right:auto; transform:translateX(-50%);
+               width:calc(100% - 32px); border-radius:18px 18px 0 0; }
+  .bottom-nav .nav-btn{ justify-content:center; align-items:center; text-align:center; }
+  .bottom-nav .nav-label{ text-align:center; width:100%; }
 }
 
 /* ── مؤشّر الفأرة موجود (حاسوب): تكبير الهدف غير لازم ── */
@@ -9424,6 +9604,41 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   .pages-wrap::-webkit-scrollbar-thumb:hover,
   .modal-sheet::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.28); background-clip:content-box; }
 }
+
+/* ===== مؤشّر السحب للتحديث ===== */
+.ptr-ind{
+  position:fixed; top:6px; left:50%; z-index:400;
+  transform:translateX(-50%) translateY(-60px); opacity:0;
+  width:38px; height:38px; border-radius:50%;
+  background:rgba(10,58,53,.92); border:1px solid rgba(247,215,116,.35);
+  box-shadow:0 8px 22px rgba(0,0,0,.45);
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .18s ease, opacity .18s ease; pointer-events:none;
+}
+.ptr-spin{
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid rgba(247,215,116,.25); border-top-color:#f7d774;
+}
+.ptr-ind.ready .ptr-spin{ border-color:rgba(247,215,116,.45); border-top-color:#f7d774; }
+.ptr-ind.spin .ptr-spin{ animation:ptrSpin .7s linear infinite; }
+@keyframes ptrSpin{ to{ transform:rotate(360deg); } }
+
+/* ===== الخط المضيء فوق أيقونة التبويب: أطول وملاصق للأيقونة ===== */
+.bottom-nav .nav-btn{ overflow:visible; }
+.bottom-nav .nav-btn::before{
+  content:''; position:absolute; top:5px; left:50%; right:auto;
+  width:72px; height:3px; margin:0;
+  background:linear-gradient(90deg,rgba(201,162,39,0),#f0d060,rgba(201,162,39,0));
+  border-radius:99px;
+  transform:translateX(-50%) scaleX(0);
+  transform-origin:center;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+  opacity:0;
+}
+.bottom-nav .nav-btn.active::before{ transform:translateX(-50%) scaleX(1); opacity:1; }
+.bottom-nav .nav-btn.active{ transform:none; }
+.bottom-nav .nav-icon-wrap{ margin-top:4px; }
+.bottom-nav .nav-label{ text-align:center; width:100%; }
 
 /* ── الجدول الشهري: يمنع انضغاط الأعمدة على الشاشات الصغيرة ── */
 @media (max-width:520px){
@@ -10288,8 +10503,18 @@ async function showRecitationView(){
   var day=((DB.evals||{})[sid] && DB.evals[sid].days && DB.evals[sid].days[key])||{};
   var tj=day.tajweed||'—', at=day.attend||'—';
   openModal('عرض التسميع', '<div class="rec-wrap" id="recWrap"><div class="rec-loading">… يجري تحضير تسميع اليوم</div></div>');
-  var lesHtml = les ? await _recSessionHtml(les) : '<div class="rec-empty">لم يُسمّع الدرس اليوم بعد</div>';
-  var revHtml = rev ? await _recSessionHtml(rev) : '<div class="rec-empty">لم تُسمّع المراجعة اليوم بعد</div>';
+  /* لو لم يسجّل المعلّم أخطاءً، نعرض مقطع اليوم من التقييم نفسه بدل رسالة فارغة */
+  function _fallback(kind,label){
+    var v=day[kind]||'';
+    var n=(typeof v==='string' && v.indexOf('n:')===0) ? parseInt(v.slice(2),10) : 0;
+    if(!n) return '<div class="rec-empty">لم '+label+' اليوم بعد</div>';
+    var txt='';
+    try{ txt=upText(kind,n)||''; }catch(e){}
+    if(!txt) return '<div class="rec-empty">لم '+label+' اليوم بعد</div>';
+    return '<div class="rec-plan">'+hqEsc(txt)+' · بدون أخطاء مسجّلة ✓</div>';
+  }
+  var lesHtml = les ? await _recSessionHtml(les) : _fallback('lesson','يُسمّع الدرس');
+  var revHtml = rev ? await _recSessionHtml(rev) : _fallback('review','تُسمّع المراجعة');
   var wrap=document.getElementById('recWrap'); if(!wrap) return;
   wrap.innerHTML=
     '<div class="rec-grades">'+
