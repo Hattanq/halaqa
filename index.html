@@ -5809,7 +5809,10 @@ function showHalqatList(){
   var halqat=DB.halqat||[];
   if(!halqat.length){ openModal('بيانات الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات بعد</div>'); return; }
   var rows=halqat.map(function(h,i){ return hqHalqaAcc(h,true,i+1); }).join('');
-  openModal('بيانات الحلقات','<div class="hs-wrap">'+rows+'</div>');
+  openModal('بيانات الحلقات','<div class="hs-wrap">'+rows+
+    '<div class="hqacc-acts" style="justify-content:center;margin-top:10px">'+
+      '<button class="hq-mini-btn view" onclick="hqPrintHalqat(DB.halqat)">طباعة التقرير PDF</button>'+
+    '</div></div>');
   hqModalTall();
 }
 /* قسم قابل للطي: العنوان الرئيسي يفتح/يغلق ما تحته — التصميم كما هو */
@@ -6198,7 +6201,10 @@ function showSupervisorsData(){
       '<button class="hq-mini-btn view" onclick="supVisitsFollow(\''+v.id+'\')">متابعة زيارات المشرف'+(nv?(' ('+arNum(nv)+')'):'')+'</button>'+
       '<button class="hq-mini-btn del" onclick="supDelete(\''+v.id+'\')">حذف</button>', _i+1, v.sector||'');
   }).join('');
-  openModal('بيانات المشرفين','<div class="hs-wrap">'+rows+'</div>');
+  openModal('بيانات المشرفين','<div class="hs-wrap">'+rows+
+    '<div class="hqacc-acts" style="justify-content:center;margin-top:10px">'+
+      '<button class="hq-mini-btn view" onclick="hqPrintSupers()">طباعة التقرير PDF</button>'+
+    '</div></div>');
   hqModalTall();
 }
 
@@ -6292,6 +6298,7 @@ function hqPrintDoc(title, inner){
   host.innerHTML=
     '<div class="pr-tools">'+
       '<button class="pr-go" onclick="hqPrGo()">طباعة · حفظ PDF</button>'+
+      '<button class="pr-png" onclick="hqPrPng(this)">حفظ كصورة PNG</button>'+
       '<button class="pr-x" onclick="hqPrClose()">إغلاق</button>'+
     '</div>'+
     '<div class="pr-stage"><div class="pr-page">'+ hqPrDeco()+
@@ -6319,6 +6326,70 @@ function hqPrFit(){
     st.style.transform='scale('+k+')';
     st.style.marginBottom=(-(1-k)*st.getBoundingClientRect().height/k)+'px';
   }catch(e){}
+}
+/* جمع أنماط التقرير لتضمينها داخل الصورة */
+function hqPrCSS(){
+  var out='';
+  for(var i=0;i<document.styleSheets.length;i++){
+    var sh=document.styleSheets[i], rules=null;
+    try{ rules=sh.cssRules; }catch(e){ continue; }
+    if(!rules) continue;
+    for(var j=0;j<rules.length;j++){
+      var r=rules[j];
+      if(!r.selectorText) continue;                       /* نتجاهل @media وغيرها */
+      var sel=r.selectorText;
+      if(sel.indexOf('#pdfReport')<0) continue;
+      if(/#pdfReport\s*$/.test(sel)) continue;             /* لا نأخذ قواعد الغلاف نفسه */
+      if(sel.indexOf('.pr-tools')>=0 || sel.indexOf('.pr-stage')>=0) continue;
+      out+=r.cssText+'\n';
+    }
+  }
+  return out;
+}
+/* حفظ التقرير صورةً PNG */
+function hqPrPng(btn){
+  var page=document.querySelector('#pdfReport .pr-page');
+  if(!page){ showToast('لا يوجد تقرير','error'); return; }
+  var old=btn?btn.textContent:'';
+  if(btn){ btn.textContent='جارٍ الحفظ…'; btn.disabled=true; }
+  function done(ok){
+    if(btn){ btn.textContent=old; btn.disabled=false; }
+    if(!ok) showToast('تعذّر حفظ الصورة','error');
+  }
+  try{
+    var W=Math.round(page.offsetWidth), H=Math.round(page.offsetHeight);
+    var clone=page.cloneNode(true);
+    var body='<div xmlns="http://www.w3.org/1999/xhtml" id="pdfReport" dir="rtl" '+
+      'style="width:'+W+'px;font-family:\'Cairo\',\'Tajawal\',\'Geeza Pro\',sans-serif">'+
+      '<style>'+hqPrCSS()+'</style>'+ new XMLSerializer().serializeToString(clone)+'</div>';
+    var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'">'+
+            '<foreignObject x="0" y="0" width="'+W+'" height="'+H+'">'+body+'</foreignObject></svg>';
+    var url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var sc=2, cv=document.createElement('canvas');
+        cv.width=W*sc; cv.height=H*sc;
+        var cx=cv.getContext('2d');
+        cx.scale(sc,sc);
+        cx.fillStyle='#0e6b62'; cx.fillRect(0,0,W,H);
+        cx.drawImage(img,0,0,W,H);
+        URL.revokeObjectURL(url);
+        var name='تقرير-حلقات-المندق-'+new Date().toISOString().slice(0,10)+'.png';
+        cv.toBlob(function(b){
+          if(!b){ done(false); return; }
+          var u=URL.createObjectURL(b);
+          var a=document.createElement('a');
+          a.href=u; a.download=name; a.rel='noopener';
+          document.body.appendChild(a); a.click();
+          setTimeout(function(){ a.remove(); URL.revokeObjectURL(u); }, 4000);
+          showToast('حُفظت الصورة','success'); done(true);
+        },'image/png');
+      }catch(e){ done(false); }
+    };
+    img.onerror=function(){ URL.revokeObjectURL(url); done(false); };
+    img.src=url;
+  }catch(e){ done(false); }
 }
 /* الطباعة تُستدعى من نقرة المستخدم مباشرة — وإلا منعها سفاري */
 function hqPrGo(){
@@ -6356,6 +6427,53 @@ async function hqPrintRanks(){
   }
   hqPrintDoc('تقرير إحصائيّات حلقات الجمعية', secs);
 }
+/* تقارير قوائم البيانات: المشرفون · المعلمون · الحلقات */
+function hqPrTable(cols, rows){
+  return '<table class="pr-tbl"><thead><tr>'+
+    cols.map(function(c){ return '<th>'+hqEsc(c)+'</th>'; }).join('')+
+  '</tr></thead><tbody>'+
+    rows.map(function(r,i){
+      return '<tr><td class="n">'+arNum(i+1)+'</td>'+
+        r.map(function(v){ return '<td>'+hqEsc(v==null||v===''?'—':String(v))+'</td>'; }).join('')+'</tr>';
+    }).join('')+
+  '</tbody></table>';
+}
+function hqPrintSupers(){
+  var list=hqSupers();
+  if(!list.length){ showToast('لا يوجد مشرفون','error'); return; }
+  var rows=list.map(function(v){
+    var u=null; for(var k in DB.users){ if(DB.users[k]&&DB.users[k].supId===v.id){ u=DB.users[k]; break; } }
+    var n=(DB.halqat||[]).filter(function(h){ return h.supervisorId===v.id; }).length;
+    return [v.name, v.sector||'', v.nationalId||'', v.birthDate||'', v.phone||'', arNum(n), (u&&u.username)||''];
+  });
+  hqPrintDoc('تقرير بيانات المشرفين',
+    '<div class="pr-sec">المشرفون ('+arNum(list.length)+')</div>'+
+    hqPrTable(['#','اسم المشرف','القطاع','الهوية','تاريخ الميلاد','الجوال','عدد الحلقات','المستخدم'], rows));
+}
+function hqPrintTeachers(){
+  var list=hqTeachers();
+  if(!list.length){ showToast('لا يوجد معلمون','error'); return; }
+  var rows=list.map(function(t){
+    return [t.name, hqTeacherHalqaNames(t.id)||'', t.nid||'', t.birthDate||'', t.nat||'', t.phone||'', t.username||''];
+  });
+  hqPrintDoc('تقرير بيانات المعلمين',
+    '<div class="pr-sec">المعلمون ('+arNum(list.length)+')</div>'+
+    hqPrTable(['#','اسم المعلّم','الحلقة','الهوية','تاريخ الميلاد','الجنسية','الجوال','المستخدم'], rows));
+}
+function hqPrintHalqat(list){
+  list=(list&&list.length)?list:(DB.halqat||[]);
+  if(!list.length){ showToast('لا توجد حلقات','error'); return; }
+  var rows=list.map(function(h){
+    var n=(h.students||[]).length;
+    var reg=(h.students||[]).filter(function(x){ return !isDiscontinued(x); }).length;
+    return [h.name, hqTeacherNameOf(h)||'', h.sector||'', h.venue||'', h.period||'',
+            hqSuperName(h.supervisorId)||h.supervisorName||'', arNum(n), arNum(reg)];
+  });
+  hqPrintDoc('تقرير بيانات الحلقات',
+    '<div class="pr-sec">الحلقات ('+arNum(list.length)+')</div>'+
+    hqPrTable(['#','الحلقة','المعلّم','القطاع','المقرّ','الفترة','المشرف','الطلاب','المنتظمون'], rows));
+}
+
 /* تقرير استعلام طالب */
 function hqPrintStudent(){
   function txt(id){ var e=document.getElementById(id); if(!e) return ''; var o=e.options?e.options[e.selectedIndex]:null; return o?String(o.text||'').trim():''; }
@@ -6543,7 +6661,10 @@ function showTeachersData(){
   var list=hqTeachers();
   if(!list.length){ openModal('بيانات المعلمين','<div class="empty-state"><div class="empty-state-icon">👤</div>لا يوجد معلمون بعد</div>'); return; }
   var rows=list.map(function(t,i){ return hqTeacherCard(t, hqTeacherHalqaNames(t.id), true, i+1); }).join('');
-  openModal('بيانات المعلمين','<div class="hs-wrap">'+rows+'</div>');
+  openModal('بيانات المعلمين','<div class="hs-wrap">'+rows+
+    '<div class="hqacc-acts" style="justify-content:center;margin-top:10px">'+
+      '<button class="hq-mini-btn view" onclick="hqPrintTeachers()">طباعة التقرير PDF</button>'+
+    '</div></div>');
   hqModalTall();
 }
 function tdToggle(hdr){
@@ -6592,14 +6713,21 @@ function supHalqatList(){
   var my=supMyHalqat();
   if(!my.length){ openModal('بيانات الحلقات','<div class="empty-state"><div class="empty-state-icon">📚</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
   var rows=my.map(function(h,i){ return hqHalqaAcc(h,false,i+1); }).join('');
-  openModal('بيانات الحلقات', '<div class="hs-wrap">'+rows+'</div>');
+  window._supHalqat=my;
+  openModal('بيانات الحلقات', '<div class="hs-wrap">'+rows+
+    '<div class="hqacc-acts" style="justify-content:center;margin-top:10px">'+
+      '<button class="hq-mini-btn view" onclick="hqPrintHalqat(window._supHalqat)">طباعة التقرير PDF</button>'+
+    '</div></div>');
   hqModalTall();
 }
 
 function supTeachersData(){
   var my=supMyHalqat();
   if(!my.length){ openModal('بيانات المعلمين','<div class="empty-state"><div class="empty-state-icon">👤</div>لا توجد حلقات تابعة لك بعد</div>'); return; }
-  openModal('بيانات المعلمين','<div class="hs-wrap">'+hqTeacherRows(my)+'</div>');
+  openModal('بيانات المعلمين','<div class="hs-wrap">'+hqTeacherRows(my)+
+    '<div class="hqacc-acts" style="justify-content:center;margin-top:10px">'+
+      '<button class="hq-mini-btn view" onclick="hqPrintTeachers()">طباعة التقرير PDF</button>'+
+    '</div></div>');
   hqModalTall();
 }
 
@@ -9689,7 +9817,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 34';
+  window.HQ_BUILD='2026-08-22 · 35';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -9927,7 +10055,21 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 #pdfReport .pr-tools button{ font-family:inherit; font-weight:800; font-size:.85rem;
   border-radius:11px; padding:9px 18px; cursor:pointer; }
 #pdfReport .pr-go{ background:#cbb27a; color:#12303a; border:none; }
+#pdfReport .pr-png{ background:rgba(203,178,122,.16); color:#e7cf95; border:1px solid rgba(203,178,122,.55); }
 #pdfReport .pr-x{ background:rgba(255,255,255,.08); color:#eaf6f4; border:1px solid rgba(255,255,255,.18); }
+#pdfReport .pr-tools{ gap:8px; }
+#pdfReport .pr-tools button{ flex:0 0 auto; white-space:nowrap; }
+@media (max-width:520px){
+  #pdfReport .pr-tools button{ padding:8px 11px; font-size:.74rem; border-radius:9px; }
+}
+/* جدول بيانات داخل التقرير */
+#pdfReport .pr-tbl{ position:relative; z-index:2; width:100%; border-collapse:collapse; margin-bottom:6mm; }
+#pdfReport .pr-tbl th{ background:rgba(203,178,122,.18); color:#f0dba6; font-size:8.5pt; font-weight:900;
+  padding:2.4mm 2mm; border-bottom:1px solid rgba(203,178,122,.4); }
+#pdfReport .pr-tbl td{ padding:2.2mm 2mm; font-size:8.5pt; color:#eaf6f4; font-weight:700;
+  border-bottom:1px solid rgba(255,255,255,.08); text-align:center; }
+#pdfReport .pr-tbl tr:nth-child(even) td{ background:rgba(255,255,255,.03); }
+#pdfReport .pr-tbl td.n{ color:#cbb27a; font-weight:900; }
 #pdfReport .pr-stage{ transform-origin:top center; margin:0 auto; width:210mm; }
 #pdfReport .pr-page{
   position:relative; width:210mm; box-sizing:border-box; padding:13mm 12mm 10mm;
