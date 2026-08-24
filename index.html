@@ -6220,6 +6220,153 @@ function hqGenRows(){
   });
   return out;
 }
+/* ---- زخارف الخلفية: أسهم صاعدة وخطوط منسابة ---- */
+function hqPrDeco(){
+  var arrows='';
+  for(var i=0;i<7;i++){
+    var y=44-i*5.6, x=6+i*3.2;
+    arrows+='<line x1="'+x+'" y1="'+y+'" x2="'+(x+46)+'" y2="'+(y-24)+'" stroke="#cbb27a" stroke-width="1.1" opacity="'+(0.28+i*0.07).toFixed(2)+'"/>'+
+            '<polygon points="'+(x+46)+','+(y-24)+' '+(x+42)+','+(y-22.4)+' '+(x+43.4)+','+(y-26.6)+'" fill="#e7cf95" opacity="'+(0.35+i*0.07).toFixed(2)+'"/>';
+  }
+  var waves='';
+  for(var k=0;k<9;k++){
+    waves+='<path d="M0 '+(52+k*5)+' C 30 '+(28+k*5)+', 62 '+(30+k*5)+', 100 '+(2+k*5)+'" fill="none" stroke="#7fd6c6" stroke-width="0.6" opacity="'+(0.3-k*0.025).toFixed(3)+'"/>';
+  }
+  return '<svg class="pr-arrows" viewBox="0 0 100 50" preserveAspectRatio="none">'+arrows+'</svg>'+
+         '<svg class="pr-wave" viewBox="0 0 100 60" preserveAspectRatio="none">'+waves+'</svg>';
+}
+/* ---- أيقونات خطّية ذهبية للبطاقات ---- */
+var HQ_PR_ICONS={
+  halqa:'<circle cx="12" cy="12" r="9"/><path d="M7 12h10M12 7v10"/>',
+  people:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.4c2.7.3 4.5 2.5 4.5 5.6"/>',
+  teacher:'<circle cx="12" cy="7" r="3"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/><path d="M17 4l4-1.6"/>',
+  book:'<path d="M4 5.5A2.5 2.5 0 016.5 3H12v16H6.5A2.5 2.5 0 004 21z"/><path d="M20 5.5A2.5 2.5 0 0017.5 3H12v16h5.5A2.5 2.5 0 0120 21z"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/>',
+  map:'<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>'
+};
+function hqPrIco(k){
+  var d=HQ_PR_ICONS[k]||HQ_PR_ICONS.chart;
+  return '<svg class="pr-ico" viewBox="0 0 24 24" fill="none" stroke="#e7cf95" stroke-width="1.5" '+
+         'stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+}
+/* اختيار أيقونة مناسبة حسب نص التسمية */
+function hqPrIcoFor(lbl){
+  var t=String(lbl||'');
+  if(t.indexOf('حلق')>=0 && t.indexOf('طلاب')<0) return 'halqa';
+  if(t.indexOf('مشرف')>=0) return 'people';
+  if(t.indexOf('معلم')>=0) return 'teacher';
+  if(t.indexOf('قطاع')>=0) return 'map';
+  if(t.indexOf('صفح')>=0) return 'book';
+  if(t.indexOf('أيام')>=0 || t.indexOf('يوم')>=0) return 'cal';
+  if(t.indexOf('فترة')>=0) return 'clock';
+  if(t.indexOf('درج')>=0 || t.indexOf('تجويد')>=0) return 'star';
+  if(t.indexOf('طلاب')>=0 || t.indexOf('طالب')>=0) return 'people';
+  return 'chart';
+}
+/* مخطط أعمدة بسيط */
+function hqPrChart(title, items){
+  var mx=1; items.forEach(function(x){ if(+x.v>mx) mx=+x.v; });
+  return '<div class="pr-sec">'+hqEsc(title)+'</div>'+
+    '<div class="pr-chart"><div class="pr-bars">'+
+      items.map(function(x){
+        var h=Math.max(3, Math.round((+x.v/mx)*100));
+        return '<div class="pr-bar"><b>'+arNum(+x.v||0)+'</b><i style="height:'+h+'%"></i></div>';
+      }).join('')+
+    '</div><div class="pr-xlbl">'+
+      items.map(function(x){ return '<span>'+hqEsc(x.l)+'</span>'; }).join('')+
+    '</div></div>';
+}
+/* هيكل مشترك لكل التقارير */
+function hqPrintDoc(title, inner){
+  var h=null; try{ h=hijriNow(); }catch(e){}
+  var hij=h?(arNum(h.day)+' '+h.monthName+' '+arNum(h.year)+'هـ'):'';
+  var d=new Date();
+  var greg=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+'م';
+  var logo=''; try{ var li=document.getElementById('img-logo'); if(li&&li.src&&li.src.length>10) logo='<img src="'+li.src+'" alt="">'; }catch(e){}
+  var host=document.getElementById('pdfReport');
+  if(host) host.parentNode.removeChild(host);
+  host=document.createElement('div');
+  host.id='pdfReport';
+  host.innerHTML=
+    '<div class="pr-page">'+ hqPrDeco()+
+      '<div class="pr-top">'+
+        '<div class="pr-ttl"><h1>'+hqEsc(title)+'</h1>'+
+          '<p>الجمعية الخيرية لتحفيظ القرآن الكريم بمحافظة المندق</p></div>'+
+        '<div class="pr-brand">'+logo+
+          '<div class="pr-date"><span>'+hqEsc(hij)+'</span><span>'+hqEsc(greg)+'</span></div>'+
+        '</div>'+
+      '</div>'+ inner +
+      '<div class="pr-foot"><span>حلقات المندق · تقرير آليّ</span>'+
+        '<span>صدر بتاريخ '+hqEsc(greg)+'</span></div>'+
+    '</div>';
+  document.body.appendChild(host);
+  setTimeout(function(){
+    try{ window.print(); }catch(e){ showToast('تعذّرت الطباعة','error'); }
+    setTimeout(function(){ if(host&&host.parentNode) host.parentNode.removeChild(host); }, 800);
+  }, 60);
+}
+/* تقرير ترتيب الحلقات — كل المؤشّرات في ورقة واحدة */
+async function hqPrintRanks(){
+  var halqat=window._hqStatsHalqat||DB.halqat||[];
+  if(!halqat.length){ showToast('لا توجد حلقات','error'); return; }
+  showToast('جارٍ تجهيز التقرير…','info');
+  var secs='';
+  for(var i=0;i<HQ_RANK_DEFS.length;i++){
+    var d=HQ_RANK_DEFS[i];
+    var list=[];
+    try{ list=await hqHalqaRank(halqat, d.k); }catch(e){ list=[]; }
+    secs+='<div class="pr-sec">'+hqEsc(d.n)+'</div>'+
+      '<div class="pr-rank">'+
+        (list.length?(function(){
+          var mx=1; list.forEach(function(x){ if((+x.val||0)>mx) mx=(+x.val||0); });
+          return list.map(function(x,n){
+            var w=Math.max(2, Math.round(((+x.val||0)/mx)*100));
+            return '<div class="pr-rk'+(n===0?' top':'')+'">'+
+              '<span class="pr-rk-n">'+arNum(n+1)+'</span>'+
+              '<span class="pr-rk-name">'+hqEsc(x.name||'—')+'</span>'+
+              '<span class="pr-rk-bar"><i style="width:'+w+'%"></i></span>'+
+              '<span class="pr-rk-val">'+hqEsc(x.sub||String(x.val||0))+'</span></div>';
+          }).join('');
+        })():'<div class="pr-rk"><span class="pr-rk-name">لا توجد بيانات</span></div>')+
+      '</div>';
+  }
+  hqPrintDoc('تقرير إحصائيّات حلقات الجمعية', secs);
+}
+/* تقرير استعلام طالب */
+function hqPrintStudent(){
+  function txt(id){ var e=document.getElementById(id); if(!e) return ''; var o=e.options?e.options[e.selectedIndex]:null; return o?String(o.text||'').trim():''; }
+  var box=document.getElementById('sq-result');
+  if(!box){ showToast('لا توجد بيانات للطباعة','error'); return; }
+  var rows=[];
+  Array.prototype.forEach.call(box.querySelectorAll('.hqacc-row'), function(r){
+    var l=r.querySelector('.hqacc-lbl'), v=r.querySelector('.hqacc-val');
+    if(l&&v) rows.push({l:String(l.textContent||'').trim(), v:String(v.textContent||'').trim()});
+  });
+  if(!rows.length){ showToast('اجلب البيانات أولاً','error'); return; }
+  var meta=[['الطالب',txt('sq-stu')],['الحلقة',txt('sq-halqa')],['القطاع',txt('sq-sector')||'كل القطاعات'],
+            ['مدة الإحصائية',txt('sq-kind')],['المطلوب',txt('sq-range')]];
+  var inner=
+    '<div class="pr-meta">'+meta.map(function(m){
+      return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>';
+    }).join('')+'</div>'+
+    '<div class="pr-sec">نتيجة الاستعلام</div>'+
+    '<div class="pr-grid">'+rows.map(function(r){
+      return '<div class="pr-card">'+hqPrIco(hqPrIcoFor(r.l))+
+             '<div class="pr-num">'+hqEsc(r.v)+'</div>'+
+             '<div class="pr-lbl">'+hqEsc(r.l)+'</div></div>';
+    }).join('')+'</div>'+
+    (function(){
+      function nv(l){ var f=rows.find(function(r){ return r.l===l; });
+        return f?(parseInt(String(f.v).replace(/[^\d]/g,''),10)||0):0; }
+      var it=[{l:'الحضور',v:nv('الحضور')},{l:'الغياب',v:nv('الغياب')},
+              {l:'صفحات الدرس',v:nv('صفحات الدرس')},{l:'صفحات المراجعة',v:nv('صفحات المراجعة')}];
+      return it.some(function(x){ return x.v>0; }) ? hqPrChart('مؤشّرات الطالب', it) : '';
+    })();
+  hqPrintDoc('تقرير الطالب', inner);
+}
 function hqPrintGeneral(){
   var rows=hqGenRows();
   if(!rows.length){ showToast('لا توجد بيانات للطباعة','error'); return; }
@@ -6235,36 +6382,22 @@ function hqPrintGeneral(){
   big.sort(function(a,b){ return head.indexOf(a.l)-head.indexOf(b.l); });
 
   function card(r,cls){
-    return '<div class="pr-card '+(cls||'')+'">'+
+    return '<div class="pr-card '+(cls||'')+'">'+ hqPrIco(hqPrIcoFor(r.l))+
       '<div class="pr-num">'+hqEsc(r.v)+'</div>'+
       '<div class="pr-lbl">'+hqEsc(r.l)+'</div></div>';
   }
-  var host=document.getElementById('pdfReport');
-  if(host) host.parentNode.removeChild(host);
-  host=document.createElement('div');
-  host.id='pdfReport';
-  host.innerHTML=
-    '<div class="pr-page">'+
-      '<div class="pr-top">'+
-        '<div class="pr-ttl">'+
-          '<h1>تقرير الإحصائيّات العامة</h1>'+
-          '<p>الجمعية الخيرية لتحفيظ القرآن الكريم بمحافظة المندق</p>'+
-        '</div>'+
-        '<div class="pr-date"><span>'+hqEsc(hij)+'</span><span>'+hqEsc(greg)+'</span></div>'+
-      '</div>'+
-      '<div class="pr-hero">'+big.map(function(r){ return card(r,'hero'); }).join('')+'</div>'+
-      '<div class="pr-sec">تفصيل الإحصائيّات</div>'+
-      '<div class="pr-grid">'+rest.map(function(r){ return card(r); }).join('')+'</div>'+
-      '<div class="pr-foot">'+
-        '<span>حلقات المندق · تقرير آليّ</span>'+
-        '<span>صدر بتاريخ '+hqEsc(greg)+'</span>'+
-      '</div>'+
-    '</div>';
-  document.body.appendChild(host);
-  setTimeout(function(){
-    try{ window.print(); }catch(e){ showToast('تعذّرت الطباعة','error'); }
-    setTimeout(function(){ if(host&&host.parentNode) host.parentNode.removeChild(host); }, 800);
-  }, 60);
+  function num(lbl){
+    var f=rows.find(function(r){ return r.l===lbl; });
+    return f?(parseInt(String(f.v).replace(/[^\d]/g,''),10)||0):0;
+  }
+  var stages=[{l:'ابتدائية',v:num('طلاب المرحلة الابتدائية')},{l:'متوسطة',v:num('طلاب المرحلة المتوسطة')},
+              {l:'ثانوية',v:num('طلاب المرحلة الثانوية')},{l:'جامعية',v:num('طلاب المرحلة الجامعية')}];
+  var chart = stages.some(function(x){ return x.v>0; }) ? hqPrChart('توزيع الطلاب على المراحل', stages) : '';
+  hqPrintDoc('تقرير الإحصائيّات العامة',
+    '<div class="pr-hero">'+big.map(function(r){ return card(r,'hero'); }).join('')+'</div>'+
+    chart+
+    '<div class="pr-sec">تفصيل الإحصائيّات</div>'+
+    '<div class="pr-grid">'+rest.map(function(r){ return card(r); }).join('')+'</div>');
 }
 
 // =====================================================
@@ -7393,6 +7526,9 @@ async function hqStuShow(){
     hqAccRow('التجويد', hqTajWord(st.tajSum,st.tajCnt))+
     hqAccRow('صفحات الدرس', arNum(lp)+' صفحة')+
     hqAccRow('صفحات المراجعة', arNum(rp)+' صفحة')+
+    '<div class="hqacc-acts" style="justify-content:center">'+
+      '<button class="hq-mini-btn view" onclick="hqPrintStudent()">طباعة التقرير PDF</button>'+
+    '</div>'+
   '</div>';
 }
 
@@ -7437,7 +7573,11 @@ function showAllHalqatStats(){
           '<span class="hqacc-lbl">'+d.n+'</span>'+
           '<span class="hqrow-arw">▾</span></div>'+
         '<div class="hqrow-body"></div></div>';
-    }).join('')+'</div></div>');
+    }).join('')+
+    '<div class="hqacc-acts" style="justify-content:center">'+
+      '<button class="hq-mini-btn view" onclick="hqPrintRanks()">طباعة التقرير PDF</button>'+
+    '</div>'+
+    '</div></div>');
 
   /* (٣) إحصائيّات الطلاب */
   function sel(lbl,id,opts,on){
@@ -9528,7 +9668,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-22 · 30';
+  window.HQ_BUILD='2026-08-22 · 33';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -9757,48 +9897,104 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 }
 
 
-/* ===== ورقة تقرير الإحصائيّات (للطباعة / PDF) ===== */
+/* ===== ورقة تقرير الإحصائيّات (للطباعة / PDF) — أسلوب إنفوجرافيك ===== */
 #pdfReport{ position:fixed; inset:0; z-index:-1; opacity:0; pointer-events:none; overflow:hidden; }
 #pdfReport .pr-page{
-  width:210mm; min-height:290mm; box-sizing:border-box; padding:14mm 13mm;
-  background:#ffffff; color:#123c38; direction:rtl;
+  position:relative; width:210mm; box-sizing:border-box; padding:13mm 12mm 10mm;
+  color:#eaf6f4; direction:rtl; overflow:hidden;
   font-family:'Tajawal','Segoe UI',sans-serif;
+  background:linear-gradient(158deg,#0e6b62 0%,#0b4a48 38%,#123350 70%,#16203f 100%);
 }
-#pdfReport .pr-top{ display:flex; justify-content:space-between; align-items:flex-end;
-  border-bottom:3px solid #0f766e; padding-bottom:7mm; margin-bottom:9mm; }
-#pdfReport .pr-ttl h1{ margin:0; font-size:24pt; font-weight:900; color:#0b4f47; letter-spacing:-.5px; }
-#pdfReport .pr-ttl p{ margin:3mm 0 0; font-size:11pt; color:#4b7a75; font-weight:600; }
-#pdfReport .pr-date{ display:flex; flex-direction:column; align-items:flex-start; gap:2mm;
-  font-size:10pt; font-weight:800; color:#0f766e; }
-#pdfReport .pr-date span:last-child{ color:#7b9c98; font-weight:600; }
+/* خطوط الخلفية المنسابة */
+#pdfReport .pr-wave{ position:absolute; inset:auto -10mm -14mm auto; width:150mm; height:90mm;
+  opacity:.5; pointer-events:none; }
+#pdfReport .pr-arrows{ position:absolute; top:16mm; inset-inline-start:8mm; width:56mm; height:44mm;
+  opacity:.75; pointer-events:none; }
 
-#pdfReport .pr-hero{ display:grid; grid-template-columns:repeat(4,1fr); gap:5mm; margin-bottom:10mm; }
-#pdfReport .pr-card{ border-radius:4mm; padding:6mm 4mm; text-align:center;
-  border:1px solid #d8e8e6; background:#f5faf9; }
-#pdfReport .pr-card.hero{ background:linear-gradient(150deg,#0d5147,#12857a); border:none; color:#fff; }
-#pdfReport .pr-card.hero .pr-num{ color:#ffe9a8; }
-#pdfReport .pr-card.hero .pr-lbl{ color:rgba(255,255,255,.9); }
-#pdfReport .pr-num{ font-size:26pt; font-weight:900; line-height:1; color:#0b4f47; }
-#pdfReport .pr-lbl{ margin-top:3mm; font-size:9.5pt; font-weight:700; color:#4b7a75; }
+#pdfReport .pr-top{ position:relative; z-index:2; display:flex; justify-content:space-between;
+  align-items:flex-start; margin-bottom:9mm; }
+#pdfReport .pr-ttl h1{ margin:0; font-size:27pt; font-weight:900; line-height:1.15; color:#ffffff; }
+#pdfReport .pr-ttl p{ margin:3mm 0 0; font-size:10.5pt; color:#cbb27a; font-weight:700; }
+#pdfReport .pr-brand{ display:flex; flex-direction:column; align-items:center; gap:2mm; }
+#pdfReport .pr-brand img{ width:22mm; height:22mm; border-radius:50%; object-fit:contain;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(203,178,122,.55);
+  box-shadow:0 0 0 1.2mm rgba(203,178,122,.1);
+  padding:1mm; }
+#pdfReport .pr-date{ text-align:center; font-size:8.5pt; font-weight:800; color:#cbb27a; line-height:1.6; }
+#pdfReport .pr-date span{ display:block; }
+#pdfReport .pr-date span:last-child{ color:#8fb3ae; font-weight:600; }
 
-#pdfReport .pr-sec{ font-size:13pt; font-weight:900; color:#0b4f47; margin:0 0 5mm;
-  padding-inline-start:3mm; border-inline-start:4px solid #d4a92c; }
-#pdfReport .pr-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:4mm; }
-#pdfReport .pr-grid .pr-num{ font-size:19pt; }
-#pdfReport .pr-grid .pr-lbl{ font-size:8.5pt; }
+#pdfReport .pr-sec{ position:relative; z-index:2; font-size:12pt; font-weight:900; color:#e7cf95;
+  margin:0 0 5mm; padding-inline-start:3mm; border-inline-start:3px solid #cbb27a; }
 
-#pdfReport .pr-foot{ display:flex; justify-content:space-between; margin-top:12mm;
-  border-top:1px solid #d8e8e6; padding-top:4mm; font-size:8.5pt; color:#8aa8a5; font-weight:600; }
+/* البطاقات: إطار رفيع وزوايا دائرية كما في المرفق */
+#pdfReport .pr-hero, #pdfReport .pr-grid{ position:relative; z-index:2; display:grid; gap:4mm; }
+#pdfReport .pr-hero{ grid-template-columns:repeat(4,1fr); margin-bottom:9mm; }
+#pdfReport .pr-grid{ grid-template-columns:repeat(4,1fr); }
+#pdfReport .pr-card{ border:1px solid rgba(203,178,122,.45); border-radius:4mm;
+  background:rgba(255,255,255,.045); padding:5mm 3mm 4mm; text-align:center; }
+#pdfReport .pr-card.hero{ background:rgba(255,255,255,.09); border-color:rgba(203,178,122,.7); }
+#pdfReport .pr-ico{ display:block; margin:0 auto 3mm; width:11mm; height:11mm; }
+#pdfReport .pr-num{ font-size:22pt; font-weight:900; line-height:1; color:#ffffff; }
+#pdfReport .pr-card.hero .pr-num{ font-size:26pt; color:#f0dba6; }
+#pdfReport .pr-lbl{ margin-top:2.5mm; font-size:8.5pt; font-weight:700; color:#bfd8d4; line-height:1.5; }
+
+/* المخطط البياني */
+#pdfReport .pr-chart{ position:relative; z-index:2; border:1px solid rgba(203,178,122,.35);
+  border-radius:4mm; padding:5mm 4mm 3mm; background:rgba(255,255,255,.035); margin-bottom:8mm; }
+#pdfReport .pr-bars{ display:flex; align-items:flex-end; gap:3mm; height:34mm; padding-bottom:2mm;
+  border-bottom:1px solid rgba(203,178,122,.3); }
+#pdfReport .pr-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end;
+  align-items:center; height:100%; }
+#pdfReport .pr-bar i{ display:block; width:100%; border-radius:2mm 2mm 0 0;
+  background:linear-gradient(180deg,#e7cf95,#b98f3d); font-style:normal; min-height:1mm; }
+#pdfReport .pr-bar b{ font-size:9pt; font-weight:900; color:#f0dba6; margin-bottom:1.5mm; }
+#pdfReport .pr-xlbl{ display:flex; gap:3mm; margin-top:2mm; }
+#pdfReport .pr-xlbl span{ flex:1; text-align:center; font-size:7.5pt; color:#bfd8d4; font-weight:700; }
+
+/* قوائم الترتيب */
+#pdfReport .pr-rank{ position:relative; z-index:2; margin-bottom:7mm; }
+#pdfReport .pr-rk{ display:flex; align-items:center; gap:3mm; padding:2mm 3mm;
+  border-bottom:1px solid rgba(255,255,255,.09); font-size:9.5pt; }
+#pdfReport .pr-rk.top{ background:rgba(203,178,122,.14); border-radius:2mm; border-bottom-color:transparent; }
+#pdfReport .pr-rk-n{ flex:0 0 7mm; height:7mm; border-radius:2mm; background:rgba(255,255,255,.12);
+  color:#eaf6f4; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:8.5pt; }
+#pdfReport .pr-rk.top .pr-rk-n{ background:#cbb27a; color:#12303a; }
+#pdfReport .pr-rk-name{ flex:1; font-weight:800; color:#eaf6f4; }
+#pdfReport .pr-rk-val{ font-weight:900; color:#f0dba6; }
+#pdfReport .pr-rk-bar{ flex:0 0 34mm; height:2.4mm; border-radius:99px; background:rgba(255,255,255,.12); overflow:hidden; }
+#pdfReport .pr-rk-bar i{ display:block; height:100%; background:linear-gradient(90deg,#e7cf95,#b98f3d); }
+
+/* شريط البيانات الوصفية */
+#pdfReport .pr-meta{ position:relative; z-index:2; display:grid; grid-template-columns:repeat(5,1fr);
+  gap:3mm; margin-bottom:8mm; }
+#pdfReport .pr-meta-i{ border:1px solid rgba(203,178,122,.4); border-radius:3mm;
+  background:rgba(255,255,255,.045); padding:3mm 2mm; text-align:center; }
+#pdfReport .pr-meta-i span{ display:block; font-size:7.5pt; color:#9fc0bc; font-weight:700; }
+#pdfReport .pr-meta-i b{ display:block; margin-top:1.5mm; font-size:9.5pt; color:#f0dba6; font-weight:900; }
+
+#pdfReport .pr-foot{ position:relative; z-index:2; display:flex; justify-content:space-between;
+  margin-top:9mm; border-top:1px solid rgba(203,178,122,.3); padding-top:3.5mm;
+  font-size:8pt; color:#8fb3ae; font-weight:600; }
 
 @media print{
   @page{ size:A4 portrait; margin:0; }
-  html,body{ background:#fff !important; height:auto !important; overflow:visible !important; }
+  html,body{ background:#0e6b62 !important; height:auto !important; overflow:visible !important; }
   body > *{ display:none !important; }
   body > #pdfReport{
     display:block !important; position:static !important; inset:auto !important;
     z-index:auto !important; opacity:1 !important; pointer-events:auto !important; overflow:visible !important;
   }
   #pdfReport, #pdfReport *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  /* لا ورقة بيضاء زائدة في نهاية أي تقرير */
+  #pdfReport .pr-page{
+    width:auto !important; min-height:0 !important; height:auto !important;
+    page-break-after:avoid !important; break-after:avoid !important;
+  }
+  #pdfReport .pr-foot{ page-break-after:avoid !important; break-after:avoid !important; margin-bottom:0 !important; }
+  #pdfReport .pr-sec{ break-after:avoid !important; }
+  #pdfReport .pr-rank, #pdfReport .pr-chart, #pdfReport .pr-card{ break-inside:avoid !important; }
 }
 
 /* ===== مؤشّر السحب للتحديث ===== */
