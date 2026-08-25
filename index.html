@@ -2702,7 +2702,24 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 
 <!-- MODAL -->
 <div class="modal-bg" id="modalBg" onclick="handleModalBgClick(event)">
-  <div class="modal-sheet" id="modalSheet">
+  <style>
+/* ===== خطط الحفظ ===== */
+.hqp-list{display:flex;flex-direction:column;gap:10px;padding:4px 2px}
+.hqp-card{width:100%;text-align:right;padding:15px 16px;border-radius:14px;border:1px solid rgba(201,162,39,.4);background:linear-gradient(160deg,rgba(201,162,39,.22),rgba(201,162,39,.07));color:#f0d060;font:800 .95rem inherit;cursor:pointer;touch-action:manipulation}
+.hqp-card.alt{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#dbeae8}
+.hqp-card.sel{border-color:#f7d774;box-shadow:0 0 0 2px rgba(247,215,116,.22)}
+.hqp-sub{display:block;margin-top:6px;color:#9abdba;font:600 .74rem inherit}
+.hqp-tbl{width:100%;border-collapse:collapse;font-size:.78rem;color:#e8f7f6}
+.hqp-tbl th{background:rgba(255,255,255,.06);padding:9px 6px;font-weight:800;color:#f0d060}
+.hqp-tbl td{padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.07);text-align:center}
+.hqp-tbl tr.now td{background:rgba(52,211,153,.14);font-weight:700}
+.hqp-num{color:#9abdba;font-weight:700}
+.gorb.stg-orb b{font-size:.52rem;margin-bottom:1px}
+.gorb.stg-orb span{font-size:.5rem;font-weight:800;color:rgba(255,255,255,.9);margin-top:0}
+.gorb.stg-edge:not(.partial):not(.done){border-color:rgba(247,215,116,.95);background:radial-gradient(circle at 38% 28%,#e8cd77,#c9a227 62%,#9d7c16);box-shadow:0 0 0 2px rgba(247,215,116,.28),0 4px 11px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.3)}
+.gorb.stg-edge:not(.partial):not(.done) b,.gorb.stg-edge:not(.partial):not(.done) span{color:#0d3f3a;text-shadow:none}
+</style>
+<div class="modal-sheet" id="modalSheet">
     <div class="modal-drag"></div>
     <div class="modal-hdr">
       <div class="modal-title" id="modalTitle">—</div>
@@ -3406,7 +3423,7 @@ function renderDash(){
       <div class="menu-card mc-1" onclick="showAddStudent()"><div class="mc-icon">${addSVG}</div><div class="mc-accent"></div><div class="mc-label">إضافة طالب</div></div>
       <div class="menu-card mc-4" onclick="showStudentsData()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="20" cy="20" r="9" stroke="white" stroke-width="2.5"/><circle cx="44" cy="20" r="9" stroke="white" stroke-width="2.5"/><path d="M4 50c0-9 7-16 16-16s16 7 16 16" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M36 50c0-9 7-16 16-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label" id="mc-stu-count">بيانات الطلاب</div></div>
       <div class="menu-card mc-2" onclick="showPage('grades')"><div class="mc-icon"><img src="${cSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تقييم الطلاب</div></div>
-      <div class="menu-card mc-4" onclick="showStudentPlan([])"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">عرض الخطط</div></div>
+      <div class="menu-card mc-4" onclick="hqPlanHome()"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">عرض الخطط</div></div>
       <div class="menu-card mc-5" onclick="showRankTable(null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطلاب</div></div>
       <div class="menu-card mc-3" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
       <div class="menu-card mc-1" onclick="showMsgStudents()">${(function(){var u=msgUnreadAllTeacher('stu');return u>0?'<div class="msg-dot">'+u+'</div>':'';})()}<div class="mc-icon">${msgStuSVG}</div><div class="mc-accent"></div><div class="mc-label">رسالة للطلاب</div></div>
@@ -3436,7 +3453,7 @@ function renderDash(){
     wrap.innerHTML=`<div class="menu-grid">
       <div class="menu-card mc-2" onclick="showRecitationView()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 16c-6-5-14-6-20-4v34c6-2 14-1 20 4 6-5 14-6 20-4V12c-6-2-14-1-20 4z" stroke="white" stroke-width="2.6" stroke-linejoin="round" fill="rgba(255,255,255,.08)"/><path d="M32 16v38" stroke="white" stroke-width="2.6"/><path d="M12 24h10M12 32h10M42 24h10M42 32h10" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">عرض التسميع</div></div>
       <div class="menu-card mc-3" onclick="showRankTable(window._ds?window._ds.id:null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطالب</div></div>
-      <div class="menu-card mc-4" onclick="showStudentPlan(window._dp, window._ds?window._ds.id:'')"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">عرض الخطط</div></div>
+      <div class="menu-card mc-4" onclick="hqPlanOpenStudent()"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">عرض الخطط</div></div>
       <div class="menu-card mc-5" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
       <div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>
       ${STATE.role==='student' ? '<div class="menu-card mc-6 mc-soon" onclick="remComingSoon()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="24" y="8" width="16" height="28" rx="8" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M17 30a15 15 0 0030 0" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="32" y1="45" x2="32" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="23" y1="54" x2="41" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">التسميع عن بُعد<span class="mc-soon-tag">قريباً</span></div></div>' : ''}
@@ -5519,35 +5536,310 @@ function hqPlanName(p){
   return t.n+' · '+hqAyN(js[0])+' ← '+hqAyN(js[js.length-1]);
 }
 
-/* ---------- فحص سريع للمحرّك (مؤقّت: افتح الرابط بإضافة ‎#plantest) ---------- */
-function hqPlanSelfTest(type,startJuz){
-  type=type||'j1'; startJuz=startJuz||30;
-  var p=hqPlanMake(type,startJuz), ds=hqPlanStudyDays(null);
-  var N=ds.length||HQ_DAYS_DEFAULT, src=ds.length?'من الخط الزمني المعتمَد':'لا يوجد خط زمني معتمَد — الافتراضي ١٤ أسبوعاً';
-  p.days=hqPlanBuildDays(p,N,0);
-  var lines=hqPlanLines(p), h='';
-  h+='<div style="padding:10px 6px;font-weight:700">'+hqPlanName(p)+' — أسطر: '+hqAyN(lines.length)+
-     ' · صفحات: '+hqAyN(hqPlanPages(p))+' · أيام: '+hqAyN(N)+' ('+src+')</div>';
-  h+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  h+='<tr style="background:#0d504a"><th>#</th><th>الدرس</th><th>س</th><th>المراجعة</th><th>س</th></tr>';
-  for(var i=0;i<p.days.length;i++){
-    var d=p.days[i];
-    h+='<tr style="border-bottom:1px solid rgba(255,255,255,.12)"><td>'+hqAyN(i+1)+'</td>'+
-       '<td>'+hqSegText(p,d.l)+'</td><td>'+hqAyN(hqSegLines(d.l))+'</td>'+
-       '<td>'+hqSegText(p,d.r)+'</td><td>'+hqAyN(hqSegLines(d.r))+'</td></tr>';
-  }
-  h+='</table>';
-  var w=document.createElement('div');
-  w.style.cssText='position:fixed;inset:0;z-index:99999;background:#07403c;color:#fff;overflow:auto;padding:12px;direction:rtl';
-  w.innerHTML='<button onclick="this.parentNode.remove()" style="position:sticky;top:0;background:#c9a227;color:#07403c;border:0;padding:8px 16px;border-radius:8px;font-weight:700">إغلاق</button>'+h;
-  document.body.appendChild(w);
-  return p;
+
+/* =====================================================================
+   واجهة خطط الحفظ (الدفعة الثانية): البطاقات الخمس · اختيار الأجزاء ·
+   اعتماد الخطة · تعديل الخطة
+   ===================================================================== */
+function hqPlanBack(fn,label){
+  window._modalBack=fn;
+  var slot=document.getElementById('modalHdrSlot');
+  if(slot){ slot.style.display=''; slot.innerHTML='<button class="ex-back" onclick="modalBack()">'+label+'</button>'; }
 }
-try{
-  if(location.hash.indexOf('plantest')>=0){
-    window.addEventListener('load',function(){ setTimeout(function(){ hqPlanSelfTest('j1',30); },800); });
+function hqPlanStu(sid){
+  var a=DB.students||[];
+  for(var i=0;i<a.length;i++){ if(a[i].id===sid) return a[i]; }
+  return null;
+}
+/* عدد أيام الفصل المعتمَد (أو الافتراضي) */
+function hqPlanTermDays(){
+  var ds=hqPlanStudyDays(null);
+  return {n:(ds.length||HQ_DAYS_DEFAULT), real:ds.length>0, list:ds};
+}
+
+/* ---------- شاشة المعلّم: خطط الطلاب ---------- */
+function hqPlanHome(){
+  var studs=DB.students||[];
+  var tl=(typeof tlActive==='function')?tlActive():null;
+  var td=hqPlanTermDays();
+  var head='<div class="hqacc" style="margin:0 0 12px"><div class="hqacc-body hqacc-plain">'+
+    hqAccRow('الفصل', (tl&&tl.termName)||'لا يوجد خط زمني معتمَد')+
+    hqAccRow('الأيام الدراسية', arNum(td.n)+(td.real?'':' (افتراضي)'))+
+    hqAccRow('عدد الطلاب', arNum(studs.length))+
+  '</div></div>';
+  var rows='';
+  for(var i=0;i<studs.length;i++){
+    var s=studs[i], p=hqPlanOf(s.id), body='', acts='';
+    if(p&&p.approved){
+      body=hqAccRow('الخطة',hqPlanName(p));
+      if(p.type!=='old'){
+        body+=hqAccRow('الصفحات',arNum(hqPlanPages(p)))+
+              hqAccRow('أيام الخطة',arNum(p.nd||(p.days||[]).length));
+      }
+      acts='<button class="hq-mini-btn view" onclick="hqPlanPick(\''+s.id+'\')">تعديل الخطة</button>'+
+           (p.type!=='old'?'<button class="hq-mini-btn view" onclick="hqPlanCircles(\''+s.id+'\')">عرض الخطة</button>':'')+
+           '<button class="hq-mini-btn del" onclick="hqPlanDelAsk(\''+s.id+'\')">إلغاء</button>';
+    }else{
+      body=hqAccRow('الخطة','لم تُعتمد بعد');
+      acts='<button class="hq-mini-btn view" onclick="hqPlanPick(\''+s.id+'\')">اعتماد الخطة</button>';
+    }
+    rows+=hqFlatSec(s.name, body, acts, i+1, (p&&p.approved)?((hqPlanType(p.type)||{}).n||''):'');
   }
-}catch(e){}
+  if(!studs.length) rows='<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد طلاب في الحلقة</div>';
+  var uni='<button type="button" class="tl-fetch" onclick="showStudentPlan([])">عرض الخطة الموحّدة (دوائر الأجزاء)</button>';
+  openModal('خطط الحفظ', head+rows+uni);
+  window._modalBack=null;
+}
+
+/* ---------- البطاقات الخمس ---------- */
+function hqPlanPick(sid){
+  var s=hqPlanStu(sid); if(!s){ showToast('الطالب غير موجود','error'); return; }
+  var cur=hqPlanOf(sid), h='<div class="hqp-list">';
+  for(var i=0;i<HQ_PLAN_TYPES.length;i++){
+    var t=HQ_PLAN_TYPES[i];
+    var sub=(t.k==='old')?'الخطة الموحّدة الحالية بهيئتها الجاهزة'
+      :('الأجزاء: '+arNum(t.juz)+' · الصفحات: '+arNum(t.pages)+' · تبدأ المراجعة بعد '+arNum(t.rev)+' صفحات');
+    h+='<button type="button" class="hqp-card'+((t.k==='old')?' alt':'')+((cur&&cur.approved&&cur.type===t.k)?' sel':'')+'" '+
+       'onclick="hqPlanConfig(\''+sid+'\',\''+t.k+'\')">'+t.n+'<span class="hqp-sub">'+sub+'</span></button>';
+  }
+  h+='</div>';
+  openModal('خطة '+s.name, h);
+  hqPlanBack(hqPlanHome,'‹ رجوع لخطط الطلاب');
+}
+
+/* ---------- ضبط الخطة واعتمادها ---------- */
+function hqPlanConfig(sid,type){
+  var s=hqPlanStu(sid), t=hqPlanType(type);
+  if(!s||!t) return;
+  if(type==='old'){
+    var h0='<div style="padding:6px 4px 2px;text-align:center">'+
+      '<div style="font-weight:800;margin-bottom:8px">'+t.n+'</div>'+
+      '<div style="color:#9abdba;font-size:.85rem;margin-bottom:14px">يسير الطالب على الخطة الموحّدة الحالية بهيئتها الجاهزة بلا تغيير.</div>'+
+      '<button class="tl-approve" type="button" onclick="hqPlanApproveUI(\''+sid+'\',\'old\')">اعتماد الخطة</button></div>';
+    openModal(t.n+' · '+s.name, h0);
+    hqPlanBack(function(){ hqPlanPick(sid); },'‹ رجوع للبطاقات');
+    return;
+  }
+  var cur=hqPlanOf(sid);
+  var start=(cur&&cur.type===type&&cur.start)?cur.start:30;
+  var opts='', list=hqPlanStartOptions(type);
+  for(var i=0;i<list.length;i++){
+    opts+='<option value="'+list[i]+'"'+((list[i]===start)?' selected':'')+'>الجزء '+arNum(list[i])+'</option>';
+  }
+  var lbl=(t.juz>1)?'جزء البداية — ويُكمل النظام ما بعده تلقائياً':'اختر الجزء';
+  var h='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label>'+
+      '<select class="prof-form-input" id="hqp-juz" onchange="hqPlanPreview(\''+type+'\')">'+opts+'</select></div>'+
+    '</div><div id="hqp-prev"></div>'+
+    '<button class="tl-approve" type="button" onclick="hqPlanApproveUI(\''+sid+'\',\''+type+'\')">اعتماد الخطة</button>'+
+  '</div>';
+  openModal(t.n+' · '+s.name, h);
+  hqPlanBack(function(){ hqPlanPick(sid); },'‹ رجوع للبطاقات');
+  setTimeout(function(){ if(typeof hqSelEnhance==='function') hqSelEnhance(document); hqPlanPreview(type); },40);
+}
+function hqPlanPickedJuz(){
+  var e=document.getElementById('hqp-juz');
+  return e?(parseInt(e.value,10)||30):30;
+}
+function hqPlanPreview(type){
+  var box=document.getElementById('hqp-prev'); if(!box) return;
+  var p=hqPlanMake(type,hqPlanPickedJuz());
+  var td=hqPlanTermDays(), lines=hqPlanLines(p);
+  var days=hqPlanBuildDays(p,td.n,0);
+  var f=days[0]||null, l=days[days.length-1]||null;
+  var avg=lines.length?(Math.round(lines.length*10/td.n)/10):0;
+  box.innerHTML='<div class="hqacc" style="margin:12px 0 0"><div class="hqacc-body hqacc-plain">'+
+    hqAccRow('الأجزاء',(p.juz||[]).map(function(j){return arNum(j);}).join(' · '))+
+    hqAccRow('الصفحات',arNum(hqPlanPages(p)))+
+    hqAccRow('الأسطر',arNum(lines.length))+
+    hqAccRow('الأيام الدراسية',arNum(td.n)+(td.real?'':' (افتراضي)'))+
+    hqAccRow('معدّل الدرس اليومي',arNum(avg)+' سطر')+
+    hqAccRow('أول درس',f?hqSegText(p,f.l):'—')+
+    hqAccRow('آخر درس',l?hqSegText(p,l.l):'—')+
+  '</div></div>';
+}
+function hqPlanApproveUI(sid,type){
+  var p=(type==='old')?hqPlanMake('old',0):hqPlanMake(type,hqPlanPickedJuz());
+  if(!p){ showToast('تعذّر بناء الخطة','error'); return; }
+  var td=hqPlanTermDays();
+  hqPlanApprove(sid,p,null);
+  showToast('اعتُمدت الخطة: '+hqPlanName(p)+(td.real?'':' (أيام افتراضية — لم يُعتمد خط زمني)'), td.real?'success':'info');
+  hqPlanHome();
+}
+
+/* ---------- إلغاء الخطة ---------- */
+function hqPlanDelAsk(sid){
+  var s=hqPlanStu(sid); if(!s) return;
+  openModal('إلغاء الخطة',
+    '<div style="padding:6px 4px 2px;text-align:center">'+
+    '<div style="font-size:2rem;margin-bottom:8px">⚠️</div>'+
+    '<div style="font-weight:800;margin-bottom:6px">إلغاء خطة '+hqEsc(s.name)+'؟</div>'+
+    '<div style="color:#fbbf24;font-size:.85rem;margin-bottom:12px">سيُحذف جدول الخطة كاملاً، ويمكن اعتماد خطة جديدة بعدها.</div>'+
+    '<button class="prof-form-save" style="background:#b91c1c" onclick="hqPlanDelGo(\''+sid+'\')">تأكيد الإلغاء</button>'+
+    '</div>');
+  hqPlanBack(hqPlanHome,'‹ رجوع لخطط الطلاب');
+}
+function hqPlanDelGo(sid){
+  hqPlanRemove(sid);
+  showToast('أُلغيت الخطة','info');
+  hqPlanHome();
+}
+
+/* ---------- جدول الخطة ---------- */
+function hqPlanTable(sid,ro){
+  var p=hqPlanOf(sid), s=hqPlanStu(sid)||{name:''};
+  if(!p||!p.approved){ showToast('لا توجد خطة معتمَدة','info'); return; }
+  if(p.type==='old'){ showStudentPlan([],sid); return; }
+  var td=hqPlanTermDays(), now=td.real?hqPlanTodayIdx(td.list):0;
+  var days=p.days||[], rows='';
+  for(var i=0;i<days.length;i++){
+    rows+='<tr'+(((i+1)===now)?' class="now"':'')+'><td class="hqp-num">'+arNum(i+1)+'</td>'+
+      '<td>'+hqSegText(p,days[i].l)+'</td><td>'+hqSegText(p,days[i].r)+'</td></tr>';
+  }
+  var h='<div style="padding:2px 0 10px;text-align:center;color:#9abdba;font-size:.8rem">'+
+      hqPlanName(p)+' · '+arNum(hqPlanPages(p))+' صفحة · '+arNum(days.length)+' يوماً</div>'+
+    '<table class="hqp-tbl"><tr><th>#</th><th>الدرس</th><th>المراجعة</th></tr>'+rows+'</table>';
+  openModal('خطة '+(s.name||''), h);
+  hqPlanBack(ro?function(){ hqPlanCircles(sid,1); }:hqPlanHome, ro?'‹ رجوع للمراحل':'‹ رجوع لخطط الطلاب');
+  setTimeout(function(){
+    try{ var r=document.querySelector('.hqp-tbl tr.now'); if(r&&r.scrollIntoView) r.scrollIntoView({block:'center'}); }catch(e){}
+  },140);
+}
+
+/* ---------- مدخل الطالب وولي الأمر ---------- */
+function hqPlanOpenStudent(){
+  var s=window._ds||null, sid=s?s.id:'';
+  var p=sid?hqPlanOf(sid):null;
+  if(p&&p.approved&&p.type!=='old'){ hqPlanCircles(sid,1); return; }
+  showStudentPlan(window._dp||[], sid);
+}
+
+/* =====================================================================
+   الدوائر العشر (مراحل الخطة) — الدفعة الثالثة
+   ===================================================================== */
+var HQ_ORD10=['الأولى','الثانية','الثالثة','الرابعة','الخامسة','السادسة','السابعة','الثامنة','التاسعة','العاشرة'];
+
+/* تقسيم أيام الخطة على عشر مراحل متساوية تقريباً */
+function hqPlanStages(p){
+  var days=(p&&p.days)||[], lines=hqPlanLines(p), L=lines.length;
+  if(!days.length||!L) return [];
+  var st=[], i, last=0;
+  for(i=0;i<10;i++) st.push({k:i+1,a:0,b:0,n:0});
+  for(var d=0;d<days.length;d++){
+    var e=days[d].l?days[d].l[1]:last; last=e;
+    var k=Math.ceil(e*10/L); if(k<1) k=1; if(k>10) k=10;
+    var s=st[k-1];
+    if(!s.a) s.a=d+1;
+    s.b=d+1; s.n++;
+  }
+  for(i=0;i<10;i++){ if(!st[i].a){ var prev=(i>0)?st[i-1].b:0; st[i].a=prev+1; st[i].b=prev; } }
+  return st;
+}
+/* مقطع المرحلة كاملاً (من أول درس فيها إلى آخره) */
+function hqStageSeg(p,x){
+  var days=(p&&p.days)||[];
+  if(!x||!x.n) return null;
+  var a=null,b=null;
+  for(var i=x.a;i<=x.b;i++){
+    var d=days[i-1]; if(!d||!d.l) continue;
+    if(a==null) a=d.l[0];
+    b=d.l[1];
+  }
+  return (a!=null&&b!=null)?[a,b]:null;
+}
+function hqStagePages(p,x){
+  var seg=hqStageSeg(p,x); if(!seg) return 0;
+  var lines=hqPlanLines(p), seen={}, n=0;
+  for(var i=seg[0];i<=seg[1];i++){ var pg=lines[i-1].p; if(!seen[pg]){ seen[pg]=1; n++; } }
+  return n;
+}
+/* اليوم الذي وصل إليه الطالب (يُربط بالتقييم في الدفعة الرابعة) */
+function hqPlanCurDay(sid,p){
+  p=p||hqPlanOf(sid);
+  if(p&&p.cur) return parseInt(p.cur,10)||0;
+  var td=hqPlanTermDays();
+  return td.real?hqPlanTodayIdx(td.list):0;
+}
+
+/* أسهم المسار بين الدوائر */
+function hqMiniArrow(dir,seq){
+  var left=(dir==='l'), xs=left?[26,18,10,2]:[2,10,18,26], pth='';
+  for(var i=0;i<xs.length;i++){
+    var x=xs[i];
+    var d=left?('M'+(x+5)+' 4L'+x+' 9L'+(x+5)+' 14'):('M'+x+' 4L'+(x+5)+' 9L'+x+' 14');
+    pth+='<path d="'+d+'" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  return '<div class="mini mini-'+dir+'" style="--seq:'+seq+'"><svg viewBox="0 0 33 18">'+pth+'</svg></div>';
+}
+function hqVturn(side,seq){
+  var ys=[3,11,19,27], pth='';
+  for(var i=0;i<ys.length;i++){
+    pth+='<path d="M3 '+ys[i]+'L9 '+(ys[i]+5)+'L15 '+ys[i]+'" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  return '<div class="vturn vturn-'+side+'" style="--seq:'+seq+'"><svg viewBox="0 0 18 34">'+pth+'</svg></div>';
+}
+
+/* ---------- شاشة المراحل ---------- */
+function hqPlanCircles(sid,ro){
+  var p=hqPlanOf(sid), s=hqPlanStu(sid)||{name:''};
+  if(!p||!p.approved){ showToast('لا توجد خطة معتمَدة','info'); return; }
+  if(p.type==='old'){ showStudentPlan([],sid); return; }
+  var stg=hqPlanStages(p), cur=hqPlanCurDay(sid,p), seq=0;
+  function orb(x){
+    var i=x.k, edge=(i===1||i===10);
+    var done=(x.n&&cur>x.b), now=(x.n&&cur>=x.a&&cur<=x.b);
+    var cls='gorb stg-orb'+(done?' done':(now?' partial':''))+(edge?' stg-edge':'');
+    var wrap='gcircle'+(edge?' year-start':'')+(now?' now-here':'');
+    var ring=now?'#34d399':'#f7d774';
+    return '<div class="'+wrap+'">'+
+      '<svg viewBox="0 0 94 94"><circle cx="47" cy="47" r="42" fill="none" stroke="'+ring+'" stroke-width="2.2" stroke-dasharray="5 4.5" stroke-linecap="round"/></svg>'+
+      (now?'<span class="gnow-badge">الآن</span>':(edge?'<span class="gyear-badge">\u2726</span>':''))+
+      '<div class="'+cls+'" onclick="hqPlanStageOpen(\''+sid+'\','+i+','+(ro?1:0)+')">'+
+        '<b>المرحلة</b><span>'+HQ_ORD10[i-1]+'</span></div></div>';
+  }
+  var rows='';
+  for(var r=0;r<5;r++){
+    var A=stg[r*2], B=stg[r*2+1];
+    if(!A||!B) break;
+    var left=(r%2===0);
+    var els=[orb(A), hqMiniArrow(left?'l':'r',seq++), orb(B)];
+    if(!left) els.reverse();
+    rows+='<div class="gr">'+els.join('')+'</div>';
+    if(r<4) rows+=hqVturn(left?'l':'r',seq++);
+  }
+  var per=Math.round(hqPlanPages(p)/10*10)/10;
+  var head='<div class="mp-info" style="margin-bottom:10px">'+
+    '<div class="mp-info-m">'+hqEsc(hqPlanName(p))+'</div>'+
+    '<div class="mp-info-s">'+arNum(hqPlanPages(p))+' صفحة · '+arNum((p.days||[]).length)+' يوماً · كل مرحلة نحو '+arNum(per)+' صفحة</div>'+
+  '</div>';
+  var foot='<button type="button" class="tl-fetch" onclick="hqPlanTable(\''+sid+'\','+(ro?1:0)+')">عرض الجدول كاملاً</button>';
+  openModal('خطة '+(s.name||''), head+'<div class="grid-scroll"><div class="grid-rows">'+rows+'</div></div>'+foot);
+  if(!ro) hqPlanBack(hqPlanHome,'‹ رجوع لخطط الطلاب');
+}
+
+/* ---------- جدول مرحلة واحدة ---------- */
+function hqPlanStageOpen(sid,k,ro){
+  var p=hqPlanOf(sid); if(!p||!p.approved) return;
+  var stg=hqPlanStages(p), x=stg[k-1]; if(!x) return;
+  var cur=hqPlanCurDay(sid,p), days=p.days||[], rows='';
+  for(var i=x.a;i<=x.b;i++){
+    var d=days[i-1]; if(!d) continue;
+    rows+='<tr'+((i===cur)?' class="now"':'')+'><td class="hqp-num">'+arNum(i)+'</td>'+
+      '<td>'+hqSegText(p,d.l)+'</td><td>'+hqSegText(p,d.r)+'</td>'+
+      ((i===cur)?'<td style="color:#34d399;font-weight:800">هنا</td>':'<td></td>')+'</tr>';
+  }
+  if(!rows) rows='<tr><td colspan="4">—</td></tr>';
+  var seg=hqStageSeg(p,x);
+  var head='<div class="mp-info" style="margin-bottom:10px">'+
+    '<div class="mp-info-m">المرحلة '+HQ_ORD10[k-1]+'</div>'+
+    '<div class="mp-info-s">'+hqEsc(seg?hqSegText(p,seg):'—')+' · '+arNum(hqStagePages(p,x))+' صفحة · '+arNum(x.n)+' يوماً</div>'+
+  '</div>';
+  openModal('خطة المرحلة', head+'<table class="hqp-tbl"><tr><th>#</th><th>الدرس</th><th>المراجعة</th><th></th></tr>'+rows+'</table>');
+  hqPlanBack(function(){ hqPlanCircles(sid,ro?1:0); },'‹ رجوع للمراحل');
+  setTimeout(function(){
+    try{ var t=document.querySelector('.hqp-tbl tr.now'); if(t&&t.scrollIntoView) t.scrollIntoView({block:'center'}); }catch(e){}
+  },140);
+}
 
 
 function showMonthPlan(m){
@@ -10144,7 +10436,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-25 · 39';
+  window.HQ_BUILD='2026-08-25 · 41';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
