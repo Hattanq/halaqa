@@ -5202,6 +5202,11 @@ function hqBuildLines(){
       out.push({p:p+1, ln:i+1, s:parseInt(q[0],10), a:parseInt(q[1],10)});
     }
   }
+  /* sa = أول آية في السطر (تُحسب من ترتيب المصحف لا من ترتيب الخطة) */
+  for(var k=0;k<out.length;k++){
+    var cur=out[k], prv=(k>0)?out[k-1]:null;
+    cur.sa=(prv&&prv.s===cur.s)?((prv.a===cur.a)?cur.a:(prv.a+1)):1;
+  }
   HQ_LINES=out; return out;
 }
 var _hqJuzLn={};
@@ -5210,8 +5215,17 @@ function hqJuzLines(j){
   j=parseInt(j,10)||1;
   if(_hqJuzLn[j]) return _hqJuzLn[j];
   var a=HQ_JUZ_FIRST_PAGE[j-1], b=(j<30)?(HQ_JUZ_FIRST_PAGE[j]-1):604;
-  _hqJuzLn[j]=hqBuildLines().filter(function(x){ return x.p>=a && x.p<=b; });
-  return _hqJuzLn[j];
+  var raw=hqBuildLines().filter(function(x){ return x.p>=a && x.p<=b; });
+  /* الحفظ داخل الجزء يبدأ من آخر سورة فيه إلى أولها، وكل سورة بترتيب آياتها */
+  var groups=[], cur=null;
+  for(var i=0;i<raw.length;i++){
+    if(!cur||cur.s!==raw[i].s){ cur={s:raw[i].s, ln:[]}; groups.push(cur); }
+    cur.ln.push(raw[i]);
+  }
+  var out=[];
+  for(var g=groups.length-1;g>=0;g--) out=out.concat(groups[g].ln);
+  _hqJuzLn[j]=out;
+  return out;
 }
 function hqJuzPages(j){
   j=parseInt(j,10)||1;
@@ -5325,45 +5339,57 @@ function hqIsSurahEnd(lines,pos){
   if(pos<1) return false;
   return lines[pos-1].s!==lines[pos].s;
 }
-/* نهايات الدروس اليومية بين startLine و آخر الخطة */
-function hqPlanCuts(blocks,startLine,nDays){
+/* أقصى ما يُضمّ أو يُؤجَّل من الأسطر لأجل حدّ السورة */
+var HQ_SNAP=3;
+/* أقرب نهاية سورة إلى pos ضمن السماحية (الضمّ أولاً ثم التأجيل) */
+function hqNearBoundary(lines,pos,lo,hi,skip){
+  if(hqIsSurahEnd(lines,pos)&&!(skip&&skip[pos])) return pos;
+  for(var d=1;d<=HQ_SNAP;d++){
+    var f=pos+d, b=pos-d;
+    if(f<=hi && !(skip&&skip[f]) && hqIsSurahEnd(lines,f)) return f;
+    if(b>=lo && b>=1 && !(skip&&skip[b]) && hqIsSurahEnd(lines,b)) return b;
+  }
+  return pos;
+}
+/* نهايات الدروس اليومية بين startLine و آخر الخطة
+   التوزيع تدريجي: يُعاد حساب نصيب اليوم من الباقي بعد كل قطع،
+   فيبقى المجموع متوازناً مهما ضُمّ أو أُجّل من الأسطر لأجل حدود السور. */
+function hqPlanCuts(lines,blocks,startLine,nDays){
   if(!blocks.length||nDays<1) return [];
   var L=blocks[blocks.length-1];
   if(startLine>L) return [];
-  var segs=[], prev=0;
-  for(var i=0;i<blocks.length;i++){
+  var segs=[], prev=0, i;
+  for(i=0;i<blocks.length;i++){
     var a=Math.max(prev+1,startLine), b=blocks[i];
     if(b>=a) segs.push({a:a,b:b,len:b-a+1});
     prev=blocks[i];
   }
   if(!segs.length) return [];
-  if(nDays<segs.length){ segs=[{a:startLine,b:L,len:L-startLine+1}]; }
+  if(nDays<segs.length) segs=[{a:startLine,b:L,len:L-startLine+1}];
   var w=[]; for(i=0;i<segs.length;i++) w.push(segs[i].len);
   var alloc=(segs.length===1)?[nDays]:hqSplitInt(w,nDays);
   var cuts=[];
   for(i=0;i<segs.length;i++){
     var n=alloc[i]; if(n<1) n=1;
-    for(var k=1;k<=n;k++) cuts.push(segs[i].a-1+Math.round(k*segs[i].len/n));
-  }
-  return cuts;
-}
-/* مراعاة حدود السور: زيادة سطر أو نقصانه ليقف المقطع عند حدّ سورة */
-function hqSnapCuts(cuts,lines,blocks){
-  var isB={}; for(var i=0;i<blocks.length;i++) isB[blocks[i]]=1;
-  for(var k=0;k<cuts.length-1;k++){
-    var pos=cuts[k];
-    if(isB[pos]||hqIsSurahEnd(lines,pos)) continue;
-    var lo=(k>0?cuts[k-1]:0)+1, hi=cuts[k+1]-1;
-    var cand=[pos-1,pos+1];
-    for(var c=0;c<cand.length;c++){
-      var v=cand[c];
-      if(v<lo||v>hi||isB[v]) continue;
-      if(hqIsSurahEnd(lines,v)){ cuts[k]=v; break; }
+    var cur=segs[i].a;
+    for(var d=1;d<=n;d++){
+      var remD=n-d+1, remL=segs[i].b-cur+1, end;
+      if(remD<=1 || remL<=remD){ end=(remD<=1)?segs[i].b:cur; }
+      else{
+        var T=Math.round(remL/remD); if(T<1) T=1;
+        end=cur+T-1;
+        var lo=Math.max(cur,end-HQ_SNAP), hi=Math.min(segs[i].b-(remD-1),end+HQ_SNAP);
+        if(hi<lo) hi=lo;
+        end=hqNearBoundary(lines,end,lo,hi,null);
+        if(end<cur) end=cur;
+        if(end>segs[i].b-(remD-1)) end=segs[i].b-(remD-1);
+      }
+      cuts.push(end); cur=end+1;
+      if(cur>segs[i].b) cur=segs[i].b;
     }
   }
   return cuts;
 }
-
 /* ---------- بناء أيام الخطة ---------- */
 /* keepDays: عدد الأيام الماضية التي تبقى كما هي (إعادة التوزيع بعد تعديل الخط الزمني) */
 function hqPlanBuildDays(p,nDays,keepDays){
@@ -5385,7 +5411,7 @@ function hqPlanBuildDays(p,nDays,keepDays){
     for(q=0;q<startLine-1&&q<L;q++){ if(!seen[lines[q].p]){ seen[lines[q].p]=1; pagesN++; } }
   }
   var need=nDays-i0; if(need<1) return days;
-  var cuts=hqSnapCuts(hqPlanCuts(blocks,startLine,need),lines,blocks);
+  var cuts=hqPlanCuts(lines,blocks,startLine,need);
   var revAfter=(hqPlanType(p.type)||{}).rev||0;
   var a=startLine;
   for(var k=0;k<need;k++){
@@ -5399,10 +5425,7 @@ function hqPlanBuildDays(p,nDays,keepDays){
       var ra=rPtr, rb=ra+len*2-1, wrap=false;
       if(rb>=b){ rb=b; wrap=true; }
       else if(rb>blockEnd){ rb=blockEnd; }
-      else if(!hqIsSurahEnd(lines,rb)){
-        if(rb-1>=ra && hqIsSurahEnd(lines,rb-1)) rb=rb-1;
-        else if(rb+1<b && rb+1<=blockEnd && hqIsSurahEnd(lines,rb+1)) rb=rb+1;
-      }
+      else rb=hqNearBoundary(lines,rb,ra,Math.min(b-1,blockEnd),null);
       day.r=[ra,rb];
       rPtr=wrap?1:(rb+1);
       if(rPtr>b) rPtr=1;
@@ -5419,21 +5442,23 @@ function hqSurName(n){ try{ return misSurahName(n)||('سورة '+n); }catch(e){ 
 function hqAyN(n){ try{ return arNum(n); }catch(e){ return String(n); } }
 /* بداية سطر: من نهاية السطر السابق داخل السورة نفسها */
 function hqLineStart(lines,pos){
-  var cur=lines[pos-1], prv=(pos>1)?lines[pos-2]:null;
-  if(prv && prv.s===cur.s) return {s:cur.s, a:(prv.a===cur.a)?cur.a:(prv.a+1)};
-  return {s:cur.s, a:1};
+  var cur=lines[pos-1];
+  return {s:cur.s, a:(cur.sa||1)};
 }
 function hqSegText(p,seg){
   if(!seg) return 'لا يوجد';
   var lines=hqPlanLines(p);
   if(!lines.length||seg[0]<1||seg[1]>lines.length) return '';
   var st=hqLineStart(lines,seg[0]), en=lines[seg[1]-1];
-  var nameA=hqSurName(st.s), nameB=hqSurName(en.s);
-  var full=false;
-  try{ full=(st.s===en.s && st.a===1 && en.a===misAyahCount(en.s)); }catch(e){}
-  if(full) return nameA;
-  if(st.s===en.s) return nameA+' '+hqAyN(st.a)+' ← '+hqAyN(en.a);
-  return nameA+' '+hqAyN(st.a)+' ← '+nameB+' '+hqAyN(en.a);
+  var nameA=hqSurName(st.s), nameB=hqSurName(en.s), cntB=0;
+  try{ cntB=misAyahCount(en.s); }catch(e){}
+  if(st.s===en.s){
+    if(st.a===1 && en.a===cntB) return nameA;
+    return nameA+' '+hqAyN(st.a)+' ← '+hqAyN(en.a);
+  }
+  var labA=(st.a===1)?nameA:(nameA+' '+hqAyN(st.a));
+  var labB=(cntB&&en.a===cntB)?nameB:(nameB+' '+hqAyN(en.a));
+  return labA+' ← '+labB;
 }
 function hqSegLines(seg){ return seg?(seg[1]-seg[0]+1):0; }
 
@@ -5495,11 +5520,11 @@ function hqPlanName(p){
 function hqPlanSelfTest(type,startJuz){
   type=type||'j1'; startJuz=startJuz||30;
   var p=hqPlanMake(type,startJuz), ds=hqPlanStudyDays(null);
-  var N=ds.length||72;
+  var N=ds.length||72, src=ds.length?'من الخط الزمني المعتمَد':'لا يوجد خط زمني معتمَد — عدد افتراضي';
   p.days=hqPlanBuildDays(p,N,0);
   var lines=hqPlanLines(p), h='';
   h+='<div style="padding:10px 6px;font-weight:700">'+hqPlanName(p)+' — أسطر: '+hqAyN(lines.length)+
-     ' · صفحات: '+hqAyN(hqPlanPages(p))+' · أيام: '+hqAyN(N)+(ds.length?'':' (افتراضي، لا خط زمني معتمَد)')+'</div>';
+     ' · صفحات: '+hqAyN(hqPlanPages(p))+' · أيام: '+hqAyN(N)+' ('+src+')</div>';
   h+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
   h+='<tr style="background:#0d504a"><th>#</th><th>الدرس</th><th>س</th><th>المراجعة</th><th>س</th></tr>';
   for(var i=0;i<p.days.length;i++){
@@ -10116,7 +10141,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-25 · 37';
+  window.HQ_BUILD='2026-08-25 · 38';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
