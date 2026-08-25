@@ -5341,6 +5341,8 @@ function hqIsSurahEnd(lines,pos){
 }
 /* أقصى ما يُضمّ أو يُؤجَّل من الأسطر لأجل حدّ السورة */
 var HQ_SNAP=3;
+/* الأيام الدراسية الافتراضية حين لا يوجد خط زمني معتمَد: ١٤ أسبوعاً × ٤ أيام */
+var HQ_DAYS_DEFAULT=56;
 /* أقرب نهاية سورة إلى pos ضمن السماحية (الضمّ أولاً ثم التأجيل) */
 function hqNearBoundary(lines,pos,lo,hi,skip){
   if(hqIsSurahEnd(lines,pos)&&!(skip&&skip[pos])) return pos;
@@ -5477,9 +5479,9 @@ function hqPlanApprove(sid,p,tl){
   p.term=(tl&&tl.term)||'';
   if(p.type==='old'){ p.days=[]; p.nd=0; }
   else{
-    var ds=hqPlanStudyDays(tl);
-    p.nd=ds.length;
-    p.days=hqPlanBuildDays(p,ds.length,0);
+    var ds=hqPlanStudyDays(tl), N=ds.length||HQ_DAYS_DEFAULT;
+    p.nd=N;
+    p.days=hqPlanBuildDays(p,N,0);
   }
   hqPlanStore()[sid]=p;
   try{ save(); }catch(e){}
@@ -5489,8 +5491,9 @@ function hqPlanApprove(sid,p,tl){
 function hqPlanRebuild(sid,tl){
   var p=hqPlanOf(sid); if(!p||p.type==='old') return null;
   tl=tl||(typeof tlActive==='function'?tlActive():null);
-  var ds=hqPlanStudyDays(tl), keep=Math.min(hqPlanElapsed(ds),(p.days||[]).length);
-  p.days=hqPlanBuildDays(p,ds.length,keep); p.nd=ds.length;
+  var ds=hqPlanStudyDays(tl), N=ds.length||HQ_DAYS_DEFAULT;
+  var keep=Math.min(ds.length?hqPlanElapsed(ds):0,(p.days||[]).length);
+  p.days=hqPlanBuildDays(p,N,keep); p.nd=N;
   try{ save(); }catch(e){}
   return p;
 }
@@ -5520,7 +5523,7 @@ function hqPlanName(p){
 function hqPlanSelfTest(type,startJuz){
   type=type||'j1'; startJuz=startJuz||30;
   var p=hqPlanMake(type,startJuz), ds=hqPlanStudyDays(null);
-  var N=ds.length||72, src=ds.length?'من الخط الزمني المعتمَد':'لا يوجد خط زمني معتمَد — عدد افتراضي';
+  var N=ds.length||HQ_DAYS_DEFAULT, src=ds.length?'من الخط الزمني المعتمَد':'لا يوجد خط زمني معتمَد — الافتراضي ١٤ أسبوعاً';
   p.days=hqPlanBuildDays(p,N,0);
   var lines=hqPlanLines(p), h='';
   h+='<div style="padding:10px 6px;font-weight:700">'+hqPlanName(p)+' — أسطر: '+hqAyN(lines.length)+
@@ -10141,7 +10144,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-25 · 38';
+  window.HQ_BUILD='2026-08-25 · 39';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
