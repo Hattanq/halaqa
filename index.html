@@ -2718,6 +2718,22 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .gorb.stg-orb span{font-size:.5rem;font-weight:800;color:rgba(255,255,255,.9);margin-top:0}
 .gorb.stg-edge:not(.partial):not(.done){border-color:rgba(247,215,116,.95);background:radial-gradient(circle at 38% 28%,#e8cd77,#c9a227 62%,#9d7c16);box-shadow:0 0 0 2px rgba(247,215,116,.28),0 4px 11px rgba(0,0,0,.45),inset 0 2px 4px rgba(255,255,255,.3)}
 .gorb.stg-edge:not(.partial):not(.done) b,.gorb.stg-edge:not(.partial):not(.done) span{color:#0d3f3a;text-shadow:none}
+.gr.gr-end{justify-content:flex-end}
+.hqp-grid{margin:2px 0 4px}
+.hqp-cnt{display:inline-block;margin-right:6px;background:rgba(0,0,0,.28);border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:800}
+.hqp-stu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:2px}
+.hqp-stu{min-height:74px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:13px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.03));color:#e8f7f6;font:800 .68rem inherit;cursor:pointer;touch-action:manipulation;text-align:center}
+.hqp-stu-n{line-height:1.25;word-break:break-word}
+.hqp-stu-s{font-size:.58rem;font-weight:700;color:#f0d060}
+.hqp-stu.on{border-color:rgba(52,211,153,.75);background:linear-gradient(160deg,rgba(52,211,153,.22),rgba(52,211,153,.06))}
+.hqp-stu.busy{border-color:rgba(201,162,39,.5);opacity:.85}
+.hqp-stu.busy .hqp-stu-s{color:#9abdba}
+.hqp-juz-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:2px}
+.hqp-juz{padding:14px 4px;border-radius:13px;border:1px solid rgba(201,162,39,.35);background:linear-gradient(160deg,rgba(201,162,39,.18),rgba(201,162,39,.05));color:#f0d060;font:800 1rem inherit;cursor:pointer;touch-action:manipulation}
+.hqp-juz.on{border-color:#f7d774;box-shadow:0 0 0 2px rgba(247,215,116,.25)}
+.ev-sc-plan{margin:-4px 0 8px;text-align:center;color:#9abdba;font-size:.7rem;font-weight:700}
+.ev-start-plan .prof-form-input{flex:1;min-width:0}
+.tl-fetch.hqp-del{border-color:rgba(185,28,28,.5);background:rgba(185,28,28,.16);color:#fca5a5}
 </style>
 <div class="modal-sheet" id="modalSheet">
     <div class="modal-drag"></div>
@@ -3278,9 +3294,12 @@ function hdrRefreshStudentStats(){
     if(!st) return;
     var _rec=(DB.evals&&DB.evals[st.id])||{}, _prog=_rec.progress||{lesson:0,review:0};
     var lEl=document.getElementById('hdr-stat-lesson');
-    if(lEl){ var _pl=upFromLinear(Math.min(UNIFIED_MAXDAY,(_prog.lesson||0)+1)); lEl.innerHTML=hdrStatTxt(_pl); }
+    var _hp=(typeof hqPlanActive==='function')?hqPlanActive(st.id):null;
+    var _hmx=_hp?_hp.days.length:UNIFIED_MAXDAY;
+    var _nl=Math.min(_hmx,(_prog.lesson||0)+1), _nr=Math.min(_hmx,(_prog.review||0)+1);
+    if(lEl){ lEl.innerHTML=_hp?hdrPlanTxt(st.id,_nl):hdrStatTxt(upFromLinear(_nl)); }
     var vEl=document.getElementById('hdr-stat-review');
-    if(vEl){ var _pr=upFromLinear(Math.min(UNIFIED_MAXDAY,(_prog.review||0)+1)); vEl.innerHTML=hdrStatTxt(_pr); }
+    if(vEl){ vEl.innerHTML=_hp?hdrPlanTxt(st.id,_nr):hdrStatTxt(upFromLinear(_nr)); }
     var rankList=DB.students.map(function(x){ return {id:x.id, t:evCurrentScore(x.id).score.total}; })
                             .sort(function(a,b){ return b.t-a.t; });
     var rEl=document.getElementById('hdr-stat-rank');
@@ -3423,7 +3442,7 @@ function renderDash(){
       <div class="menu-card mc-1" onclick="showAddStudent()"><div class="mc-icon">${addSVG}</div><div class="mc-accent"></div><div class="mc-label">إضافة طالب</div></div>
       <div class="menu-card mc-4" onclick="showStudentsData()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="20" cy="20" r="9" stroke="white" stroke-width="2.5"/><circle cx="44" cy="20" r="9" stroke="white" stroke-width="2.5"/><path d="M4 50c0-9 7-16 16-16s16 7 16 16" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M36 50c0-9 7-16 16-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label" id="mc-stu-count">بيانات الطلاب</div></div>
       <div class="menu-card mc-2" onclick="showPage('grades')"><div class="mc-icon"><img src="${cSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تقييم الطلاب</div></div>
-      <div class="menu-card mc-4" onclick="hqPlanHome()"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">عرض الخطط</div></div>
+      <div class="menu-card mc-4" onclick="hqPlanTypesHome()"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">عرض الخطط</div></div>
       <div class="menu-card mc-5" onclick="showRankTable(null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطلاب</div></div>
       <div class="menu-card mc-3" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
       <div class="menu-card mc-1" onclick="showMsgStudents()">${(function(){var u=msgUnreadAllTeacher('stu');return u>0?'<div class="msg-dot">'+u+'</div>':'';})()}<div class="mc-icon">${msgStuSVG}</div><div class="mc-accent"></div><div class="mc-label">رسالة للطلاب</div></div>
@@ -3933,6 +3952,7 @@ function hdrGotoPlan(kind){
   var s=DB.students.find(function(st){ return st.id===u.sid || st.code===u.username; });
   if(!s) return;
   var rec=(DB.evals&&DB.evals[s.id])||{}; var prog=rec.progress||{lesson:0,review:0};
+  if(typeof hqPlanActive==='function' && hqPlanActive(s.id)){ hqPlanCircles(s.id,1); return; }
   var n=Math.min(UNIFIED_MAXDAY,(prog[kind]||0)+1);
   window._planSid=s.id;
   var p=upFromLinear(n);
@@ -5255,11 +5275,12 @@ function hqJuzPages(j){
    ===================================================================== */
 /* البطاقات الخمس: juz=عدد الأجزاء · pages=صفحات الخطة · rev=بدء المراجعة بعد كم صفحة */
 var HQ_PLAN_TYPES=[
-  {k:'j1',  n:'الجزء الواحد',   juz:1, pages:20,  rev:3},
-  {k:'j2',  n:'الجزءان',        juz:2, pages:40,  rev:4},
-  {k:'j3',  n:'الثلاثة أجزاء',  juz:3, pages:60,  rev:6},
-  {k:'j5',  n:'الخمسة أجزاء',   juz:5, pages:100, rev:8},
-  {k:'old', n:'الخطة القديمة',  juz:0, pages:0,   rev:0}
+  {k:'j1',  n:'خطة جزء واحد',    juz:1, pages:20,  rev:3},
+  {k:'j2',  n:'خطة جزئين',       juz:2, pages:40,  rev:4},
+  {k:'j3',  n:'خطة ثلاث أجزاء',  juz:3, pages:60,  rev:6},
+  {k:'j5',  n:'خطة خمسة أجزاء',  juz:5, pages:100, rev:8},
+  /* الخطة القديمة مهمَّشة حالياً — تُفعَّل بحذف hide */
+  {k:'old', n:'الخطة القديمة',   juz:0, pages:0,   rev:0, hide:true}
 ];
 function hqPlanType(k){ for(var i=0;i<HQ_PLAN_TYPES.length;i++){ if(HQ_PLAN_TYPES[i].k===k) return HQ_PLAN_TYPES[i]; } return null; }
 /* أجزاء الخطة متتالية إجبارياً بترتيب الحفظ في التطبيق (٣٠ ← ١) */
@@ -5596,7 +5617,7 @@ function hqPlanPick(sid){
   var s=hqPlanStu(sid); if(!s){ showToast('الطالب غير موجود','error'); return; }
   var cur=hqPlanOf(sid), h='<div class="hqp-list">';
   for(var i=0;i<HQ_PLAN_TYPES.length;i++){
-    var t=HQ_PLAN_TYPES[i];
+    var t=HQ_PLAN_TYPES[i]; if(t.hide) continue;
     var sub=(t.k==='old')?'الخطة الموحّدة الحالية بهيئتها الجاهزة'
       :('الأجزاء: '+arNum(t.juz)+' · الصفحات: '+arNum(t.pages)+' · تبدأ المراجعة بعد '+arNum(t.rev)+' صفحات');
     h+='<button type="button" class="hqp-card'+((t.k==='old')?' alt':'')+((cur&&cur.approved&&cur.type===t.k)?' sel':'')+'" '+
@@ -5756,6 +5777,9 @@ function hqStagePages(p,x){
 /* اليوم الذي وصل إليه الطالب (يُربط بالتقييم في الدفعة الرابعة) */
 function hqPlanCurDay(sid,p){
   p=p||hqPlanOf(sid);
+  var rec=(typeof DB!=='undefined'&&DB.evals)?DB.evals[sid]:null;
+  var prog=(rec&&rec.progress&&parseInt(rec.progress.lesson,10))||0;
+  if(prog>0){ var mx=(p&&p.days)?p.days.length:0; return (mx&&prog+1>mx)?mx:(prog+1); }
   if(p&&p.cur) return parseInt(p.cur,10)||0;
   var td=hqPlanTermDays();
   return td.real?hqPlanTodayIdx(td.list):0;
@@ -5779,33 +5803,43 @@ function hqVturn(side,seq){
   return '<div class="vturn vturn-'+side+'" style="--seq:'+seq+'"><svg viewBox="0 0 18 34">'+pth+'</svg></div>';
 }
 
+/* ---------- دائرة مرحلة واحدة + شبكة الدوائر (ثلاث في الصف) ---------- */
+function hqStageOrb(k,stateCls,onclick){
+  var edge=(k===1||k===10), now=(stateCls==='partial');
+  var ring=now?'#34d399':'#f7d774';
+  return '<div class="gcircle'+(edge?' year-start':'')+(now?' now-here':'')+'">'+
+    '<svg viewBox="0 0 94 94"><circle cx="47" cy="47" r="42" fill="none" stroke="'+ring+'" stroke-width="2.2" stroke-dasharray="5 4.5" stroke-linecap="round"/></svg>'+
+    (now?'<span class="gnow-badge">الآن</span>':(edge?'<span class="gyear-badge">\u2726</span>':''))+
+    '<div class="gorb stg-orb'+(stateCls?(' '+stateCls):'')+(edge?' stg-edge':'')+'" onclick="'+onclick+'">'+
+      '<b>المرحلة</b><span>'+HQ_ORD10[k-1]+'</span></div></div>';
+}
+function hqStageGrid(orbs){
+  var rows='', seq=0, i=0, r=0;
+  while(i<orbs.length){
+    var chunk=orbs.slice(i,i+3); i+=3;
+    var left=(r%2===0), els=[];
+    for(var c=0;c<chunk.length;c++){
+      if(c) els.push(hqMiniArrow(left?'l':'r',seq++));
+      els.push(chunk[c]);
+    }
+    if(!left) els.reverse();
+    rows+='<div class="gr'+((chunk.length<3)?' gr-end':'')+'">'+els.join('')+'</div>';
+    if(i<orbs.length) rows+=hqVturn(left?'l':'r',seq++);
+    r++;
+  }
+  return '<div class="grid-scroll"><div class="grid-rows">'+rows+'</div></div>';
+}
+
 /* ---------- شاشة المراحل ---------- */
 function hqPlanCircles(sid,ro){
   var p=hqPlanOf(sid), s=hqPlanStu(sid)||{name:''};
   if(!p||!p.approved){ showToast('لا توجد خطة معتمَدة','info'); return; }
   if(p.type==='old'){ showStudentPlan([],sid); return; }
-  var stg=hqPlanStages(p), cur=hqPlanCurDay(sid,p), seq=0;
-  function orb(x){
-    var i=x.k, edge=(i===1||i===10);
-    var done=(x.n&&cur>x.b), now=(x.n&&cur>=x.a&&cur<=x.b);
-    var cls='gorb stg-orb'+(done?' done':(now?' partial':''))+(edge?' stg-edge':'');
-    var wrap='gcircle'+(edge?' year-start':'')+(now?' now-here':'');
-    var ring=now?'#34d399':'#f7d774';
-    return '<div class="'+wrap+'">'+
-      '<svg viewBox="0 0 94 94"><circle cx="47" cy="47" r="42" fill="none" stroke="'+ring+'" stroke-width="2.2" stroke-dasharray="5 4.5" stroke-linecap="round"/></svg>'+
-      (now?'<span class="gnow-badge">الآن</span>':(edge?'<span class="gyear-badge">\u2726</span>':''))+
-      '<div class="'+cls+'" onclick="hqPlanStageOpen(\''+sid+'\','+i+','+(ro?1:0)+')">'+
-        '<b>المرحلة</b><span>'+HQ_ORD10[i-1]+'</span></div></div>';
-  }
-  var rows='';
-  for(var r=0;r<5;r++){
-    var A=stg[r*2], B=stg[r*2+1];
-    if(!A||!B) break;
-    var left=(r%2===0);
-    var els=[orb(A), hqMiniArrow(left?'l':'r',seq++), orb(B)];
-    if(!left) els.reverse();
-    rows+='<div class="gr">'+els.join('')+'</div>';
-    if(r<4) rows+=hqVturn(left?'l':'r',seq++);
+  var stg=hqPlanStages(p), cur=hqPlanCurDay(sid,p), orbs=[];
+  for(var i=0;i<stg.length;i++){
+    var x=stg[i];
+    var st=(x.n&&cur>x.b)?'done':((x.n&&cur>=x.a&&cur<=x.b)?'partial':'');
+    orbs.push(hqStageOrb(x.k,st,"hqPlanStageOpen('"+sid+"',"+x.k+","+(ro?1:0)+")"));
   }
   var per=Math.round(hqPlanPages(p)/10*10)/10;
   var head='<div class="mp-info" style="margin-bottom:10px">'+
@@ -5813,7 +5847,7 @@ function hqPlanCircles(sid,ro){
     '<div class="mp-info-s">'+arNum(hqPlanPages(p))+' صفحة · '+arNum((p.days||[]).length)+' يوماً · كل مرحلة نحو '+arNum(per)+' صفحة</div>'+
   '</div>';
   var foot='<button type="button" class="tl-fetch" onclick="hqPlanTable(\''+sid+'\','+(ro?1:0)+')">عرض الجدول كاملاً</button>';
-  openModal('خطة '+(s.name||''), head+'<div class="grid-scroll"><div class="grid-rows">'+rows+'</div></div>'+foot);
+  openModal('خطة '+(s.name||''), head+hqStageGrid(orbs)+foot);
   if(!ro) hqPlanBack(hqPlanHome,'‹ رجوع لخطط الطلاب');
 }
 
@@ -5841,6 +5875,178 @@ function hqPlanStageOpen(sid,k,ro){
   },140);
 }
 
+
+/* =====================================================================
+   بطاقات الخطط الأربع · معاينة المراحل · الانضمام للخطة (تعديل ٢٥ أغسطس)
+   ===================================================================== */
+/* شاشة «عرض الخطط» في حساب المعلّم */
+function hqPlanTypesHome(){
+  var _d=(document.getElementById('img-doc')||{src:''}).src;
+  var HQ_SVG_PLAN=_d?('<img src="'+_d+'" style="width:64px;height:64px;object-fit:contain">')
+    :'<svg viewBox="0 0 64 64" fill="none"><rect x="14" y="8" width="34" height="48" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.08)"/><line x1="22" y1="22" x2="40" y2="22" stroke="white" stroke-width="2.6" stroke-linecap="round"/><line x1="22" y1="32" x2="40" y2="32" stroke="white" stroke-width="2.6" stroke-linecap="round"/><line x1="22" y1="42" x2="34" y2="42" stroke="white" stroke-width="2.6" stroke-linecap="round"/></svg>';
+  var cards='';
+  for(var i=0;i<HQ_PLAN_TYPES.length;i++){
+    var t=HQ_PLAN_TYPES[i]; if(t.hide) continue;
+    var n=hqPlanTypeCount(t.k);
+    cards+='<div class="menu-card mc-'+((i%7)+1)+'" onclick="hqPlanTypeView(\''+t.k+'\')">'+
+      '<div class="mc-icon">'+HQ_SVG_PLAN+'</div><div class="mc-accent"></div>'+
+      '<div class="mc-label">'+t.n+(n?('<span class="hqp-cnt">'+arNum(n)+'</span>'):'')+'</div></div>';
+  }
+  var foot='<button type="button" class="tl-fetch" onclick="hqPlanHome()">خطط الطلاب المعتمَدة</button>';
+  openModal('خطط الحفظ','<div class="menu-grid hqp-grid">'+cards+'</div>'+foot);
+  window._modalBack=null;
+}
+/* عدد الطلاب المنضمّين لنوع خطة */
+function hqPlanTypeCount(k){
+  var st=hqPlanStore(), n=0;
+  for(var id in st){ if(st[id]&&st[id].approved&&st[id].type===k) n++; }
+  return n;
+}
+/* معاينة المراحل العشر لنوع الخطة (بالخط الزمني المعتمَد أو الافتراضي) */
+function hqPlanTypeView(type){
+  var t=hqPlanType(type); if(!t) return;
+  var td=hqPlanTermDays();
+  var per=Math.round(t.pages/10*10)/10, dper=Math.round(td.n/10*10)/10;
+  var head='<div class="mp-info" style="margin-bottom:10px">'+
+    '<div class="mp-info-m">'+t.n+'</div>'+
+    '<div class="mp-info-s">'+arNum(t.juz)+' جزء · '+arNum(t.pages)+' صفحة · '+arNum(td.n)+' يوماً دراسياً'+(td.real?'':' (افتراضي)')+'</div>'+
+    '<div class="mp-info-s">كل مرحلة نحو '+arNum(per)+' صفحة و'+arNum(dper)+' أيام</div>'+
+  '</div>';
+  var orbs=[];
+  for(var i=1;i<=10;i++){
+    orbs.push(hqStageOrb(i,'',"hqPlanStageInfo('"+type+"',"+i+")"));
+  }
+  var foot='<button type="button" class="tl-fetch" onclick="hqPlanJoin(\''+type+'\')">الانضمام للخطة</button>';
+  openModal(t.n, head+hqStageGrid(orbs)+foot);
+  hqPlanBack(hqPlanTypesHome,'‹ رجوع للخطط');
+}
+function hqPlanStageInfo(type,k){
+  var t=hqPlanType(type); if(!t) return;
+  var td=hqPlanTermDays();
+  var per=Math.round(t.pages/10*10)/10, dper=Math.round(td.n/10*10)/10;
+  showToast('المرحلة '+HQ_ORD10[k-1]+' — نحو '+arNum(per)+' صفحة و'+arNum(dper)+' أيام','info');
+}
+
+/* ---------- الانضمام للخطة: مربّعات الطلاب ---------- */
+function hqPlanJoin(type){
+  var t=hqPlanType(type); if(!t) return;
+  var studs=DB.students||[], g='';
+  for(var i=0;i<studs.length;i++){
+    var s=studs[i], p=hqPlanOf(s.id);
+    var mine=(p&&p.approved&&p.type===type);
+    var other=(p&&p.approved&&p.type!==type);
+    var sub=mine?('الجزء '+arNum(p.start)):(other?((hqPlanType(p.type)||{}).n||''):'');
+    g+='<button type="button" class="hqp-stu'+(mine?' on':'')+(other?' busy':'')+'" '+
+       'onclick="hqPlanJuzGrid(\''+type+'\',\''+s.id+'\')">'+
+       '<span class="hqp-stu-n">'+hqEsc(s.name)+'</span>'+
+       (sub?('<span class="hqp-stu-s">'+hqEsc(sub)+'</span>'):'')+'</button>';
+  }
+  if(!studs.length) g='<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد طلاب في الحلقة</div>';
+  openModal('الانضمام إلى '+t.n,
+    '<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-s">اختر الطالب ثم حدّد الجزء</div></div>'+
+    '<div class="hqp-stu-grid">'+g+'</div>');
+  hqPlanBack(function(){ hqPlanTypeView(type); },'‹ رجوع للمراحل');
+}
+
+/* ---------- اختيار الجزء: من ٣٠ إلى ١ ---------- */
+function hqPlanJuzGrid(type,sid){
+  var t=hqPlanType(type), s=hqPlanStu(sid); if(!t||!s) return;
+  var p=hqPlanOf(sid), cur=(p&&p.approved&&p.type===type)?p.start:0;
+  var list=hqPlanStartOptions(type), g='';
+  for(var i=0;i<list.length;i++){
+    var j=list[i];
+    g+='<button type="button" class="hqp-juz'+((j===cur)?' on':'')+'" onclick="hqPlanJoinGo(\''+type+'\',\''+sid+'\','+j+')">'+arNum(j)+'</button>';
+  }
+  var note=(t.juz>1)?('<div class="mp-info-s">يُختار جزء البداية ويُكمل النظام ما بعده تلقائياً ('+arNum(t.juz)+' أجزاء)</div>'):'';
+  var del=(p&&p.approved)?('<button type="button" class="tl-fetch hqp-del" onclick="hqPlanDelAsk(\''+sid+'\')">إلغاء خطة الطالب</button>'):'';
+  openModal(s.name,
+    '<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">'+t.n+'</div>'+
+    '<div class="mp-info-s">اختر الجزء</div>'+note+'</div>'+
+    '<div class="hqp-juz-grid">'+g+'</div>'+del);
+  hqPlanBack(function(){ hqPlanJoin(type); },'‹ رجوع للطلاب');
+}
+function hqPlanJoinGo(type,sid,juz){
+  var p=hqPlanMake(type,juz);
+  if(!p){ showToast('تعذّر بناء الخطة','error'); return; }
+  var td=hqPlanTermDays();
+  hqPlanApprove(sid,p,null);
+  var s=hqPlanStu(sid)||{name:''};
+  showToast(s.name+' — '+hqPlanName(p)+(td.real?'':' (أيام افتراضية)'), td.real?'success':'info');
+  hqPlanJoin(type);
+}
+
+/* =====================================================================
+   الربط بالتقييم والتسميع والدرجات (الدفعتان الرابعة والخامسة)
+   ===================================================================== */
+/* خطة الطالب الفعّالة (معتمَدة وذات أيام) — وإلا فالنظام الموحّد القديم */
+function hqPlanActive(sid){
+  var p=sid?hqPlanOf(sid):null;
+  return (p&&p.approved&&p.type&&p.type!=='old'&&(p.days||[]).length)?p:null;
+}
+function hqPlanMax(sid){ var p=hqPlanActive(sid); return p?p.days.length:UNIFIED_MAXDAY; }
+function hqPlanSegOf(sid,kind,n){
+  var p=hqPlanActive(sid); if(!p) return null;
+  var d=p.days[(parseInt(n,10)||0)-1]; if(!d) return null;
+  return (kind==='review')?d.r:d.l;
+}
+function hqPlanDayText(sid,kind,n){
+  var p=hqPlanActive(sid); if(!p) return '';
+  var seg=hqPlanSegOf(sid,kind,n);
+  return seg?hqSegText(p,seg):'لا يوجد';
+}
+/* مقطع الأسطر ← نطاقات آيات جاهزة لشاشة التسميع */
+function hqLineSegs(p,seg){
+  if(!seg) return [];
+  var lines=hqPlanLines(p), out=[];
+  for(var i=seg[0];i<=seg[1];i++){
+    var ln=lines[i-1]; if(!ln) continue;
+    var last=out[out.length-1];
+    if(last && last.s===ln.s){ if(ln.a>last.to) last.to=ln.a; }
+    else out.push({s:ln.s, from:(ln.sa||1), to:ln.a});
+  }
+  return out;
+}
+function hqPlanAyahSegs(sid,kind,n){
+  var p=hqPlanActive(sid), seg=hqPlanSegOf(sid,kind,n);
+  return (p&&seg)?hqLineSegs(p,seg):[];
+}
+/* المرحلة التي يقع فيها يوم من الخطة */
+function hqStageOfDay(p,n){
+  var st=hqPlanStages(p);
+  for(var i=0;i<st.length;i++){ if(st[i].n && n>=st[i].a && n<=st[i].b) return st[i].k; }
+  return 0;
+}
+function hqStageName(sid,n){
+  var p=hqPlanActive(sid); if(!p) return '';
+  var k=hqStageOfDay(p,n);
+  return k?('المرحلة '+HQ_ORD10[k-1]):'';
+}
+/* للتقارير: صفحات ما بين يومين من الخطة · وطرف المقرر (سورة · آية · صفحة) */
+function hqPlanPagesBetween(sid,kind,n1,n2){
+  var p=hqPlanActive(sid); if(!p) return null;
+  var a=hqPlanSegOf(sid,kind,n1), b=hqPlanSegOf(sid,kind,n2);
+  if(!a||!b) return null;
+  var lines=hqPlanLines(p), lo=Math.min(a[0],b[0]), hi=Math.max(a[1],b[1]), seen={}, cnt=0;
+  for(var i=lo;i<=hi;i++){ var pg=lines[i-1]&&lines[i-1].p; if(pg&&!seen[pg]){ seen[pg]=1; cnt++; } }
+  return cnt;
+}
+function hqPlanEdge(sid,kind,n,which){
+  var p=hqPlanActive(sid); if(!p) return null;
+  var seg=hqPlanSegOf(sid,kind,n), segs=hqPlanAyahSegs(sid,kind,n);
+  if(!seg||!segs.length) return null;
+  var lines=hqPlanLines(p);
+  var g=(which==='end')?segs[segs.length-1]:segs[0];
+  var ayah=(which==='end')?g.to:g.from;
+  var pg=(which==='end')?(lines[seg[1]-1]||{}).p:(lines[seg[0]-1]||{}).p;
+  return { surah:hqSurName(g.s), ayah:ayah, page:(pg!=null?+pg:null) };
+}
+/* رأس شاشة الطالب: «يوم ٧ - مرحلة ٣» */
+function hdrPlanTxt(sid,n){
+  var p=hqPlanActive(sid); if(!p) return '—';
+  var k=hqStageOfDay(p,n);
+  return '<span class="hdr-stat-w">يوم</span> '+arNum(n)+
+         ' <span class="hdr-stat-w">-</span> <span class="hdr-stat-w">مرحلة</span> '+arNum(k||1);
+}
 
 function showMonthPlan(m){
   var DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
@@ -6062,9 +6268,10 @@ function hsFindAyah(arr,a){
   var best=null; for(var j=0;j<arr.length;j++){ if(best==null||Math.abs(arr[j].a-a)<Math.abs(best.a-a)) best=arr[j]; }
   return best;
 }
-async function hsPages(kind,firstN,lastN){
+async function hsPages(kind,firstN,lastN,sid){
   try{
     if(!firstN||!lastN) return null;
+    if(sid && typeof hqPlanActive==='function' && hqPlanActive(sid)) return hqPlanPagesBetween(sid,kind,firstN,lastN);
     var tA=misPlanText(kind,firstN), sA=misParsePlan(tA);
     var tB=misPlanText(kind,lastN), sB=misParsePlan(tB);
     if(!sA.length||!sB.length) return null;
@@ -6081,9 +6288,10 @@ function hsSurahName(num){
   return '';
 }
 /* طرف مقرر (بداية أو نهاية): السورة والآية والصفحة */
-async function hsEdge(kind,n,which){
+async function hsEdge(kind,n,which,sid){
   try{
     if(!n) return null;
+    if(sid && typeof hqPlanActive==='function' && hqPlanActive(sid)) return hqPlanEdge(sid,kind,n,which);
     var t=misPlanText(kind,n), segs=misParsePlan(t);
     if(!segs.length) return null;
     var g=(which==='end')?segs[segs.length-1]:segs[0];
@@ -6168,7 +6376,7 @@ function showHalqaStats(){
     var cs=evCurrentScore(s.id), term=cs.term, tIdx=Math.min(term,EX_TERMS)||1;
     var e1=exSum(exGet(s.id,tIdx,1)), e2=exSum(exGet(s.id,tIdx,2)), e3=exSum(exGet(s.id,tIdx,3));
     function ex(v){ return v==null?'\u2014':evFmt(v); }
-    reps.push({fl:fl.first,ll:fl.last,fr:fr.first,lr:fr.last});
+    reps.push({sid:s.id,fl:fl.first,ll:fl.last,fr:fr.first,lr:fr.last});
     var _hi=hqInfoOf(hqActiveHalqa());
     function _edge(id){ return '<div class="hs-edge" id="'+id+'">'+
       '<span class="hs-edge-p"><i>السورة</i><b>…</b></span>'+
@@ -6245,9 +6453,9 @@ function showHalqaStats(){
       for(var i=0;i<reps.length;i++){
         if(!document.getElementById('hs-lp-'+i)) return;
         var r=reps[i];
-        var lp=await hsPages('lesson', r.fl, r.ll);
+        var lp=await hsPages('lesson', r.fl, r.ll, r.sid);
         var e1=document.getElementById('hs-lp-'+i); if(e1) e1.textContent=(lp!=null?arNum(lp):'\u2014');
-        var rp=await hsPages('review', r.fr, r.lr);
+        var rp=await hsPages('review', r.fr, r.lr, r.sid);
         var e2=document.getElementById('hs-rp-'+i); if(e2) e2.textContent=(rp!=null?arNum(rp):'\u2014');
         /* بداية/نهاية الدرس والمراجعة: السورة · الآية · الصفحة */
         var _pairs=[['hs-ls-'+i,'lesson',r.fl,'start'],['hs-le-'+i,'lesson',r.ll,'end'],
@@ -6255,7 +6463,7 @@ function showHalqaStats(){
         for(var q=0;q<_pairs.length;q++){
           var pr=_pairs[q], box=document.getElementById(pr[0]);
           if(!box) continue;
-          var ed=await hsEdge(pr[1],pr[2],pr[3]);
+          var ed=await hsEdge(pr[1],pr[2],pr[3],r.sid);
           var bs=box.querySelectorAll('b');
           if(bs.length>=3){
             bs[0].textContent=ed?(ed.surah||'\u2014'):'\u2014';
@@ -7861,6 +8069,10 @@ function tlSave(){
     var st=tlStore();
     st[term]=obj; st.activeKey=term;
     save();
+    try{
+      var _rb=(typeof hqPlanRebuildAll==='function')?hqPlanRebuildAll():0;
+      if(_rb) setTimeout(function(){ showToast('\u267b\ufe0f \u0623\u064f\u0639\u064a\u062f \u062a\u0648\u0632\u064a\u0639 '+arNum(_rb)+' \u062e\u0637\u0629 \u0639\u0644\u0649 \u0627\u0644\u062e\u0637 \u0627\u0644\u0632\u0645\u0646\u064a \u0627\u0644\u062c\u062f\u064a\u062f \u2014 \u0645\u0627 \u0645\u0636\u0649 \u0644\u0645 \u064a\u064f\u0645\u0633','info'); },1400);
+    }catch(e){}
     showToast(skipped?('اعتُمد الخط الزمني · تُخطّيت '+arNum(skipped)+' إجازة ناقصة أو خارج مدى الفصل'):('اعتُمد الخط الزمني · '+tName), skipped?'info':'success');
     tlShow();
   }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
@@ -7971,14 +8183,14 @@ function tlShow(){
 
 /* صفحات مقطع واحد (kind: lesson|review) بين رقمين موحّدين — متزامنة عبر ذاكرة الصفحات */
 var _HQPG={};   /* مخزن أرقام صفحات الآيات */
-async function hqPagesOf(kind,firstN,lastN){
-  try{ return await hsPages(kind,firstN,lastN); }catch(e){ return null; }
+async function hqPagesOf(kind,firstN,lastN,sid){
+  try{ return await hsPages(kind,firstN,lastN,sid); }catch(e){ return null; }
 }
 /* صفحات طالب خلال مجموعة أيام */
 async function hqStuPages(sid,kind,days){
   var fl=hsFirstLast(days||[],kind);
   if(!fl.first||!fl.last) return 0;
-  var n=await hqPagesOf(kind,fl.first,fl.last);
+  var n=await hqPagesOf(kind,fl.first,fl.last,sid);
   return n||0;
 }
 /* كل طلاب حلقة */
@@ -8662,6 +8874,15 @@ function evCurrentScore(sid){ var t=evTerms(sid); var term=t.length; var sc=evTe
   sc.behavior=exTermSum(sid,termIdx);                            /* خانة «الاختبارات» = مجموع الاختبارات الثلاثة (١٠ لكل اختبار) */
   sc.lesson=evEarned(sid,'lesson');                              /* نقطة لكل درس بعد نقطة البداية */
   sc.review=evEarned(sid,'review');                              /* ونقطة لكل مراجعة كذلك */
+  /* خطة الطالب: الدرجة نسبةٌ من خطته هو، فيتساوى صاحب الجزء وصاحب الخمسة إذا أتمّ كلٌّ خطته */
+  var _pl=(typeof hqPlanActive==='function')?hqPlanActive(sid):null;
+  if(_pl){
+    var _nd=_pl.days.length||1;
+    sc.planName=hqPlanName(_pl); sc.planDays=_nd;
+    sc.lessonDone=sc.lesson; sc.reviewDone=sc.review;
+    sc.lesson=Math.min(20, sc.lesson/_nd*20);
+    sc.review=Math.min(20, sc.review/_nd*20);
+  }
   sc.part=evPartPoints(sid);                                     /* المشاركات: + نقطة لكل مشاركة */
   sc.pen =evPenPoints(sid);                                      /* العقوبات: − نقطة لكل عقوبة */
   sc.total=sc.lesson+sc.review+sc.tajweed+sc.attend+sc.part-sc.pen+sc.behavior;
@@ -8674,6 +8895,7 @@ function evScorePanel(sid){
   function row(lbl,val,max){ return '<div class="ev-sc"><span class="ev-sc-l">'+lbl+'</span><span class="ev-sc-v"><span class="ev-got">'+evFmtEn(val)+'</span> / '+max+'</span></div>'; }
   return '<div class="ev-scores">'
     +'<div class="ev-scores-hdr">\u062f\u0631\u062c\u0627\u062a \u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062f\u0631\u0627\u0633\u064a '+(EV_TERM_NAMES[c.term]||arNum(c.term))+'</div>'
+    +(s.planName?('<div class="ev-sc-plan">'+hqEsc(s.planName)+' \u00b7 \u0627\u0644\u062f\u0631\u0633 '+arNum(s.lessonDone||0)+'/'+arNum(s.planDays)+' \u00b7 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 '+arNum(s.reviewDone||0)+'/'+arNum(s.planDays)+'</div>'):'')
     +'<div class="ev-sc-grid">'
       +row('\u0627\u0644\u062f\u0631\u0633',s.lesson,20)+row('\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629',s.review,20)
       +row('\u0627\u0644\u062a\u062c\u0648\u064a\u062f',s.tajweed,15)+row('\u0627\u0644\u062d\u0636\u0648\u0631',s.attend,15)
@@ -9330,7 +9552,8 @@ function evSyncManual(dd){
 }
 /* بطاقة الدرس/المراجعة: صف الجزء+الرقم، ثم عرض التسميع، ثم أزرار المصير */
 function evRecCell(kind,curLinear,todayVal,sid){
-  var p=upFromLinear(curLinear);
+  var _pl=(typeof hqPlanActive==='function')?hqPlanActive(sid):null;
+  var p=_pl?{juz:0,idx:curLinear}:upFromLinear(curLinear);
   var done=(todayVal && (String(todayVal).indexOf('n:')===0 || String(todayVal).indexOf('x:')===0));
   var isLesson=(kind==='lesson');
   var lbl=isLesson?'\u0627\u0644\u062f\u0631\u0633':'\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629';
@@ -9338,8 +9561,10 @@ function evRecCell(kind,curLinear,todayVal,sid){
   return '<div class="ev-cell ev-cell-rec ev-jp ev-jp-wide'+(done?' done':'')+'" data-kind="'+kind+'" data-sid="'+sid+'">'
     +'<div class="ev-lbl">'+lbl+'</div>'
     +'<div class="ev-jp-sels">'
-      +evJPDD('ev-'+kind+'-juz',kind,'juz',p.juz,evJuzLabel(p.juz),'',true)
-      +evJPDD('ev-'+kind+'-idx',kind,'idx',p.idx,evIdxLabel(kind,p.juz,p.idx),'',true)
+      +(_pl?evJPDD('ev-'+kind+'-juz',kind,'juz',hqStageOfDay(_pl,curLinear),hqStageName(sid,curLinear)||'الخطة','',true)
+           :evJPDD('ev-'+kind+'-juz',kind,'juz',p.juz,evJuzLabel(p.juz),'',true))
+      +(_pl?evJPDD('ev-'+kind+'-idx',kind,'idx',curLinear,arNum(curLinear)+' \u00b7 '+hqPlanDayText(sid,kind,curLinear),'',true)
+           :evJPDD('ev-'+kind+'-idx',kind,'idx',p.idx,evIdxLabel(kind,p.juz,p.idx),'',true))
     +'</div>'
     +viewBtn
     +'<div class="ev-jp-rev">'
@@ -9351,6 +9576,12 @@ function evRecCell(kind,curLinear,todayVal,sid){
 function evJpText(kind){
   var js=document.getElementById('ev-'+kind+'-juz'), is=document.getElementById('ev-'+kind+'-idx');
   if(!js||!is) return {n:0,txt:'',juz:0,idx:1};
+  var _c=document.querySelector('.ev-cell-rec[data-kind="'+kind+'"]');
+  var _sid=_c?(_c.getAttribute('data-sid')||''):'';
+  if(_sid && typeof hqPlanActive==='function' && hqPlanActive(_sid)){
+    var _n=parseInt(is.getAttribute('data-val'),10)||1;
+    return {n:_n, txt:hqPlanDayText(_sid,kind,_n), juz:0, idx:_n, plan:true, sid:_sid};
+  }
   var juz=parseInt(js.getAttribute('data-val'),10)||0, idx=parseInt(is.getAttribute('data-val'),10)||1, n=upToLinear(juz,idx);
   return {n:n,txt:upText(kind,n)||'',juz:juz,idx:idx};
 }
@@ -9368,8 +9599,9 @@ function evMarkEval(sid, kind, num){
     var rec=DB.evals[sid]||{progress:{lesson:0,review:0},days:{}};
     if(!rec.progress) rec.progress={lesson:0,review:0};
     if(!rec.days) rec.days={};
-    var req=parseInt(num,10)||Math.min(UNIFIED_MAXDAY,(rec.progress[kind]||0)+1);
-    if(req<1) req=1; if(req>UNIFIED_MAXDAY) req=UNIFIED_MAXDAY;
+    var _mx=(typeof hqPlanMax==='function')?hqPlanMax(sid):UNIFIED_MAXDAY;
+    var req=parseInt(num,10)||Math.min(_mx,(rec.progress[kind]||0)+1);
+    if(req<1) req=1; if(req>_mx) req=_mx;
     var key=evDateKey(); var day=rec.days[key]||{};
     function val(id){ var el=document.getElementById(id); return el?(el.getAttribute('data-val')||''):''; }
     var flds=['tajweed','attend','behavior'];
@@ -9430,8 +9662,9 @@ function evMarkDone(sid, kind, num, silent){
     var rec=DB.evals[sid]||{progress:{lesson:0,review:0},days:{}};
     if(!rec.progress) rec.progress={lesson:0,review:0};
     if(!rec.days) rec.days={};
-    var req=parseInt(num,10)||Math.min(UNIFIED_MAXDAY,(rec.progress[kind]||0)+1);
-    if(req<1) req=1; if(req>UNIFIED_MAXDAY) req=UNIFIED_MAXDAY;
+    var _mx=(typeof hqPlanMax==='function')?hqPlanMax(sid):UNIFIED_MAXDAY;
+    var req=parseInt(num,10)||Math.min(_mx,(rec.progress[kind]||0)+1);
+    if(req<1) req=1; if(req>_mx) req=_mx;
     var key=evDateKey(); var day=rec.days[key]||{};
     function val(id){ var el=document.getElementById(id); return el?(el.getAttribute('data-val')||''):''; }
     var flds=['tajweed','attend','behavior'];
@@ -9447,9 +9680,16 @@ function evMarkDone(sid, kind, num, silent){
 function evToggleStart(){ var b=document.getElementById('ev-start-box'); if(b) b.classList.toggle('open'); }
 function evSetStart(sid){
   try{
-    function lin(kind){ var js=document.getElementById('ev-start-'+kind+'-juz'), is=document.getElementById('ev-start-'+kind+'-idx'); return upToLinear(js?js.getAttribute('data-val'):0, is?is.getAttribute('data-val'):1); }
-    var l=lin('lesson'), r=lin('review');
-    if(l<1||l>UNIFIED_MAXDAY||r<1||r>UNIFIED_MAXDAY){ showToast('\u0627\u062e\u062a\u064a\u0627\u0631 \u063a\u064a\u0631 \u0635\u0627\u0644\u062d','error'); return; }
+    var _pl=(typeof hqPlanActive==='function')?hqPlanActive(sid):null;
+    var _mx=_pl?_pl.days.length:UNIFIED_MAXDAY, l, r;
+    if(_pl){
+      var _ld=document.getElementById('ev-start-lesson-day'), _rd=document.getElementById('ev-start-review-day');
+      l=parseInt(_ld?_ld.value:0,10)||0; r=parseInt(_rd?_rd.value:0,10)||0;
+    } else {
+      var lin=function(kind){ var js=document.getElementById('ev-start-'+kind+'-juz'), is=document.getElementById('ev-start-'+kind+'-idx'); return upToLinear(js?js.getAttribute('data-val'):0, is?is.getAttribute('data-val'):1); };
+      l=lin('lesson'); r=lin('review');
+    }
+    if(l<1||l>_mx||r<1||r>_mx){ showToast('\u0627\u062e\u062a\u064a\u0627\u0631 \u063a\u064a\u0631 \u0635\u0627\u0644\u062d','error'); return; }
     if(Math.abs(l-r)>EV_GAP_MAX){ showToast('⚠️ الفارق بين الدرس والمراجعة '+arNum(Math.abs(l-r))+' — الحدّ المسموح '+arNum(EV_GAP_MAX),'error'); return; }
     if(!DB.evals) DB.evals={};
     var rec=DB.evals[sid]||{progress:{lesson:0,review:0},days:{}};
@@ -9458,8 +9698,12 @@ function evSetStart(sid){
     rec.progress.lesson=l-1; rec.progress.review=r-1;   /* بلا نقاط: لا يُكتب سجل يوم */
     rec.base={lesson:l-1, review:r-1};                  /* أساس احتساب النقاط من هنا */
     DB.evals[sid]=rec; save();
-    var pL=upFromLinear(l), pR=upFromLinear(r);
-    showToast('\ud83c\udfaf \u0627\u0644\u062f\u0631\u0633: \u062c'+arNum(pL.juz)+'\u00b7'+arNum(pL.idx)+' \u2022 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629: \u062c'+arNum(pR.juz)+'\u00b7'+arNum(pR.idx),'success');
+    if(_pl){
+      showToast('\ud83c\udfaf \u0627\u0644\u062f\u0631\u0633: \u064a\u0648\u0645 '+arNum(l)+' \u2022 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629: \u064a\u0648\u0645 '+arNum(r),'success');
+    } else {
+      var pL=upFromLinear(l), pR=upFromLinear(r);
+      showToast('\ud83c\udfaf \u0627\u0644\u062f\u0631\u0633: \u062c'+arNum(pL.juz)+'\u00b7'+arNum(pL.idx)+' \u2022 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629: \u062c'+arNum(pR.juz)+'\u00b7'+arNum(pR.idx),'success');
+    }
     openStudentEval(sid);
   }catch(e){ showToast('\u062d\u062f\u062b \u062e\u0637\u0623\u060c \u062d\u0627\u0648\u0644 \u0645\u062c\u062f\u062f\u0627\u064b','error'); }
 }
@@ -9773,7 +10017,9 @@ function openStudentEval(sid){
   if(!DB.evals) DB.evals={};
   var rec=DB.evals[sid]||{}; var prog=rec.progress||{lesson:0,review:0};
   var key=evDateKey(); var today=(rec.days&&rec.days[key])||{};
-  var reqL=Math.min(UNIFIED_MAXDAY,(prog.lesson||0)+1), reqR=Math.min(UNIFIED_MAXDAY,(prog.review||0)+1);
+  var _plan=(typeof hqPlanActive==='function')?hqPlanActive(sid):null;
+  var _mx=_plan?_plan.days.length:UNIFIED_MAXDAY;
+  var reqL=Math.min(_mx,(prog.lesson||0)+1), reqR=Math.min(_mx,(prog.review||0)+1);
   var recCell=evRecCell('lesson',reqL,today.lesson,sid);
   var reviewCell=evRecCell('review',reqR,today.review,sid);
   function cell(lbl,inner){ return '<div class="ev-cell"><div class="ev-lbl">'+lbl+'</div>'+inner+'</div>'; }
@@ -9795,17 +10041,28 @@ function openStudentEval(sid){
   var _startToggle=_isT?('<button type="button" class="ev-act-box" onclick="evToggleStart()">\u062a\u0639\u064a\u064a\u0646 \u0646\u0642\u0637\u0629 \u0627\u0644\u0628\u062f\u0627\u064a\u0629</button>'):'';
   var _misRepBtn=_isT?('<button type="button" class="ev-act-box" onclick="evOpenMisReport(\''+sid+'\')">\u062a\u0642\u0631\u064a\u0631 \u0623\u062e\u0637\u0627\u0621 \u0627\u0644\u062a\u0644\u0627\u0648\u0629</button>'):'';
   var _resetBtn=_isT?('<button type="button" class="ev-act-box ev-reset-box" onclick="evResetToday(\''+sid+'\')">\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u0642\u064a\u064a\u0645</button>'):'';
-  var _pL=upFromLinear(reqL), _pR=upFromLinear(reqR);
-  var _startBox=_isT?('<div class="ev-start-box" id="ev-start-box">'
-    +'<div class="ev-start-hint">\u0644\u0644\u0637\u0627\u0644\u0628 \u0627\u0644\u062c\u062f\u064a\u062f \u0627\u0644\u0630\u064a \u064a\u062d\u0641\u0638 \u0645\u0633\u0628\u0642\u0627\u064b: \u062d\u062f\u0651\u062f \u0627\u0644\u062c\u0632\u0621 \u0648\u0631\u0642\u0645 \u0627\u0644\u062f\u0631\u0633 \u0648\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0644\u0630\u064a\u0646 \u064a\u0628\u062f\u0623 \u0645\u0646\u0647\u0645\u0627 \u0627\u0644\u0622\u0646 (\u0628\u0644\u0627 \u0646\u0642\u0627\u0637).</div>'
-    +'<div class="ev-start-row"><label>\u0627\u0644\u062f\u0631\u0633</label>'
+  var _pL=_plan?{juz:0,idx:reqL}:upFromLinear(reqL), _pR=_plan?{juz:0,idx:reqR}:upFromLinear(reqR);
+  var _dayOpts=function(kind,cur){
+    var o='';
+    for(var i=1;i<=_mx;i++){ o+='<option value="'+i+'"'+((i===cur)?' selected':'')+'>'+arNum(i)+' \u00b7 '+hqEsc(hqPlanDayText(sid,kind,i))+'</option>'; }
+    return o;
+  };
+  var _startRows=_plan
+    ? ('<div class="ev-start-row ev-start-plan"><label>\u0627\u0644\u062f\u0631\u0633</label>'
+        +'<select class="prof-form-input" id="ev-start-lesson-day">'+_dayOpts('lesson',reqL)+'</select></div>'
+      +'<div class="ev-start-row ev-start-plan"><label>\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629</label>'
+        +'<select class="prof-form-input" id="ev-start-review-day">'+_dayOpts('review',reqR)+'</select></div>')
+    : ('<div class="ev-start-row"><label>\u0627\u0644\u062f\u0631\u0633</label>'
       +evJPDD('ev-start-lesson-juz','lesson','juz',_pL.juz,evJuzLabel(_pL.juz),evJuzOptions(_pL.juz))
       +evJPDD('ev-start-lesson-idx','lesson','idx',_pL.idx,evIdxLabel('lesson',_pL.juz,_pL.idx),evIdxOptions('lesson',_pL.juz,_pL.idx))
     +'</div>'
     +'<div class="ev-start-row"><label>\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629</label>'
       +evJPDD('ev-start-review-juz','review','juz',_pR.juz,evJuzLabel(_pR.juz),evJuzOptions(_pR.juz))
       +evJPDD('ev-start-review-idx','review','idx',_pR.idx,evIdxLabel('review',_pR.juz,_pR.idx),evIdxOptions('review',_pR.juz,_pR.idx))
-    +'</div>'
+    +'</div>');
+  var _startBox=_isT?('<div class="ev-start-box" id="ev-start-box">'
+    +'<div class="ev-start-hint">\u0644\u0644\u0637\u0627\u0644\u0628 \u0627\u0644\u062c\u062f\u064a\u062f \u0627\u0644\u0630\u064a \u064a\u062d\u0641\u0638 \u0645\u0633\u0628\u0642\u0627\u064b: \u062d\u062f\u0651\u062f \u0627\u0644\u062c\u0632\u0621 \u0648\u0631\u0642\u0645 \u0627\u0644\u062f\u0631\u0633 \u0648\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0644\u0630\u064a\u0646 \u064a\u0628\u062f\u0623 \u0645\u0646\u0647\u0645\u0627 \u0627\u0644\u0622\u0646 (\u0628\u0644\u0627 \u0646\u0642\u0627\u0637).</div>'
+    +_startRows
     +'<button type="button" class="ev-start-save" onclick="evSetStart(\''+sid+'\')">\u062d\u0641\u0638 \u0646\u0642\u0637\u0629 \u0627\u0644\u0628\u062f\u0627\u064a\u0629</button>'
     +'</div>'):'';
   var _eval=_isT?('<div class="ev-eval">'
@@ -10436,7 +10693,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-25 · 41';
+  window.HQ_BUILD='2026-08-25 · 43';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -11334,12 +11591,14 @@ function misViewPick(){
   const kind=(MIS.kind==='review')?'review':'lesson';
   const lbl=(kind==='lesson')?'\u0627\u0644\u062f\u0631\u0633':'\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629';
   const val=(kind==='lesson')?MIS.lesson:MIS.review;
+  const _plP=(typeof hqPlanActive==='function')?hqPlanActive(MIS.sid):null;
+  const MAXD=_plP?_plP.days.length:MIS_MAXDAY;
 
   w.innerHTML='<div class="mis-wrap">'+
     '<div class="mis-bar"><button class="mis-back" onclick="misBack()">\u2039 \u0631\u062c\u0648\u0639</button><div class="mis-ttl">'+stu.name+'</div><span style="width:62px"></span></div>'+
     '<div class="mis-card">'+
-      '<div class="mis-lbl">\u0631\u0642\u0645 '+lbl+' <span style="color:#8ba6a4;font-weight:600">(1 \u2013 '+MIS_MAXDAY+')</span></div>'+
-      '<input type="number" class="mis-num" id="mis-'+kind+'" min="1" max="'+MIS_MAXDAY+'" value="'+val+'" oninput="misPreview(\''+kind+'\')">'+
+      '<div class="mis-lbl">\u0631\u0642\u0645 '+lbl+' <span style="color:#8ba6a4;font-weight:600">(1 \u2013 '+MAXD+')</span></div>'+
+      '<input type="number" class="mis-num" id="mis-'+kind+'" min="1" max="'+MAXD+'" value="'+val+'" oninput="misPreview(\''+kind+'\')">'+
       '<div class="mis-prev" id="mis-prev-'+kind+'"></div>'+
       '<button class="mis-btn" style="margin-top:10px" onclick="misStart(\''+kind+'\')">\u0628\u062f\u0621 \u062a\u0633\u0645\u064a\u0639 '+lbl+'</button>'+
     '</div>'+
@@ -11351,11 +11610,13 @@ function misPreview(kind){
   const box=document.getElementById('mis-prev-'+kind);
   if(!inp||!box) return;
   const n=parseInt(inp.value,10)||0;
-  if(n<1||n>MIS_MAXDAY){ box.innerHTML='<span class="mis-prev-bad">رقم خارج النطاق</span>'; return; }
+  const _plV=(typeof hqPlanActive==='function')?hqPlanActive(MIS.sid):null;
+  const _mxV=_plV?_plV.days.length:MIS_MAXDAY;
+  if(n<1||n>_mxV){ box.innerHTML='<span class="mis-prev-bad">رقم خارج النطاق</span>'; return; }
   MIS[kind]=n;
-  const t=misPlanText(kind,n);
+  const t=_plV?hqPlanDayText(MIS.sid,kind,n):misPlanText(kind,n);
   if(!t){ box.innerHTML='<span class="mis-prev-bad">لا توجد '+(kind==='lesson'?'خطة درس':'مراجعة')+' لهذا الرقم</span>'; return; }
-  const segs=misParsePlan(t);
+  const segs=_plV?hqPlanAyahSegs(MIS.sid,kind,n):misParsePlan(t);
   const nm=segs.length? segs.map(function(g){
     return (g.from===1&&g.to===misAyahCount(g.s))? misSurahName(g.s) : misSurahName(g.s)+' '+g.from+'\u2013'+g.to;
   }).join(' \u00b7 ') : '\u2014';
@@ -11368,10 +11629,12 @@ async function misStart(kind, nOverride, ro){
   MIS.ro=!!ro;
   let n=parseInt(nOverride,10)||0;
   if(!n){ const inp=document.getElementById(kind==='lesson'?'mis-lesson':'mis-review'); n=parseInt(inp?inp.value:0,10)||0; }
-  if(n<1||n>MIS_MAXDAY){ misToast('أدخل رقمًا بين 1 و '+MIS_MAXDAY,'err'); return; }
   if(!MIS.sid){ misToast('اختر الطالب أولاً','err'); return; }
-  const txt=misPlanText(kind,n);
-  const segs=misParsePlan(txt);
+  const _pl=(typeof hqPlanActive==='function')?hqPlanActive(MIS.sid):null;
+  const _mx=_pl?_pl.days.length:MIS_MAXDAY;
+  if(n<1||n>_mx){ misToast('أدخل رقمًا بين 1 و '+_mx,'err'); return; }
+  const txt=_pl?hqPlanDayText(MIS.sid,kind,n):misPlanText(kind,n);
+  const segs=_pl?hqPlanAyahSegs(MIS.sid,kind,n):misParsePlan(txt);
   if(!segs.length){ misToast('لا يوجد نطاق آيات لهذا الرقم','err'); return; }
   MIS[kind]=n; MIS.kind=kind; MIS.num=n; MIS.planText=txt; MIS.segs=segs;
 
@@ -11397,8 +11660,11 @@ async function misStart(kind, nOverride, ro){
 function misViewRead(){
   const w=document.getElementById('mis-content'); if(!w) return;
   const stu=DB.students.find(s=>s.id===MIS.sid)||{name:'\u2014'};
-  const _mp=(typeof upFromLinear==='function')?upFromLinear(MIS.num):null;
-  const kindLbl=(MIS.kind==='lesson'?'الدرس':'المراجعة')+' '+(_mp?_mp.idx:MIS.num)+(_mp?' \u00b7 الجزء '+_mp.juz:'');
+  const _plR=(typeof hqPlanActive==='function')?hqPlanActive(MIS.sid):null;
+  const _mp=(!_plR&&typeof upFromLinear==='function')?upFromLinear(MIS.num):null;
+  const kindLbl=_plR
+    ? ((MIS.kind==='lesson'?'الدرس':'المراجعة')+' '+MIS.num+' \u00b7 '+(hqStageName(MIS.sid,MIS.num)||''))
+    : ((MIS.kind==='lesson'?'الدرس':'المراجعة')+' '+(_mp?_mp.idx:MIS.num)+(_mp?' \u00b7 الجزء '+_mp.juz:''));
   const _misWord=(MIS.kind==='lesson'?'الدرس':'المراجعة');
   const _misDone='أنجز '+_misWord, _misNotDone='لم ينجز '+_misWord;
 
@@ -11696,7 +11962,7 @@ async function showRecitationView(){
     var n=(typeof v==='string' && v.indexOf('n:')===0) ? parseInt(v.slice(2),10) : 0;
     if(!n) return '<div class="rec-empty">لم '+label+' اليوم بعد</div>';
     var txt='';
-    try{ txt=upText(kind,n)||''; }catch(e){}
+    try{ txt=(typeof hqPlanActive==='function'&&hqPlanActive(sid))?hqPlanDayText(sid,kind,n):(upText(kind,n)||''); }catch(e){}
     if(!txt) return '<div class="rec-empty">لم '+label+' اليوم بعد</div>';
     return '<div class="rec-plan">'+hqEsc(txt)+' · بدون أخطاء مسجّلة ✓</div>';
   }
