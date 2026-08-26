@@ -1617,7 +1617,14 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .ev-susp-note{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px 12px;font-size:.8rem;color:#bcd6d3;line-height:1.6;margin-bottom:12px}
 .ev-bulk-list{max-height:180px;overflow:auto;text-align:right;margin-top:10px;background:rgba(255,255,255,.04);border-radius:12px;padding:10px 12px}
 .ev-bulk-nm{font-size:.83rem;color:#dbeae8;padding:3px 0}
-.ev-row4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.ev-row4{display:grid;grid-template-columns:1fr;gap:9px}
+.ev-row4 .ev-cell{flex-direction:row;align-items:center;gap:12px;padding:12px 14px}
+.ev-row4 .ev-cell .ev-lbl{flex:0 0 96px;text-align:right;font-size:.78rem}
+.ev-row4 .ev-cell .hqsel,.ev-row4 .ev-cell select{flex:1;min-width:0}
+.ev-row4 .ev-part-cell{justify-content:flex-start}
+.ev-row4 .ev-why{flex:1;min-width:0;text-align:right;font-size:.68rem;padding:9px 11px}
+.ev-row4 .ev-pm-btn{flex:0 0 70px}
+.ev-row4 .ev-part-val{flex:0 0 58px;text-align:center}
 /* بحجم مربّع «التجويد/الحضور» نفسه وبألوان من لوحة الصفحة */
 .ev-pm-btn{width:100%;height:31px;display:flex;align-items:center;justify-content:center;
   padding:0;border-radius:9px;border:1px solid;cursor:pointer;
@@ -2058,7 +2065,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .ev-jp-row .ev-jpdd-idx{flex:2 1 120px}
 .ev-jp-row .ev-jp-btn{width:auto;flex:1 1 72px;white-space:nowrap;padding:9px 8px}
 .ev-jp-row .ev-jp-btn.view{flex:1 1 108px}
-.ev-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;direction:rtl;align-items:stretch}
+.ev-row3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:9px;direction:rtl;align-items:stretch}
 .ev-row3 .ev-cell{background:rgba(247,215,116,.07);border-color:rgba(247,215,116,.25)}
 .ev-row3 .ev-act-box{margin:0}
 .rem-wrap{display:flex;flex-direction:column;gap:10px}
@@ -2657,6 +2664,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
     </div>
     <div class="hdr-row3" id="hdr-row3">
       <div class="hdr-plan-track" id="hdr-plan-track" style="display:none"></div>
+      <div class="hdr-tring" id="hdr-tring" style="display:none"></div>
       <div class="hdr-datebox" id="hdr-datebox">
         <div class="hdr-date-hijri" id="hdr-hijri">جارٍ...</div>
         <div class="hdr-date-row2">
@@ -2729,6 +2737,27 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .gr.gr-end{justify-content:flex-end}
 .hqp-grid{margin:2px 0 4px}
 .hqp-cnt{display:inline-block;margin-right:6px;background:rgba(0,0,0,.28);border-radius:20px;padding:1px 8px;font-size:.72rem;font-weight:800}
+.hdr-tring{width:100%;display:flex;align-items:center;gap:13px;background:rgba(0,0,0,.2);border:1px solid rgba(201,162,39,.22);border-radius:14px;padding:10px 13px;margin-top:8px}
+.htr-ring{position:relative;flex:0 0 58px;width:58px;height:58px}
+.htr-ring svg{width:100%;height:100%}
+.htr-arc{transition:stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1)}
+.htr-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 .68rem 'Cairo',sans-serif;color:#e8f7f6;direction:ltr}
+.htr-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.htr-ttl{font-size:.66rem;font-weight:800;color:#f0d060}
+.htr-sub{font-size:.58rem;font-weight:700;color:#9abdba}
+.htr-msg{display:inline-flex;padding:3px 10px;border-radius:99px;font-size:.62rem;font-weight:800}
+.htr-msg.on{background:rgba(52,211,153,.14);color:#5fe3a6;border:1px solid rgba(52,211,153,.35)}
+.htr-msg.ahead{background:rgba(247,215,116,.16);color:#f7d774;border:1px solid rgba(247,215,116,.4)}
+.htr-msg.behind{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+@keyframes ringSpinR{to{transform:rotate(-360deg)}}
+.gcircle.spin-cw svg{animation:ringSpin 6s linear infinite}
+.gcircle.spin-ccw svg{animation:ringSpinR 6s linear infinite}
+.gcircle.now-here.spin-cw svg{animation:ringSpin 4.2s linear infinite}
+.gcircle.now-here.spin-ccw svg{animation:ringSpinR 4.2s linear infinite}
+.stg-cup{position:absolute;top:50%;left:-52px;transform:translateY(-50%);width:46px;height:54px;z-index:5;cursor:pointer;filter:drop-shadow(0 4px 10px rgba(247,215,116,.45));animation:cupFloat 3.2s ease-in-out infinite;touch-action:manipulation}
+.stg-cup svg{position:static!important;width:100%;height:100%;animation:none!important;pointer-events:none}
+.stg-cup:active{transform:translateY(-50%) scale(.9)}
+@keyframes cupFloat{0%,100%{transform:translateY(-50%) rotate(-4deg)}50%{transform:translateY(-58%) rotate(4deg)}}
 .hdr-w-line{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .hdr-w-line .hdr-welcome-badge{margin-bottom:0}
 .hdr-logout-mini{display:flex;align-items:center;gap:5px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.28);border-radius:10px;padding:5px 10px;cursor:pointer;color:#fca5a5;font:700 .64rem inherit;touch-action:manipulation}
@@ -3337,6 +3366,7 @@ function hdrRefreshStudentStats(){
     var vEl=document.getElementById('hdr-stat-review');
     if(vEl){ vEl.innerHTML=_hp?hdrPlanTxt(st.id,_nr):hdrStatTxt(upFromLinear(_nr)); }
     try{ hdrPlanTrack(); }catch(e){}
+    try{ hdrTeacherRing(); }catch(e){}
     var rankList=DB.students.map(function(x){ return {id:x.id, t:evCurrentScore(x.id).score.total}; })
                             .sort(function(a,b){ return b.t-a.t; });
     var rEl=document.getElementById('hdr-stat-rank');
@@ -3373,6 +3403,7 @@ function launchApp(){
     hdrRefreshStudentStats();
   } else if(STATE.role==='teacher'){
     if(sec) sec.classList.add('active');
+    try{ hdrTeacherRing(); }catch(e){}
     var wb=document.getElementById('hdr-welcome-badge');
     if(wb) wb.textContent='مرحباً بالمعلم';
     var sn=document.getElementById('hdr-sname');
@@ -5803,6 +5834,17 @@ function hqPlanOpenStudent(){
    الدوائر العشر (مراحل الخطة) — الدفعة الثالثة
    ===================================================================== */
 var HQ_ORD10=['الأولى','الثانية','الثالثة','الرابعة','الخامسة','السادسة','السابعة','الثامنة','التاسعة','العاشرة'];
+/* كأس ذهبي يزيّن المرحلة العاشرة */
+var HQ_CUP_SVG='<svg viewBox="0 0 48 56" fill="none">'+
+  '<defs><linearGradient id="hqcupG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf0b8"/><stop offset=".45" stop-color="#f7d774"/><stop offset="1" stop-color="#b8891a"/></linearGradient></defs>'+
+  '<path d="M13 6h22v13c0 6.6-4.9 12-11 12S13 25.6 13 19V6z" fill="url(#hqcupG)" stroke="#8a6a12" stroke-width="1.2"/>'+
+  '<path d="M13 9H8a6 6 0 0 0 6 8" stroke="#e0b944" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+  '<path d="M35 9h5a6 6 0 0 1-6 8" stroke="#e0b944" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+  '<rect x="21" y="31" width="6" height="8" fill="url(#hqcupG)"/>'+
+  '<path d="M14 45h20l-2.5-6h-15L14 45z" fill="url(#hqcupG)" stroke="#8a6a12" stroke-width="1"/>'+
+  '<rect x="11" y="45" width="26" height="5" rx="2.2" fill="url(#hqcupG)" stroke="#8a6a12" stroke-width="1"/>'+
+  '<path d="M24 12l1.7 3.6 4 .5-2.9 2.7.7 3.9L24 20.9l-3.5 1.8.7-3.9-2.9-2.7 4-.5L24 12z" fill="#fffbe8" opacity=".9"/></svg>';
+function hqCupCheer(){ if(typeof showToast==='function') showToast('🏆 أتمم مراحلك العشر لتبلغ الكأس - وفّقك الله','success'); }
 
 /* تقسيم أيام الخطة على عشر مراحل متساوية تقريباً */
 function hqPlanStages(p){
@@ -5871,7 +5913,10 @@ function hqVturn(side,seq){
 function hqStageOrb(k,stateCls,onclick){
   var edge=(k===1||k===10), now=(stateCls==='partial');
   var ring=now?'#34d399':'#f7d774';
-  return '<div class="gcircle'+(edge?' year-start':'')+(now?' now-here':'')+'">'+
+  /* اتجاه دوران الشرطات: الصف الأول عكس الساعة - الثاني معها - الثالث عكسها - والعاشرة معها */
+  var spin=(k<=3)?' spin-ccw':((k<=6)?' spin-cw':((k<=9)?' spin-ccw':' spin-cw'));
+  var cup=(k===10)?('<span class="stg-cup" onclick="event.stopPropagation();hqCupCheer()">'+HQ_CUP_SVG+'</span>'):'';
+  return '<div class="gcircle'+(edge?' year-start':'')+(now?' now-here':'')+spin+'">'+cup+
     '<svg viewBox="0 0 94 94"><circle cx="47" cy="47" r="42" fill="none" stroke="'+ring+'" stroke-width="2.2" stroke-dasharray="5 4.5" stroke-linecap="round"/></svg>'+
     (now?'<span class="gnow-badge">الآن</span>':(edge?'<span class="gyear-badge">\u2726</span>':''))+
     '<div class="gorb stg-orb'+(stateCls?(' '+stateCls):'')+(edge?' stg-edge':'')+'" onclick="'+onclick+'">'+
@@ -5972,10 +6017,36 @@ function hqPlanTypeView(type){
   var head='<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">'+t.n+'</div></div>';
   var orbs=[];
   for(var i=1;i<=10;i++){
-    orbs.push(hqStageOrb(i,'',"hqPlanStageInfo('"+type+"',"+i+")"));
+    orbs.push(hqStageOrb(i,'',"hqPlanStagePreview('"+type+"',"+i+")"));
   }
   openModal(t.n, head+hqStageGrid(orbs));
   hqPlanBack(function(){ hqPlanJoin(type); },'‹ رجوع للانضمام');
+}
+/* مسار المرحلة في المعاينة (نموذج على أعلى جزء لهذه الخطة) */
+var _hqPrev={};
+function hqPlanPreviewPlan(type){
+  if(_hqPrev[type]) return _hqPrev[type];
+  var p=hqPlanMake(type,30), td=hqPlanTermDays();
+  p.days=hqPlanBuildDays(p,td.n,0); p.approved=true;
+  _hqPrev[type]=p; return p;
+}
+function hqPlanStagePreview(type,k){
+  var t=hqPlanType(type); if(!t) return;
+  var p=hqPlanPreviewPlan(type), stg=hqPlanStages(p), x=stg[k-1]; if(!x) return;
+  var days=p.days||[], rows='';
+  for(var i=x.a;i<=x.b;i++){
+    var d=days[i-1]; if(!d) continue;
+    rows+='<tr><td class="hqp-num">'+arNum(i)+'</td><td>'+hqSegText(p,d.l)+'</td><td>'+hqSegText(p,d.r)+'</td></tr>';
+  }
+  if(!rows) rows='<tr><td colspan="3">—</td></tr>';
+  var seg=hqStageSeg(p,x);
+  var head='<div class="mp-info" style="margin-bottom:10px">'+
+    '<div class="mp-info-m">المرحلة '+HQ_ORD10[k-1]+'</div>'+
+    '<div class="mp-info-s">'+hqEsc(seg?hqSegText(p,seg):'—')+' - '+arNum(hqStagePages(p,x))+' صفحة - '+arNum(x.n)+' يوماً</div>'+
+    '<div class="mp-info-s">نموذج بالجزء '+arNum((p.juz||[30])[0])+' - يتغيّر المقطع بحسب الجزء المختار للطالب</div>'+
+  '</div>';
+  openModal(t.n+' - مسار المرحلة', head+'<table class="hqp-tbl"><tr><th>#</th><th>الدرس</th><th>المراجعة</th></tr>'+rows+'</table>');
+  hqPlanBack(function(){ hqPlanTypeView(type); },'‹ رجوع للمراحل');
 }
 function hqPlanStageInfo(type,k){
   var t=hqPlanType(type); if(!t) return;
@@ -6126,6 +6197,38 @@ function hdrPlanTrack(){
       '<span class="hpt-pct">'+pct+'%</span></div>';
   setTimeout(function(){ var f=el.querySelector('.hpt-fill'); if(f) f.style.width=pct+'%'; },60);
 }
+/* دائرة إنجاز المعلم: متوسط تقدّم طلابه في خططهم */
+function hdrTeacherRing(){
+  var el=document.getElementById('hdr-tring'); if(!el) return;
+  var role=(typeof STATE!=='undefined')?STATE.role:'';
+  if(role!=='teacher'){ el.style.display='none'; return; }
+  var studs=DB.students||[], td=hqPlanTermDays(), n=0, sp=0, se=0;
+  for(var i=0;i<studs.length;i++){
+    var p=hqPlanActive(studs[i].id); if(!p) continue;
+    var nd=p.days.length||1;
+    var rec=(DB.evals&&DB.evals[studs[i].id])||{};
+    var pr=(rec.progress&&parseInt(rec.progress.lesson,10))||0;
+    var ex=td.real?Math.min(nd,hqPlanElapsed(td.list)):0;
+    sp+=Math.min(1,pr/nd); se+=Math.min(1,ex/nd); n++;
+  }
+  if(!n){ el.style.display='none'; return; }
+  var avg=sp/n, exp=se/n, pct=Math.round(avg*100), epct=Math.round(exp*100);
+  var cls='on', msg='طلابك يسيرون على خططهم';
+  if(epct>0 && pct>=epct+4){ cls='ahead'; msg='طلابك متقدّمون على خططهم'; }
+  else if(epct>0 && pct<=epct-4){ cls='behind'; msg='طلابك متأخرون عن خططهم'; }
+  var R=26, C=2*Math.PI*R, off=C*(1-Math.min(1,avg));
+  el.style.display='';
+  el.innerHTML='<div class="htr-ring"><svg viewBox="0 0 64 64">'+
+      '<circle cx="32" cy="32" r="'+R+'" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="7"/>'+
+      '<circle class="htr-arc" cx="32" cy="32" r="'+R+'" fill="none" stroke="url(#htrG)" stroke-width="7" stroke-linecap="round" '+
+        'stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" transform="rotate(-90 32 32)"/>'+
+      '<defs><linearGradient id="htrG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#f7d774"/></linearGradient></defs>'+
+    '</svg><span class="htr-pct">'+pct+'%</span></div>'+
+    '<div class="htr-txt"><div class="htr-ttl">متوسط إنجاز طلابك</div>'+
+      '<div class="htr-msg '+cls+'">'+msg+'</div>'+
+      '<div class="htr-sub">'+arNum(n)+' طالباً على خطط - المتوقّع '+epct+'%</div></div>';
+  setTimeout(function(){ var a=el.querySelector('.htr-arc'); if(a) a.style.strokeDashoffset=off.toFixed(1); },80);
+}
 /* رأس شاشة الطالب: «يوم ٧ - مرحلة ٣» */
 function hdrPlanTxt(sid,n){
   var p=hqPlanActive(sid); if(!p) return '—';
@@ -6275,7 +6378,7 @@ function showRankTable(meId){
   if(!list.length){ openModal('\ud83c\udfc6 \u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u0637\u0644\u0627\u0628','<div class="empty-state"><div class="empty-state-icon">\ud83c\udfc6</div>\u0644\u0627 \u064a\u0648\u062c\u062f \u0637\u0644\u0627\u0628</div>'); return; }
   function H(t,w){ return '<th>'+t+(w?'<small>'+w+'</small>':'')+'</th>'; }
   var head='<thead><tr><th>#</th><th class="rank-name">\u0627\u0644\u0637\u0627\u0644\u0628</th>'
-    +H('المشاركات','+')+H('العقوبات','−')
+    +H('مشاركة','+')+H('عقوبة','−')
     +H('\u0627\u0644\u062f\u0631\u0633','١ نقطة')+H('\u0645\u0631\u0627\u062c\u0639\u0629','١ نقطة')+H('\u062a\u062c\u0648\u064a\u062f','١ نقطة')
     +H('\u062d\u0636\u0648\u0631','٠٫٥ نقطة')+H('\u0627\u062e\u062a\u0628\u0627\u0631\u0627\u062a','١٠ نقاط')
     +'<th class="rank-total">\u0627\u0644\u0645\u062c\u0645\u0648\u0639<small>نقاط</small></th></tr></thead>';
@@ -8862,8 +8965,7 @@ var EV_GAP_MAX=2;
 function evGapCheck(sid,kind,target){
   var rec=(DB.evals&&DB.evals[sid])||{}; var prog=rec.progress||{lesson:0,review:0};
   var other=(kind==='lesson')?'review':'lesson';
-  var op=prog[other]||0;
-  if(!op) return {ok:true};                       /* لم تُحدَّد نقطة الطرف الآخر بعد */
+  var op=parseInt(prog[other],10)||0;             /* الصفر قيمة معتبَرة: لم يبدأ بعد */
   var diff=Math.abs(target-op);
   if(diff<=EV_GAP_MAX) return {ok:true};
   return {ok:false, other:op, diff:diff,
@@ -9742,9 +9844,15 @@ function evOutcome(sid,kind,done){
   var w=(kind==='lesson')?'\u0627\u0644\u062f\u0631\u0633':'\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629';
   if(done){
     var _g=evGapCheck(sid,kind,info.n);          /* لا يتباعد الدرس عن المراجعة أكثر من رقمين */
-    if(!_g.ok){ if(typeof showToast==='function') showToast('⚠️ '+_g.msg,'error'); return; }
-    var _free=(kind==='review' && (!info.txt || info.txt==='لا يوجد'));   /* المرحلة الأولى بلا مراجعة */
-    evMarkDone(sid,kind,info.n,false,_free);   /* نقطة + انتقال للتالي (وبلا نقطة إن كانت «لا يوجد») */
+    if(!_g.ok && !(typeof hqPlanActive==='function' && hqPlanActive(sid))){ if(typeof showToast==='function') showToast('⚠️ '+_g.msg,'error'); return; }
+    var _rc=(DB.evals&&DB.evals[sid])||{}, _pg=(_rc.progress&&parseInt(_rc.progress[kind],10))||0;
+    var _pl=(typeof hqPlanActive==='function')?hqPlanActive(sid):null;
+    var _tgt=_pl?(_pg+1):info.n;                                   /* التالي دائماً من التقدّم الفعلي */
+    if(_pl && _tgt>_pl.days.length){ if(typeof showToast==='function') showToast('أتمّ الطالب خطته كاملة 🎉','success'); return; }
+    var _g2=_pl?evGapCheck(sid,kind,_tgt):{ok:true};
+    if(!_g2.ok){ if(typeof showToast==='function') showToast('⚠️ '+_g2.msg,'error'); return; }
+    var _free=_pl?(kind==='review' && !hqPlanSegOf(sid,'review',_tgt)):(kind==='review' && (!info.txt || info.txt==='لا يوجد'));
+    evMarkDone(sid,kind,_tgt,false,_free);   /* نقطة + انتقال للتالي (وبلا نقطة إن كانت «لا يوجد») */
     if(typeof showToast==='function') showToast(_free?'✅ انتقال للمراجعة التالية - بلا نقطة':('✅ أُنجز '+w+' - نقطة وانتقال للتالي'),'success');
   } else {
     evMarkEval(sid,kind,info.n);   /* تخضير بلا نقطة، دون انتقال */
@@ -9762,6 +9870,10 @@ function evMarkDone(sid, kind, num, silent, free){
     if(!rec.free) rec.free={lesson:0,review:0};
     var _mx=(typeof hqPlanMax==='function')?hqPlanMax(sid):UNIFIED_MAXDAY;
     var req=parseInt(num,10)||Math.min(_mx,(rec.progress[kind]||0)+1);
+    if(typeof hqPlanActive==='function' && hqPlanActive(sid)){
+      var _nx=(parseInt(rec.progress[kind],10)||0)+1;              /* مع الخطة: التالي دائماً */
+      if(req<_nx) req=_nx;
+    }
     if(req<1) req=1; if(req>_mx) req=_mx;
     var key=evDateKey(); var day=rec.days[key]||{};
     function val(id){ var el=document.getElementById(id); return el?(el.getAttribute('data-val')||''):''; }
@@ -10808,7 +10920,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-26 - 44';
+  window.HQ_BUILD='2026-08-26 - 45';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
