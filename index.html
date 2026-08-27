@@ -1622,7 +1622,7 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .ev-row4 .ev-cell .ev-lbl{flex:0 0 96px;text-align:right;font-size:.78rem}
 .ev-row4 .ev-cell .hqsel,.ev-row4 .ev-cell select{flex:1;min-width:0}
 .ev-row4 .ev-part-cell{justify-content:flex-start}
-.ev-row4 .ev-why{flex:1;min-width:0;text-align:right;font-size:16px;padding:9px 11px}
+.ev-row4 .ev-why{flex:1;min-width:0;text-align:right;font-size:.72rem;padding:9px 11px}
 .ev-row4 .ev-pm-btn{flex:0 0 70px}
 .ev-row4 .ev-part-val{flex:0 0 58px;text-align:center}
 /* بحجم مربّع «التجويد/الحضور» نفسه وبألوان من لوحة الصفحة */
@@ -2750,32 +2750,34 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .htr-msg.on{background:rgba(52,211,153,.14);color:#5fe3a6;border:1px solid rgba(52,211,153,.35)}
 .htr-msg.ahead{background:rgba(247,215,116,.16);color:#f7d774;border:1px solid rgba(247,215,116,.4)}
 .htr-msg.behind{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
-@keyframes hqArGlow{0%,100%{stroke:rgba(247,215,116,.28);filter:none}6%{stroke:#ffe9a8;filter:drop-shadow(0 0 5px rgba(247,215,116,.95))}18%{stroke:rgba(247,215,116,.28);filter:none}}
-.mini svg .hqar{animation:hqArGlow 5s linear infinite}
+/* الأسهم مضيئة دائماً */
+.mini svg .hqar{stroke:#ffe6a1;filter:drop-shadow(0 0 4px rgba(247,215,116,.75));animation:none}
 @keyframes ringSpinR{to{transform:rotate(-360deg)}}
-.gcircle.spin-cw svg{animation:ringSpin 16s linear infinite}
-.gcircle.spin-ccw svg{animation:ringSpinR 16s linear infinite}
-.gcircle.now-here.spin-cw svg{animation:ringSpin 12s linear infinite}
-.gcircle.now-here.spin-ccw svg{animation:ringSpinR 12s linear infinite}
+.gcircle.spin-cw svg{animation:ringSpin 34s linear infinite}
+.gcircle.spin-ccw svg{animation:ringSpinR 34s linear infinite}
+.gcircle.now-here.spin-cw svg{animation:ringSpin 26s linear infinite}
+.gcircle.now-here.spin-ccw svg{animation:ringSpinR 26s linear infinite}
 .stg-cup{position:absolute;top:50%;right:-52px;transform:translateY(-50%);width:46px;height:54px;z-index:5;cursor:pointer;filter:drop-shadow(0 4px 10px rgba(247,215,116,.45));animation:cupFloat 3.2s ease-in-out infinite;touch-action:manipulation}
 .stg-cup svg{position:static!important;width:100%;height:100%;animation:none!important;pointer-events:none}
 .stg-cup:active{transform:translateY(-50%) scale(.9)}
 @keyframes cupFloat{0%,100%{transform:translateY(-50%) rotate(-4deg)}50%{transform:translateY(-58%) rotate(4deg)}}
 .gr.gr-end{padding-left:56px}
-.vs-stars{display:flex;flex-wrap:wrap;gap:8px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-bottom:10px}
-.vs-star{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px 10px;color:#e8f7f6;font-size:.72rem;font-weight:700;cursor:pointer;touch-action:manipulation}
-.vs-star input{accent-color:#34d399;width:15px;height:15px}
+.vs-stars{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px;margin-bottom:10px}
+.vs-star{display:flex;align-items:center;gap:5px;min-width:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px 7px;color:#e8f7f6;font-size:.6rem;font-weight:700;cursor:pointer;touch-action:manipulation;line-height:1.3}
+.vs-star span{flex:1;min-width:0;word-break:break-word}
+.vs-stars .vs-hint{grid-column:1/-1}
+.vs-star input{accent-color:#34d399;width:13px;height:13px;flex:0 0 auto}
 .vs-star.on{border-color:rgba(52,211,153,.7);background:rgba(52,211,153,.16)}
 .vs-hint{color:#8fb0ad;font-size:.7rem;font-weight:700;padding:2px 4px}
 .hdr-row1{position:relative}
-.hdr-tools{position:absolute;top:0;left:0;display:flex;flex-direction:column;align-items:stretch;gap:5px;z-index:3}
-.hdr-datebox-sm{padding:4px 9px!important;border-radius:9px!important}
+.hdr-tools{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin-inline-start:auto}
+.hdr-datebox-sm{padding:5px 10px!important;border-radius:10px!important;text-align:center;min-width:118px}
 .hdr-datebox-sm .hdr-date-hijri{font-size:.62rem}
 .hdr-datebox-sm .hdr-date-row2{font-size:.54rem}
-.hdr-logout-sm{padding:4px 9px!important;border-radius:9px!important}
+.hdr-logout-sm{padding:5px 10px!important;border-radius:10px!important;justify-content:center;width:100%}
 .hdr-logout-sm .hdr-logout-lbl{font-size:.6rem}
 .hdr-logout-sm svg{width:12px!important;height:12px!important}
-.hdr-sync-sm{padding:3px 9px!important;font-size:.58rem!important}
+.hdr-sync-sm{padding:3px 10px!important;font-size:.58rem!important;margin:0!important;flex:0 0 auto}
 .hdr-w-line .hdr-sync-sm{margin:0}
 .hdr-w-line{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .hdr-w-line .hdr-welcome-badge{margin-bottom:0}
@@ -2797,7 +2799,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hpt-msg.behind{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
 .hpt-pct{font-size:.62rem;font-weight:800;color:#e8f7f6;direction:ltr}
 .ev-cell-gold{background:rgba(247,215,116,.07);border-color:rgba(247,215,116,.25)}
-.ev-why{width:100%;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#e8f7f6;font-family:inherit;font-weight:600;font-size:16px;padding:7px 9px;text-align:center}
+.ev-why{width:100%;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#e8f7f6;font-family:inherit;font-weight:600;font-size:.72rem;padding:8px 10px;text-align:center}
 .ev-why::placeholder{color:#7f9c9a}
 .hqp-sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:2px}
 .hqp-sbox{min-height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 5px;border-radius:15px;border:1px solid rgba(255,255,255,.13);background:linear-gradient(150deg,rgba(255,255,255,.09),rgba(255,255,255,.03));color:#e8f7f6;cursor:pointer;touch-action:manipulation;text-align:center;font-family:inherit}
@@ -6002,11 +6004,7 @@ function hqPlanStageOpen(sid,k,ro){
       ((i===cur)?'<td style="color:#34d399;font-weight:800">هنا</td>':'<td></td>')+'</tr>';
   }
   if(!rows) rows='<tr><td colspan="4">—</td></tr>';
-  var seg=hqStageSeg(p,x);
-  var head='<div class="mp-info" style="margin-bottom:10px">'+
-    '<div class="mp-info-m">المرحلة '+HQ_ORD10[k-1]+'</div>'+
-    '<div class="mp-info-s">'+hqEsc(seg?hqSegText(p,seg):'—')+' - '+arNum(hqStagePages(p,x))+' صفحة - '+arNum(x.n)+' يوماً</div>'+
-  '</div>';
+  var head='<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">المرحلة '+HQ_ORD10[k-1]+'</div></div>';
   openModal('خطة المرحلة', head+'<table class="hqp-tbl"><tr><th>#</th><th>الدرس</th><th>المراجعة</th><th></th></tr>'+rows+'</table>');
   hqPlanBack(function(){ hqPlanCircles(sid,ro?1:0); },'‹ رجوع للمراحل');
   setTimeout(function(){
@@ -6070,11 +6068,7 @@ function hqPlanStagePreview(type,k){
   }
   if(!rows) rows='<tr><td colspan="3">—</td></tr>';
   var seg=hqStageSeg(p,x);
-  var head='<div class="mp-info" style="margin-bottom:10px">'+
-    '<div class="mp-info-m">المرحلة '+HQ_ORD10[k-1]+'</div>'+
-    '<div class="mp-info-s">'+hqEsc(seg?hqSegText(p,seg):'—')+' - '+arNum(hqStagePages(p,x))+' صفحة - '+arNum(x.n)+' يوماً</div>'+
-    '<div class="mp-info-s">نموذج بالجزء '+arNum((p.juz||[30])[0])+' - يتغيّر المقطع بحسب الجزء المختار للطالب</div>'+
-  '</div>';
+  var head='<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">المرحلة '+HQ_ORD10[k-1]+'</div></div>';
   openModal(t.n+' - مسار المرحلة', head+'<table class="hqp-tbl"><tr><th>#</th><th>الدرس</th><th>المراجعة</th></tr>'+rows+'</table>');
   hqPlanBack(function(){ hqPlanTypeView(type); },'‹ رجوع للمراحل');
 }
@@ -6199,6 +6193,18 @@ function hqPlanEdge(sid,kind,n,which){
   var pg=(which==='end')?(lines[seg[1]-1]||{}).p:(lines[seg[0]-1]||{}).p;
   return { surah:hqSurName(g.s), ayah:ayah, page:(pg!=null?+pg:null) };
 }
+/* منع تكبير سفاري عند الكتابة في الحقول الصغيرة */
+function hqNoZoom(on){
+  try{
+    var m=document.querySelector('meta[name=viewport]'); if(!m) return;
+    if(on){
+      if(!window.__vpOld) window.__vpOld=m.getAttribute('content');
+      m.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    } else if(window.__vpOld){
+      m.setAttribute('content',window.__vpOld);
+    }
+  }catch(e){}
+}
 /* ترتيب عناصر الرأس: التاريخ والخروج أعلى اليسار · شارة المزامنة مقابل الترحيب */
 function hdrArrange(){
   try{
@@ -6206,7 +6212,7 @@ function hdrArrange(){
     var db=document.getElementById('hdr-datebox');
     var lo=document.querySelector('.hdr-actions .hdr-logout-btn');
     var pill=document.getElementById('syncPill');
-    var wline=document.getElementById('hdr-w-line');
+    var wline=document.querySelector('.hdr-w-line');
     var mini=document.getElementById('hdr-logout-mini');
     var acts=document.getElementById('hdr-actions');
     if(mini) mini.style.display='none';
@@ -6289,7 +6295,7 @@ function hdrTeacherRing(){
     '</svg><span class="htr-pct">'+pct+'%</span></div>'+
     '<div class="htr-txt"><div class="htr-ttl">متوسط إنجاز طلابك</div>'+
       '<div class="htr-msg '+cls+'">'+msg+'</div>'+
-      '<div class="htr-sub">'+arNum(n)+' طالباً على خطط - المتوقّع '+epct+'%</div></div>';
+      '<div class="htr-sub">'+arNum(n)+' طالب يسير على الخطة</div></div>';
   setTimeout(function(){ var a=el.querySelector('.htr-arc'); if(a) a.style.strokeDashoffset=off.toFixed(1); },80);
 }
 /* رأس شاشة الطالب: «يوم ٧ - مرحلة ٣» */
@@ -8627,7 +8633,7 @@ async function hqHalqaRank(halqat, metric){
     if(metric==='present'||metric==='absent') pc=Math.round(o.val);
     else pc=best>0?Math.round(o.val/best*100):0;
     o.pct=pc;
-    o.sub=arNum(pc)+'٪ - '+o.sub;
+    o.sub=arNum(pc)+'٪';
   });
   return out;
 }
@@ -10409,13 +10415,13 @@ function openStudentEval(sid){
   var _penVal =(typeof evTodayPen ==='function')?evTodayPen(sid) :0;
   var partCell=_isT?('<div class="ev-cell ev-cell-gold ev-part-cell">'
     +'<div class="ev-lbl">إضافة مشاركة</div>'
-    +'<input type="text" class="ev-why" id="ev-part-why" placeholder="سبب المشاركة" maxlength="60">'
+    +'<input type="text" class="ev-why" id="ev-part-why" placeholder="سبب المشاركة" maxlength="60" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)">'
     +'<button type="button" class="ev-pm-btn plus" onclick="evAdjustPart(\''+sid+'\',1)">+</button>'
     +'<div class="ev-part-val" id="ev-part-val">+'+evFmt(_partVal)+'</div>'
     +'</div>'):'';
   var penCell=_isT?('<div class="ev-cell ev-cell-gold ev-part-cell">'
     +'<div class="ev-lbl">إضافة عقوبة</div>'
-    +'<input type="text" class="ev-why" id="ev-pen-why" placeholder="سبب العقوبة" maxlength="60">'
+    +'<input type="text" class="ev-why" id="ev-pen-why" placeholder="سبب العقوبة" maxlength="60" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)">'
     +'<button type="button" class="ev-pm-btn minus" onclick="evAdjustPart(\''+sid+'\',-1)">−</button>'
     +'<div class="ev-part-val pen" id="ev-pen-val">−'+evFmt(_penVal)+'</div>'
     +'</div>'):'';
@@ -11074,7 +11080,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-27 - 47';
+  window.HQ_BUILD='2026-08-27 - 48';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -11658,11 +11664,11 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .hs-rep-cv.sm{font-size:.78rem;line-height:1.35}
 .hs-rep{position:relative;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:visible}
 .hs-rep.open{z-index:900}
-.hs-rep-hd{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}
+.hs-rep-hd{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;flex-wrap:wrap}
 .hs-rep-hd .stu-avatar{width:30px;height:30px;font-size:.78rem}
-.hs-rep-name{flex:1;font-weight:800;color:#fff;font-size:.88rem}
+.hs-rep-name{flex:1 1 auto;min-width:34%;font-weight:800;color:#fff;font-size:.84rem;line-height:1.35;word-break:break-word}
 .hs-rep-disc{font-size:.6rem;font-weight:800;color:#fbbf24;background:rgba(234,179,8,.16);border:1px solid rgba(234,179,8,.4);border-radius:6px;padding:1px 6px;margin-inline-start:5px}
-.hs-rep-tot{background:rgba(247,215,116,.15);color:#f7d774;font-weight:800;font-size:.78rem;border-radius:8px;padding:3px 9px;font-family:'Cairo','Noto Sans Arabic',sans-serif;min-width:44px;text-align:center}
+.hs-rep-tot{background:rgba(247,215,116,.15);color:#f7d774;font-weight:800;font-size:.66rem;border-radius:8px;padding:3px 8px;font-family:'Cairo','Noto Sans Arabic',sans-serif;min-width:44px;max-width:100%;text-align:center;line-height:1.4;white-space:normal;word-break:break-word}
 .hs-rep-arr{color:#f7d774;font-size:1.05rem;transition:transform .2s;min-width:16px;text-align:center}
 .hs-rep.open .hs-rep-arr{transform:rotate(180deg)}
 .hs-rep-body{display:none;position:absolute;top:calc(100% + 5px);right:0;left:0;z-index:9999;max-height:262px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#103f3b;border:1px solid rgba(247,215,116,.3);border-radius:11px;box-shadow:0 14px 32px rgba(0,0,0,.55);padding:10px 12px}
