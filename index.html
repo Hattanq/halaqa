@@ -2751,7 +2751,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .htr-msg.ahead{background:rgba(247,215,116,.16);color:#f7d774;border:1px solid rgba(247,215,116,.4)}
 .htr-msg.behind{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
 /* الأسهم مضيئة دائماً */
-.mini svg .hqar{stroke:#ffe6a1;filter:drop-shadow(0 0 4px rgba(247,215,116,.75));animation:none}
+.mini svg .hqar,.vturn svg .hqar{stroke:#ffe6a1;filter:drop-shadow(0 0 4px rgba(247,215,116,.75));animation:none}
 @keyframes ringSpinR{to{transform:rotate(-360deg)}}
 .gcircle.spin-cw svg{animation:ringSpin 34s linear infinite}
 .gcircle.spin-ccw svg{animation:ringSpinR 34s linear infinite}
@@ -2761,7 +2761,20 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .stg-cup svg{position:static!important;width:100%;height:100%;animation:none!important;pointer-events:none}
 .stg-cup:active{transform:translateY(-50%) scale(.9)}
 @keyframes cupFloat{0%,100%{transform:translateY(-50%) rotate(-4deg)}50%{transform:translateY(-58%) rotate(4deg)}}
-.gr.gr-end{padding-left:56px}
+.hqpick{position:relative;margin-bottom:10px}
+.hqpick-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0d504a;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 13px;color:#e8f7f6;font:700 .78rem inherit;cursor:pointer;touch-action:manipulation}
+.hqpick-cur{flex:1;text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hqpick-arw{color:#f0d060;font-size:.7rem}
+.hqpick-list{display:none;margin-top:6px;max-height:260px;overflow:auto;background:#0b423d;border:1px solid rgba(201,162,39,.3);border-radius:12px;padding:5px}
+.hqpick.open .hqpick-list{display:block}
+.hqpick-row{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:9px;color:#e8f7f6;font-size:.76rem;font-weight:700;cursor:pointer;touch-action:manipulation;border-bottom:1px solid rgba(255,255,255,.05)}
+.hqpick-row:last-child{border-bottom:0}
+.hqpick-row input{accent-color:#34d399;width:17px;height:17px;flex:0 0 auto}
+.hqpick-row span{flex:1;min-width:0;word-break:break-word}
+.hqpick-row.on{background:rgba(52,211,153,.14)}
+.hs-rep-tags{flex:0 0 100%;display:flex;align-items:center;gap:7px;margin-top:2px}
+.hs-rep-tags .hs-rep-rank{flex:0 0 auto}
+.hs-rep-tags .hq-seen{margin-inline-start:auto;background:rgba(255,255,255,.07);color:#a9c8c4}
 .vs-stars{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px;margin-bottom:10px}
 .vs-star{display:flex;align-items:center;gap:5px;min-width:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px 7px;color:#e8f7f6;font-size:.6rem;font-weight:700;cursor:pointer;touch-action:manipulation;line-height:1.3}
 .vs-star span{flex:1;min-width:0;word-break:break-word}
@@ -2792,7 +2805,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hpt-fill{position:absolute;inset-block:0;right:0;border-radius:99px;background:linear-gradient(90deg,#0f8a6d,#34d399 60%,#7bf3c6);box-shadow:0 0 12px rgba(52,211,153,.45);transition:width .9s cubic-bezier(.22,1,.36,1)}
 .hpt-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);transform:translateX(-100%);animation:hptShine 2.6s linear infinite}
 @keyframes hptShine{to{transform:translateX(100%)}}
-.hpt-mark{position:absolute;top:-3px;bottom:-3px;width:2px;background:#f7d774;box-shadow:0 0 6px rgba(247,215,116,.8);border-radius:2px}
+.hpt-exp{position:absolute;inset-block:0;right:0;border-radius:99px;background:rgba(255,255,255,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
 .hpt-msg{margin-top:7px;display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;font-size:.63rem;font-weight:800}
 .hpt-msg.on{background:rgba(52,211,153,.14);color:#5fe3a6;border:1px solid rgba(52,211,153,.35)}
 .hpt-msg.ahead{background:rgba(247,215,116,.16);color:#f7d774;border:1px solid rgba(247,215,116,.4)}
@@ -5865,15 +5878,20 @@ function hqPlanOpenStudent(){
    ===================================================================== */
 var HQ_ORD10=['الأولى','الثانية','الثالثة','الرابعة','الخامسة','السادسة','السابعة','الثامنة','التاسعة','العاشرة'];
 /* كأس ذهبي يزيّن المرحلة العاشرة */
-var HQ_CUP_SVG='<svg viewBox="0 0 48 56" fill="none">'+
-  '<defs><linearGradient id="hqcupG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf0b8"/><stop offset=".45" stop-color="#f7d774"/><stop offset="1" stop-color="#b8891a"/></linearGradient></defs>'+
-  '<path d="M13 6h22v13c0 6.6-4.9 12-11 12S13 25.6 13 19V6z" fill="url(#hqcupG)" stroke="#8a6a12" stroke-width="1.2"/>'+
-  '<path d="M13 9H8a6 6 0 0 0 6 8" stroke="#e0b944" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
-  '<path d="M35 9h5a6 6 0 0 1-6 8" stroke="#e0b944" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
-  '<rect x="21" y="31" width="6" height="8" fill="url(#hqcupG)"/>'+
-  '<path d="M14 45h20l-2.5-6h-15L14 45z" fill="url(#hqcupG)" stroke="#8a6a12" stroke-width="1"/>'+
-  '<rect x="11" y="45" width="26" height="5" rx="2.2" fill="url(#hqcupG)" stroke="#8a6a12" stroke-width="1"/>'+
-  '<path d="M24 12l1.7 3.6 4 .5-2.9 2.7.7 3.9L24 20.9l-3.5 1.8.7-3.9-2.9-2.7 4-.5L24 12z" fill="#fffbe8" opacity=".9"/></svg>';
+var HQ_CUP_SVG='<svg viewBox="0 0 64 72" fill="none">'+
+  '<defs><linearGradient id="hqcupG" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0" stop-color="#fdf1bb"/><stop offset=".4" stop-color="#f2cf6c"/>'+
+    '<stop offset=".75" stop-color="#d3a637"/><stop offset="1" stop-color="#a87d14"/></linearGradient></defs>'+
+  '<g fill="url(#hqcupG)" stroke="#8a6a12" stroke-width="1.1" stroke-linejoin="round">'+
+    '<rect x="15" y="4" width="34" height="4.6" rx="2.3"/>'+
+    '<path d="M17.5 9.2h29v10.4c0 8.6-6.5 15.6-14.5 15.6S17.5 28.2 17.5 19.6V9.2z"/>'+
+    '<path d="M17.6 11.4H10c-2.6 0-4.4 2-4.4 4.6 0 5.4 4.6 9.6 10.4 10.2l-.6-3.6c-4-.6-6.6-3.4-6.6-6.6 0-1.2.7-1.8 1.8-1.8h7v-2.8z"/>'+
+    '<path d="M46.4 11.4H54c2.6 0 4.4 2 4.4 4.6 0 5.4-4.6 9.6-10.4 10.2l.6-3.6c4-.6 6.6-3.4 6.6-6.6 0-1.2-.7-1.8-1.8-1.8h-7v-2.8z"/>'+
+    '<path d="M28.6 35.2h6.8v9.4h-6.8z"/>'+
+    '<path d="M20 55.4h24l-3-9.2H23l-3 9.2z"/>'+
+    '<rect x="15.4" y="55.6" width="33.2" height="7.4" rx="2.6"/>'+
+  '</g>'+
+  '<path d="M32 13.6l1.9 4 4.4.6-3.2 3 .8 4.3L32 23.5l-3.9 2 .8-4.3-3.2-3 4.4-.6 1.9-4z" fill="#fffbe8" opacity=".92"/></svg>';
 function hqCupCheer(){ if(typeof showToast==='function') showToast('🏆 أتمم مراحلك العشر لتبلغ الكأس - وفّقك الله','success'); }
 
 /* تقسيم أيام الخطة على عشر مراحل متساوية تقريباً */
@@ -5936,7 +5954,7 @@ function hqMiniArrow(dir,seq){
 function hqVturn(side,seq){
   var ys=[3,11,19,27], pth='';
   for(var i=0;i<ys.length;i++){
-    pth+='<path d="M3 '+ys[i]+'L9 '+(ys[i]+5)+'L15 '+ys[i]+'" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+    pth+='<path class="hqar" d="M3 '+ys[i]+'L9 '+(ys[i]+5)+'L15 '+ys[i]+'" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
   }
   return '<div class="vturn vturn-'+side+'" style="--seq:'+seq+'"><svg viewBox="0 0 18 34">'+pth+'</svg></div>';
 }
@@ -6193,6 +6211,25 @@ function hqPlanEdge(sid,kind,n,which){
   var pg=(which==='end')?(lines[seg[1]-1]||{}).p:(lines[seg[0]-1]||{}).p;
   return { surah:hqSurName(g.s), ayah:ayah, page:(pg!=null?+pg:null) };
 }
+/* قائمة منسدلة متعددة الاختيار (صفّ لكل خيار) */
+function hqPickToggle(btn){
+  var w=btn&&btn.parentNode; if(!w) return;
+  var open=w.classList.contains('open');
+  var all=document.querySelectorAll('.hqpick.open');
+  for(var i=0;i<all.length;i++) all[i].classList.remove('open');
+  if(!open) w.classList.add('open');
+}
+function hqPickSync(listId){
+  var box=document.getElementById(listId); if(!box) return [];
+  var w=box.parentNode, cur=w?w.querySelector('.hqpick-cur'):null;
+  var ch=box.querySelectorAll('input[type=checkbox]'), a=[];
+  for(var i=0;i<ch.length;i++){
+    if(ch[i].checked) a.push(ch[i].value);
+    if(ch[i].parentNode&&ch[i].parentNode.classList) ch[i].parentNode.classList.toggle('on',ch[i].checked);
+  }
+  if(cur) cur.textContent=a.length?(a.length>3?(arNum(a.length)+' مختارين'):a.join('، ')):'—';
+  return a;
+}
 /* منع تكبير سفاري عند الكتابة في الحقول الصغيرة */
 function hqNoZoom(on){
   try{
@@ -6259,8 +6296,9 @@ function hdrPlanTrack(){
   el.style.display='';
   el.innerHTML='<div class="hpt-top"><span class="hpt-ttl">مسار خطتي هذا الفصل</span>'+
       '<span class="hpt-num">'+arNum(prog)+' من '+arNum(nd)+' درساً</span></div>'+
-    '<div class="hpt-bar"><div class="hpt-fill" style="width:0%"></div>'+
-      (epct>0?('<div class="hpt-mark" style="right:'+epct+'%"></div>'):'')+'</div>'+
+    '<div class="hpt-bar">'+
+      (epct>0?('<div class="hpt-exp" style="width:'+epct+'%"></div>'):'')+
+      '<div class="hpt-fill" style="width:0%"></div></div>'+
     '<div class="hpt-top" style="margin:7px 0 0"><span class="hpt-msg '+cls+'">'+msg+'</span>'+
       '<span class="hpt-pct">'+pct+'%</span></div>';
   setTimeout(function(){ var f=el.querySelector('.hpt-fill'); if(f) f.style.width=pct+'%'; },60);
@@ -6289,6 +6327,8 @@ function hdrTeacherRing(){
   el.style.display='';
   el.innerHTML='<div class="htr-ring"><svg viewBox="0 0 64 64">'+
       '<circle cx="32" cy="32" r="'+R+'" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="7"/>'+
+      (epct>0?('<circle cx="32" cy="32" r="'+R+'" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="7" stroke-linecap="round" '+
+        'stroke-dasharray="'+(C*Math.min(1,exp)).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 32 32)"/>'):'')+
       '<circle class="htr-arc" cx="32" cy="32" r="'+R+'" fill="none" stroke="url(#htrG)" stroke-width="7" stroke-linecap="round" '+
         'stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" transform="rotate(-90 32 32)"/>'+
       '<defs><linearGradient id="htrG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#f7d774"/></linearGradient></defs>'+
@@ -6821,9 +6861,13 @@ function showAddHalqa(){
   var teachers=hqTeachers();
   var _lockSup=supIsSup()?((STATE.user||{}).supId||''):'';
   var daysBox='<div class="prof-form-field"><label class="prof-form-lbl">أيام الحلقة</label>'+
-    '<div class="hq-days">'+HQ_DAYS.map(function(d,i){
-      return '<label class="hq-day"><input type="checkbox" class="ah-day" value="'+hqEsc(d)+'"'+(i<5?' checked':'')+'><span>'+hqEsc(d)+'</span></label>';
-    }).join('')+'</div></div>';
+    '<div class="hqpick">'+
+      '<button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
+        '<span class="hqpick-cur" id="ah-days-cur">—</span><span class="hqpick-arw">▾</span></button>'+
+      '<div class="hqpick-list" id="ah-days">'+HQ_DAYS.map(function(d,i){
+        return '<label class="hqpick-row"><input type="checkbox" class="ah-day" value="'+hqEsc(d)+'"'+(i<5?' checked':'')+' onchange="hqPickSync(\'ah-days\')"><span>'+hqEsc(d)+'</span></label>';
+      }).join('')+'</div>'+
+    '</div></div>';
   var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
     fld('اسم الحلقة','ah-name','مثال: حلقة أبي بكر الصدّيق')+
     sel('معلم الحلقة','ah-teacher',teachers.map(function(t){ return {v:t.id,n:t.name}; }),
@@ -6844,6 +6888,7 @@ function showAddHalqa(){
     '<button class="prof-form-save" onclick="saveNewHalqa()" style="margin-top:16px;">✅ فتح الحلقة</button>'+
   '</div>';
   openModal('➕ إضافة حلقة', body);
+  setTimeout(function(){ try{ hqPickSync('ah-days'); }catch(e){} },60);
   if(!_lockSup) setTimeout(ahSyncSup,0);
 }
 /* قطاع مشرف بعينه */
@@ -6911,16 +6956,25 @@ function hqFoldSec(title,inner,open){
 }
 function hqFoldToggle(el){
   var box=el&&el.parentNode; if(!box) return;
-  box.classList.toggle('open');
+  var was=box.classList.contains('open');
+  var root=box.parentNode;
+  if(root){
+    var sibs=root.children;
+    for(var i=0;i<sibs.length;i++){
+      if(sibs[i]!==box && sibs[i].classList && sibs[i].classList.contains('hsfold')) sibs[i].classList.remove('open');
+    }
+  }
+  box.classList.toggle('open', !was);
 }
 /* بطاقة منسدلة بتصميم «تقارير الطلاب»: رقم دائري + الاسم + وسم + سهم */
-function hqFlatSec(title,rows,acts,idx,tag){
+function hqFlatSec(title,rows,acts,idx,tag,tagRow){
   return '<div class="hs-rep hq-rep">'+
     '<div class="hs-rep-hd" onclick="hsToggleRep(this.parentNode)">'+
       (idx!=null?('<div class="stu-avatar">'+arNum(idx)+'</div>'):'')+
       '<div class="hs-rep-name">'+hqEsc(title||'—')+'</div>'+
       (tag?('<span class="hs-rep-tot hs-rep-rank">'+hqEsc(tag)+'</span>'):'')+
       '<span class="hs-rep-arr">▾</span>'+
+      (tagRow?('<div class="hs-rep-tags">'+tagRow+'</div>'):'')+
     '</div>'+
     '<div class="hs-rep-body">'+
       '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+rows+
@@ -7919,7 +7973,11 @@ function supVisitOpen(){
     sel('عدد الحضور','vs-present',num(1,30),'')+
     sel('عدد الغياب','vs-absent',num(1,30),'')+
     '<label class="prof-form-lbl">الطلاب المميّزون</label>'+
-    '<div class="vs-stars" id="vs-star"><div class="vs-hint">اختر الحلقة أولاً</div></div>'+
+    '<div class="hqpick">'+
+      '<button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
+        '<span class="hqpick-cur" id="vs-star-cur">اختر الحلقة أولاً</span><span class="hqpick-arw">▾</span></button>'+
+      '<div class="hqpick-list" id="vs-star"><div class="vs-hint">اختر الحلقة أولاً</div></div>'+
+    '</div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">ملاحظات عامة عن الحلقة</label>'+
       '<textarea class="prof-form-input" id="vs-notes" rows="4" placeholder="اكتب ملاحظاتك هنا" style="resize:vertical;min-height:90px;font-family:inherit"></textarea></div>'+
     '</div>'+
@@ -7943,9 +8001,10 @@ function supVisitFill(){
     st.innerHTML = studs.length
       ? studs.map(function(x){
           var nm=hqEsc(x.name||'');
-              return '<label class="vs-star"><input type="checkbox" value="'+nm+'" onchange="this.parentNode.classList.toggle(\'on\',this.checked)"><span>'+nm+'</span></label>';
+              return '<label class="hqpick-row"><input type="checkbox" value="'+nm+'" onchange="hqPickSync(\'vs-star\')"><span>'+nm+'</span></label>';
         }).join('')
       : '<div class="vs-hint">لا يوجد طلاب في هذه الحلقة</div>';
+    hqPickSync('vs-star');
   }
 }
 
@@ -8029,7 +8088,9 @@ function hqTeacherCard(t,halqaName,canDelete,idx){
   var acts='';
   if(t.id) acts+='<button class="hq-mini-btn view" onclick="tmsgCompose(\''+t.id+'\')">رسالة للمعلم</button>';
   if(canDelete&&t.id) acts+='<button class="hq-mini-btn del" onclick="teacherDelete(\''+t.id+'\')">حذف</button>';
-  return hqFlatSec(t.name||'—', rows, acts, idx, (halqaName||'')+' - آخر ظهور: '+hqLastSeenOf(t));
+  var tag2='<span class="hs-rep-tot hs-rep-rank">'+hqEsc(halqaName||'—')+'</span>'+
+           '<span class="hs-rep-tot hq-seen">آخر ظهور: '+hqEsc(hqLastSeenOf(t))+'</span>';
+  return hqFlatSec(t.name||'—', rows, acts, idx, '', tag2);
 }
 /* صفوف بيانات المعلمين — مشتركة بين الشؤون التعليمية والمشرف */
 function hqTeacherRows(halqat){
@@ -8324,7 +8385,7 @@ function tlBuild(){
       '</select></div>'+
     '</div>'+
     '<div class="tl-sec-hd">إجازات الفصل الدراسي</div>'+
-    '<div id="tl-hols"></div>'+   /* يبدأ فارغًا دائمًا — تُضاف الإجازات يدويًا */
+    '<div id="tl-hols">'+((ex&&ex.holidays&&ex.holidays.length)?ex.holidays.map(function(hv){ return tlHolRow(hv,null); }).join(''):'')+'</div>'+
     '<button class="tl-add" type="button" onclick="tlHolAdd()"><span class="tl-plus">+</span><span>إضافة إجازة</span></button>'+
     '<button class="tl-add tl-add-danger" type="button" onclick="tlWipeAsk()">حذف الخط الزمني</button>'+
     '<button class="tl-approve" type="button" onclick="tlSave()">اعتماد الخط الزمني</button>'+
@@ -11080,7 +11141,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-27 - 48';
+  window.HQ_BUILD='2026-08-28 - 49';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -11351,11 +11412,8 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 #pdfReport .pr-ttl h1{ margin:0; font-size:27pt; font-weight:900; line-height:1.15; color:#ffffff; }
 #pdfReport .pr-ttl p{ margin:3mm 0 0; font-size:10.5pt; color:#cbb27a; font-weight:700; }
 #pdfReport .pr-brand{ display:flex; flex-direction:column; align-items:center; gap:2mm; }
-#pdfReport .pr-brand img{ width:22mm; height:22mm; border-radius:50%; object-fit:contain;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(203,178,122,.55);
-  box-shadow:0 0 0 1.2mm rgba(203,178,122,.1);
-  padding:1mm; }
+#pdfReport .pr-brand img{ width:24mm; height:24mm; object-fit:contain;
+  background:transparent; border:0; box-shadow:none; padding:0; }
 #pdfReport .pr-date{ text-align:center; font-size:8.5pt; font-weight:800; color:#cbb27a; line-height:1.6; }
 #pdfReport .pr-date span{ display:block; }
 #pdfReport .pr-date span:last-child{ color:#8fb3ae; font-weight:600; }
