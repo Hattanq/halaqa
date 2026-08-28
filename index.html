@@ -302,8 +302,19 @@ input, select, textarea { font-family: inherit; outline: none; }
   to   { opacity:1; transform: scale(1) rotate(0deg); }
 }
 .splash-logo-img {
-  width: 140px; height: 140px; object-fit: contain; border-radius: 50%;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.35));
+  width: 150px; height: 150px; object-fit: contain; border-radius: 50%;
+  padding: 12px; box-sizing: border-box;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(203,178,122,0.55);
+  box-shadow: 0 0 0 6px rgba(203,178,122,0.10),
+              inset 0 0 16px rgba(203,178,122,0.14),
+              0 0 26px rgba(201,162,39,0.30),
+              0 6px 16px rgba(0,0,0,0.35);
+  animation: splashLogoGlow 3.4s ease-in-out infinite;
+}
+@keyframes splashLogoGlow {
+  0%,100% { box-shadow: 0 0 0 6px rgba(203,178,122,0.10), inset 0 0 16px rgba(203,178,122,0.14), 0 0 22px rgba(201,162,39,0.24), 0 6px 16px rgba(0,0,0,0.35); }
+  50%     { box-shadow: 0 0 0 8px rgba(203,178,122,0.14), inset 0 0 18px rgba(203,178,122,0.18), 0 0 34px rgba(201,162,39,0.40), 0 6px 16px rgba(0,0,0,0.35); }
 }
 .splash-title-wrap {
   position: relative; z-index: 1; text-align: center; margin-top: 28px;
@@ -1129,10 +1140,10 @@ textarea.fc { resize: vertical; min-height: 70px; }
 .hdr-card{position:relative;border-radius:18px;overflow:hidden;background:linear-gradient(145deg,#093834 0%,#0c504a 50%,#14655e 100%);box-shadow:0 6px 30px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.07)}
 .hdr-top-line{position:absolute;top:0;left:0;right:0;height:2px;z-index:3;background:linear-gradient(90deg,transparent,rgba(201,162,39,.4) 25%,#c9a227 50%,rgba(201,162,39,.4) 75%,transparent)}
 .hdr-row1{position:relative;z-index:1;display:flex;align-items:center;gap:10px;padding:11px 14px 9px;border-bottom:1px solid rgba(255,255,255,.07)}
-.hdr-logo-ring{flex-shrink:0;width:52px;height:52px;border-radius:50%;padding:2px;cursor:pointer;background:conic-gradient(rgba(201,162,39,.45) 0deg,rgba(240,192,64,.25) 90deg,rgba(201,162,39,.45) 180deg,rgba(240,192,64,.25) 270deg,rgba(201,162,39,.45) 360deg);box-shadow:0 0 8px rgba(201,162,39,.18);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+.hdr-logo-ring{flex-shrink:0;width:52px;height:52px;border-radius:50%;padding:2px;cursor:pointer;background:conic-gradient(rgba(201,162,39,.55) 0deg,rgba(240,192,64,.3) 90deg,rgba(201,162,39,.55) 180deg,rgba(240,192,64,.3) 270deg,rgba(201,162,39,.55) 360deg);box-shadow:0 0 12px rgba(201,162,39,.3),0 0 0 1px rgba(203,178,122,.25);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
 .hdr-logo-ring:hover{transform:rotate(7deg) scale(1.08)}
-.hdr-logo-inner{width:100%;height:100%;border-radius:50%;background:#f7f2e6;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.hdr-logo-inner img{width:90%;height:90%;object-fit:contain}
+.hdr-logo-inner{width:100%;height:100%;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(203,178,122,.55);box-shadow:inset 0 0 10px rgba(203,178,122,.14),0 0 10px rgba(201,162,39,.28);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hdr-logo-inner img{width:86%;height:86%;object-fit:contain;filter:drop-shadow(0 0 5px rgba(247,215,116,.35))}
 .hdr-titles{flex:1;min-width:0}
 .hdr-halqa{font-family:'Amiri',serif;font-size:1.1rem;color:#fff;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr-radi-txt{font-size:.58rem;color:rgba(201,162,39,.7);font-weight:400;margin-right:3px;vertical-align:middle}
@@ -11159,7 +11170,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-28 - 52';
+  window.HQ_BUILD='2026-08-28 - 53';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
