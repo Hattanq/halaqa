@@ -1087,7 +1087,7 @@ textarea.fc { resize: vertical; min-height: 70px; }
    ============================ */
 .toast-container {
   position: fixed; bottom: 85px; right: 50%; transform: translateX(50%);
-  z-index: 9999; display: flex; flex-direction: column; gap: 7px; pointer-events: none;
+  z-index: 99999; display: flex; flex-direction: column; gap: 7px; pointer-events: none;
 }
 .toast {
   background: var(--navy); color: white; padding: 9px 18px;
@@ -7786,7 +7786,7 @@ function hqCredApply(key,uname,pass,name,mk){
     if(!uname&&!pass) return true;
     if(typeof mk!=='function'){ showToast('لا يوجد حساب دخول مرتبط','error'); return false; }
     if(!uname){ showToast('يرجى إدخال اسم المستخدم','error'); return false; }
-    if(pass.length<4){ showToast('كلمة المرور أربعة أحرف فأكثر','error'); return false; }
+    if(!pass){ showToast('يرجى إدخال كلمة المرور','error'); return false; }
     if(hqUserTaken(uname,'')){ showToast('اسم المستخدم مستخدم من قبل، اختر غيره','error'); return false; }
     return !!mk(uname,pass,name);
   }
@@ -7795,10 +7795,7 @@ function hqCredApply(key,uname,pass,name,mk){
     if(hqUserTaken(uname,key)){ showToast('اسم المستخدم مستخدم من قبل، اختر غيره','error'); return false; }
     u.username=uname;
   }
-  if(pass){
-    if(pass.length<4){ showToast('كلمة المرور أربعة أحرف فأكثر','error'); return false; }
-    u.pw=hqPw(pass); if(u.password) delete u.password;
-  }
+  if(pass){ u.pw=hqPw(pass); if(u.password) delete u.password; }
   if(name) u.name=name;
   return true;
 }
@@ -11273,7 +11270,12 @@ function renderAttend(){
 // =====================================================
 function showToast(msg, type){
   var c = document.getElementById('toastContainer');
-  if(!c) return;
+  if(!c){
+    c = document.createElement('div');
+    c.id = 'toastContainer';
+    c.className = 'toast-container';
+    document.body.appendChild(c);
+  }
   var t = document.createElement('div');
   t.className = 'toast t-'+(type||'info');
   t.textContent = msg;
@@ -11665,7 +11667,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-29 - 66';
+  window.HQ_BUILD='2026-08-29 - 67';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
