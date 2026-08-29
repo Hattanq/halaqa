@@ -1200,8 +1200,8 @@ textarea.fc { resize: vertical; min-height: 70px; }
 @keyframes cardEntry{from{opacity:0;transform:translateY(40px) scale(.92)}to{opacity:1;transform:translateY(0) scale(1)}}
 .login-identity{text-align:center;padding:0 0 24px}
 .login-logo-ring{display:inline-block;width:120px;height:120px;animation:logoFloat 4s ease-in-out infinite;margin-bottom:18px}
-.login-logo-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-.login-logo-inner img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 14px rgba(0,0,0,.35))}
+.login-logo-inner{width:100%;height:100%;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(203,178,122,.55);box-shadow:0 0 0 6px rgba(203,178,122,.10),inset 0 0 18px rgba(203,178,122,.14);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:9px;box-sizing:border-box}
+.login-logo-inner img{width:100%;height:100%;object-fit:contain;filter:none}
 @keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 .login-app-name{font-family:'Aref Ruqaa','Cairo','Noto Sans Arabic',sans-serif;font-size:1.55rem;font-weight:700;color:#f0d060;line-height:1.3;margin-bottom:6px;animation:textGlow 3s ease-in-out infinite;display:flex;flex-direction:column;align-items:center;gap:1px}
 @keyframes textGlow{0%,100%{text-shadow:0 0 20px rgba(201,162,39,.5)}50%{text-shadow:0 0 35px rgba(201,162,39,.8)}}
@@ -2602,7 +2602,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
   <div class="login-orb login-orb-2"></div>
   <div class="login-card">
     <div class="login-identity">
-      <div class="login-logo-ring"><div class="login-logo-inner"><img id="login-logo-img" data-img="logoBig" alt="شعار"></div></div>
+      <div class="login-logo-ring"><div class="login-logo-inner"><img id="login-logo-img" data-img="logo" alt="شعار"></div></div>
       <div class="login-app-name"><span class="lname-org">جَمعِيّةُ تَحفِيظ القُرآنِ بالمنْدق</span><span class="lname-name">ضِيَاء</span></div>
       <div class="login-org-name">الجمعية الخيرية لتحفيظ القرآن الكريم<br>بمحافظة المندق</div>
     </div>
@@ -2779,7 +2779,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .stg-cup:active{transform:translateY(-50%) scale(.9)}
 @keyframes cupFloat{0%,100%{transform:translateY(-50%) rotate(-4deg)}50%{transform:translateY(-58%) rotate(4deg)}}
 .hs-cell{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-height:86px}
-.hs-cell .hs-cell-lbl{margin-top:auto}
+.hs-cell .hs-cell-lbl{margin-top:0}
 .hs-cell-val.sm{font-size:.78rem;line-height:1.35;word-break:break-word}
 .hs-heroes{background:rgba(0,0,0,.16);border:1px solid rgba(201,162,39,.22);border-radius:14px;padding:6px 10px}
 .hs-hero-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -2787,12 +2787,12 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hs-hero-n{font-size:.8rem;font-weight:800;color:#eef}
 .hs-hero-d{font-size:.62rem;font-weight:700;color:#f0d060;white-space:nowrap}
 .hqpick{position:relative;margin-bottom:10px}
-.hqpick-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0d504a;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 13px;color:#e8f7f6;font:700 .78rem inherit;cursor:pointer;touch-action:manipulation}
+.hqpick-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0d504a;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 13px;color:#e8f7f6;font:700 16px inherit;cursor:pointer;touch-action:manipulation}
 .hqpick-cur{flex:1;text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hqpick-arw{color:#f0d060;font-size:.7rem}
 .hqpick-list{display:none;margin-top:6px;max-height:260px;overflow:auto;background:#0b423d;border:1px solid rgba(201,162,39,.3);border-radius:12px;padding:5px}
 .hqpick.open .hqpick-list{display:block}
-.hqpick-row{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:9px;color:#e8f7f6;font-size:.76rem;font-weight:700;cursor:pointer;touch-action:manipulation;border-bottom:1px solid rgba(255,255,255,.05)}
+.hqpick-row{display:flex;align-items:center;gap:9px;padding:11px;border-radius:9px;color:#e8f7f6;font-size:.85rem;font-weight:700;cursor:pointer;touch-action:manipulation;border-bottom:1px solid rgba(255,255,255,.05)}
 .hqpick-row:last-child{border-bottom:0}
 .hqpick-row input{accent-color:#34d399;width:17px;height:17px;flex:0 0 auto}
 .hqpick-row span{flex:1;min-width:0;word-break:break-word}
@@ -6512,7 +6512,7 @@ function hqPickSync(listId){
   var w=box.parentNode, cur=w?w.querySelector('.hqpick-cur'):null;
   var ch=box.querySelectorAll('input[type=checkbox]'), a=[];
   for(var i=0;i<ch.length;i++){
-    if(ch[i].checked) a.push(ch[i].value);
+    if(ch[i].checked) a.push(ch[i].getAttribute('data-lbl')||ch[i].value);
     if(ch[i].parentNode&&ch[i].parentNode.classList) ch[i].parentNode.classList.toggle('on',ch[i].checked);
   }
   if(cur){
@@ -7386,6 +7386,7 @@ function showAddTeacher(){
       '</div>'+
     '</div>'+
     fld('رقم الجوال','te-phone','05xxxxxxxx','tel')+
+    hqHalqaPickHTML('te-halqat-new','')+
     fld('اسم المستخدم','te-user','اسم الدخول')+
     fld('كلمة المرور','te-pass','كلمة المرور')+
     '</div>'+
@@ -7407,11 +7408,13 @@ function saveNewTeacher(){
     var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
     var bd=V('te-bDay'), bm=V('te-bMonth');
     var tid='tch'+Date.now();
-    hqTeachers().push({ id:tid, name:name, nid:V('te-nid'),
+    var _newT={ id:tid, name:name, nid:V('te-nid'),
       bDay:bd, bMonth:bm, bYear:by,
       birthDate:(by?(bd+' '+hM[parseInt(bm,10)-1]+' '+by+'هـ'):''),
-      nat:'', phone:V('te-phone'), username:user });
+      nat:'', phone:V('te-phone'), username:user };
+    hqTeachers().push(_newT);
     DB.users['tc_'+tid]={username:user,pw:hqPw(pass),name:name,role:'teacher',display:'معلم الحلقة',tid:tid,hid:''};
+    hqHalqaPickApply('te-halqat-new',_newT);
     save();
     showToast('تمت إضافة المعلم '+name,'success');
     closeModal();
@@ -7622,6 +7625,10 @@ function supEditOpen(sid){
   for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'"'+((parseInt(v.bMonth,10)===mo+1)?' selected':'')+'>'+hM[mo]+'</option>';
   function fld(lbl,id,val,tp){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label><input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" value="'+hqEsc(val||'')+'"></div>'; }
   var yOpts=''; for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'"'+((''+_y)===(''+(v.bYear||''))?' selected':'')+'>'+_y+'</option>';
+  var _sk=hqSupUserKey(v.id);
+  var _sun=(_sk&&DB.users[_sk]?DB.users[_sk].username:'')||'';
+  var _myH=(DB.halqat||[]).filter(function(h){ return String(h.supervisorId)===String(v.id); });
+  var _curH=_myH.length?(_myH.length>3?(arNum(_myH.length)+' مختارة'):_myH.map(function(h){ return h.name||'حلقة'; }).join('، ')):'حدد الحلقات';
   var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
     fld('الاسم','se-name',v.name)+
     fld('الهوية / الإقامة','se-nid',v.nationalId)+
@@ -7637,15 +7644,16 @@ function supEditOpen(sid){
       '<select class="prof-form-input" id="se-sector"><option value="">— اختر القطاع —</option>'+
       HQ_SECTORS.map(function(o){ return '<option value="'+hqEsc(o)+'"'+((v.sector===o)?' selected':'')+'>'+hqEsc(o)+'</option>'; }).join('')+
       '</select></div>'+
+    hqCredFields('se',_sun)+
     (sid?('<div class="prof-form-field"><label class="prof-form-lbl">الإشراف بحلقة</label>'+
       '<div class="hqpick"><button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
-        '<span class="hqpick-cur" id="se-halqat-cur">حدد الحلقات</span><span class="hqpick-arw">▾</span></button>'+
+        '<span class="hqpick-cur" id="se-halqat-cur">'+hqEsc(_curH)+'</span><span class="hqpick-arw">▾</span></button>'+
       '<div class="hqpick-list" id="se-halqat">'+
         ((DB.halqat||[]).length
           ? (DB.halqat||[]).map(function(h){
               var mine=(String(h.supervisorId)===String(v.id));
               var sup=h.supervisorName?(' — '+hqEsc(h.supervisorName)):' — بلا مشرف';
-              return '<label class="hqpick-row'+(mine?' on':'')+'"><input type="checkbox" value="'+hqEsc(h.id)+'"'+(mine?' checked':'')+' onchange="hqPickSync(\'se-halqat\')">'+
+              return '<label class="hqpick-row'+(mine?' on':'')+'"><input type="checkbox" value="'+hqEsc(h.id)+'" data-lbl="'+hqEsc(h.name||'حلقة')+'"'+(mine?' checked':'')+' onchange="hqPickSync(\'se-halqat\')">'+
                      '<span>'+hqEsc(h.name||'حلقة')+'<em style="font-style:normal;color:#9abdba;font-size:.62rem">'+sup+'</em></span></label>';
             }).join('')
           : '<div class="vs-hint">لا توجد حلقات</div>')+
@@ -7665,6 +7673,7 @@ function supEditSave(){
     if(!nm){ showToast('يرجى إدخال الاسم','error'); return; }
     var by=V('se-bYear');
     if(by && !/^[0-9]{3,4}$/.test(by)){ showToast('سنة الميلاد بأرقام إنجليزية فقط','error'); return; }
+    if(!hqCredApply(hqSupUserKey(v.id), V('se-user'), V('se-pass'), nm)) return;
     var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
     var bd=V('se-bDay'), bm=V('se-bMonth');
     v.name=nm; v.nationalId=V('se-nid'); v.nationality=V('se-nat');
@@ -7692,6 +7701,148 @@ function supEditSave(){
     var w=document.getElementById('prof-content'); if(w) renderSupProfile(w);
     if(typeof renderDash==='function') renderDash();
     if(window._supEditId && typeof showSupervisorsData==='function'){ window._supEditId=null; showSupervisorsData(); }
+    showToast('حُفظت البيانات','success');
+  }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
+}
+
+
+/* ====== خانة «إضافة حلقة»: الحلقات المتاحة (بلا معلّم) + حلقات المعلّم نفسه ====== */
+function hqFreeHalqat(tid){
+  return (DB.halqat||[]).filter(function(h){
+    return !h.teacherId || (tid && String(h.teacherId)===String(tid));
+  });
+}
+function hqHalqaPickHTML(listId,tid){
+  var list=hqFreeHalqat(tid);
+  var mine=list.filter(function(h){ return tid && String(h.teacherId)===String(tid); });
+  var cur=mine.length?(mine.length>3?(arNum(mine.length)+' مختارة'):mine.map(function(h){ return h.name||'حلقة'; }).join('، ')):'حدد الحلقات';
+  return '<div class="prof-form-field"><label class="prof-form-lbl">إضافة حلقة</label>'+
+    '<div class="hqpick"><button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
+      '<span class="hqpick-cur" id="'+listId+'-cur">'+hqEsc(cur)+'</span><span class="hqpick-arw">▾</span></button>'+
+    '<div class="hqpick-list" id="'+listId+'">'+
+      (list.length
+        ? list.map(function(h){
+            var on=(tid&&String(h.teacherId)===String(tid));
+            var tag=on?' — حلقته الحالية':' — متاحة';
+            return '<label class="hqpick-row'+(on?' on':'')+'"><input type="checkbox" value="'+hqEsc(h.id)+'" data-lbl="'+hqEsc(h.name||'حلقة')+'"'+(on?' checked':'')+' onchange="hqPickSync(\''+listId+'\')">'+
+                   '<span>'+hqEsc(h.name||'حلقة')+'<em style="font-style:normal;color:#9abdba;font-size:.62rem">'+tag+'</em></span></label>';
+          }).join('')
+        : '<div class="vs-hint">لا توجد حلقات متاحة — كل الحلقات مرتبطة بمعلّمين</div>')+
+    '</div></div></div>';
+}
+/* يربط الحلقات المختارة بالمعلّم ويحرّر ما أُلغي اختياره */
+function hqHalqaPickApply(listId,t){
+  var box=document.getElementById(listId); if(!box||!t||!t.id) return;
+  var ch=box.querySelectorAll('input[type=checkbox]');
+  for(var i=0;i<ch.length;i++){
+    var val=ch[i].value, ok=ch[i].checked;
+    var h=(DB.halqat||[]).find(function(x){ return String(x.id)===String(val); });
+    if(!h) continue;
+    if(ok){ h.teacherId=t.id; h.teacherName=t.name||''; h.teacherUser=t.username||''; }
+    else if(String(h.teacherId)===String(t.id)){ h.teacherId=''; h.teacherName=''; h.teacherUser=''; }
+  }
+}
+
+/* ====== حسابات الدخول: اسم المستخدم وكلمة المرور داخل نافذة «تعديل» ====== */
+function hqSupUserKey(sid){
+  for(var k in DB.users){ var u=DB.users[k]; if(u&&u.role==='supervisor'&&String(u.supId)===String(sid)) return k; }
+  return '';
+}
+function hqTeacherUserKey(tid,uname){
+  var k;
+  for(k in DB.users){
+    var u=DB.users[k]; if(!u||u.role!=='teacher') continue;
+    if(tid&&(String(u.tid)===String(tid)||String(u.hid)===String(tid)||k==='tc_'+tid||k==='t_'+tid)) return k;
+  }
+  var un=String(uname||'').toLowerCase();
+  if(un){ for(k in DB.users){ var u2=DB.users[k]; if(u2&&u2.role==='teacher'&&String(u2.username||'').toLowerCase()===un) return k; } }
+  return '';
+}
+/* حقلا اسم المستخدم وكلمة المرور — يُستعملان في نموذجَي المشرف والمعلم */
+function hqCredFields(prefix,username){
+  return '<div class="prof-form-field"><label class="prof-form-lbl">اسم المستخدم</label>'+
+      '<input class="prof-form-input" id="'+prefix+'-user" type="text" value="'+hqEsc(username||'')+'" placeholder="اسم الدخول"></div>'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">كلمة المرور</label>'+
+      '<input class="prof-form-input" id="'+prefix+'-pass" type="text" value="" placeholder="اتركها فارغة لإبقائها كما هي"></div>';
+}
+/* يُطبّق التغيير على حساب الدخول — يعيد false إن وُجد خطأ */
+function hqCredApply(key,uname,pass,name){
+  uname=String(uname||'').trim(); pass=String(pass||'').trim();
+  if(!key||!DB.users[key]){
+    if(uname||pass) showToast('لا يوجد حساب دخول مرتبط','error');
+    return !(uname||pass);
+  }
+  var u=DB.users[key];
+  if(uname){
+    var ul=uname.toLowerCase();
+    for(var k in DB.users){
+      if(k!==key&&DB.users[k]&&String(DB.users[k].username||'').toLowerCase()===ul){
+        showToast('اسم المستخدم مستخدم من قبل، اختر غيره','error'); return false;
+      }
+    }
+    u.username=uname;
+  }
+  if(pass){
+    if(pass.length<4){ showToast('كلمة المرور أربعة أحرف فأكثر','error'); return false; }
+    u.pw=hqPw(pass); if(u.password) delete u.password;
+  }
+  if(name) u.name=name;
+  return true;
+}
+
+/* ====== تعديل بيانات المعلم — بنفس نموذج تعديل بيانات المشرف ====== */
+function teacherEditOpen(tid){
+  var t=hqTeacher(tid); if(!t){ showToast('المعلم غير موجود','error'); return; }
+  window._teEditId=t.id;
+  var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+  var dOpts='',mOpts='';
+  for(var d=1;d<=30;d++) dOpts+='<option value="'+d+'"'+((parseInt(t.bDay,10)===d)?' selected':'')+'>'+arNum(d)+'</option>';
+  for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'"'+((parseInt(t.bMonth,10)===mo+1)?' selected':'')+'>'+hM[mo]+'</option>';
+  function fld(lbl,id,val,tp){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label><input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" value="'+hqEsc(val||'')+'"></div>'; }
+  var yOpts=''; for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'"'+((''+_y)===(''+(t.bYear||''))?' selected':'')+'>'+_y+'</option>';
+  var uk=hqTeacherUserKey(t.id,t.username);
+  var un=(uk&&DB.users[uk]?DB.users[uk].username:t.username)||'';
+  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+    fld('الاسم','te-e-name',t.name)+
+    fld('الهوية / الإقامة','te-e-nid',t.nid)+
+    '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الميلاد (هجري)</label>'+
+      '<div class="hijri-picker">'+
+        '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select" id="te-e-bDay">'+dOpts+'</select></div>'+
+        '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select" id="te-e-bMonth">'+mOpts+'</select></div>'+
+        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select" id="te-e-bYear"><option value="">السنة</option>'+yOpts+'</select></div>'+
+      '</div></div>'+
+    fld('الجنسية','te-e-nat',t.nat)+
+    fld('الجوال','te-e-phone',t.phone,'tel')+
+    hqHalqaPickHTML('te-halqat',t.id)+
+    hqCredFields('te-e',un)+
+    '</div>'+
+    '<button class="prof-form-save" onclick="teacherEditSave()" style="margin-top:16px;">حفظ التعديلات</button>'+
+  '</div>';
+  openModal('تعديل بيانات المعلم', body);
+}
+function teacherEditSave(){
+  try{
+    var t=hqTeacher(window._teEditId); if(!t){ showToast('المعلم غير موجود','error'); return; }
+    function V(id){ var e=document.getElementById(id); return e?String(e.value||'').trim():''; }
+    var nm=V('te-e-name');
+    if(!nm){ showToast('يرجى إدخال الاسم','error'); return; }
+    var by=V('te-e-bYear');
+    if(by && !/^[0-9]{3,4}$/.test(by)){ showToast('سنة الميلاد بأرقام إنجليزية فقط','error'); return; }
+    var uk=hqTeacherUserKey(t.id,t.username);
+    if(!hqCredApply(uk, V('te-e-user'), V('te-e-pass'), nm)) return;
+    var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+    var bd=V('te-e-bDay'), bm=V('te-e-bMonth');
+    t.name=nm; t.nid=V('te-e-nid'); t.nat=V('te-e-nat'); t.phone=V('te-e-phone');
+    t.bDay=bd; t.bMonth=bm; t.bYear=by;
+    t.birthDate = by ? (bd+' '+hM[parseInt(bm,10)-1]+' '+by+'هـ') : '';
+    var un=V('te-e-user'); if(un) t.username=un;
+    try{ hqHalqaPickApply('te-halqat',t); }catch(e){}
+    (DB.halqat||[]).forEach(function(h){ if(String(h.teacherId)===String(t.id)){ h.teacherName=t.name; h.teacherUser=t.username||''; } });
+    if(uk&&DB.users[uk]) DB.users[uk].name=nm;
+    save(); closeModal();
+    window._teEditId=null;
+    if(typeof renderDash==='function') renderDash();
+    if(typeof showTeachersData==='function') showTeachersData();
     showToast('حُفظت البيانات','success');
   }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
 }
@@ -7733,8 +7884,7 @@ function showSupervisorsData(){
     var nv=(DB.visits||[]).filter(function(x){ return x.supId===v.id; }).length;
     return hqFlatSec(v.name, details,
       '<button class="hq-mini-btn view" onclick="supVisitsFollow(\''+v.id+'\')">متابعة زيارات المشرف'+(nv?(' ('+arNum(nv)+')'):'')+'</button>'+
-      (STATE.role==='admin'?('<button class="hq-mini-btn view" onclick="supEditOpen(\''+v.id+'\')">تعديل</button>'+
-        '<button class="hq-mini-btn view" onclick="hqPwOpen(\'sup\',\''+v.id+'\',\''+hqEsc(v.name||'')+'\')">كلمة المرور</button>'):'')+
+      (STATE.role==='admin'?('<button class="hq-mini-btn view" onclick="supEditOpen(\''+v.id+'\')">تعديل</button>'):'')+
       '<button class="hq-mini-btn del" onclick="supDelete(\''+v.id+'\')">حذف</button>', _i+1, v.sector||'');
   }).join('');
   openModal('بيانات المشرفين','<div class="hs-wrap">'+rows+
@@ -8356,7 +8506,7 @@ function supVisitOpen(){
     sel('اسم الحلقة','vs-halqa',hOpts,'— اختر الحلقة —',' onchange="supVisitFill()"')+
     ro('اسم الجامع','vs-venue')+
     ro('القطاع','vs-sector')+
-    sel('الفترة','vs-period',HQ_PERIODS.map(function(o){ return '<option value="'+hqEsc(o)+'">'+hqEsc(o)+'</option>'; }).join(''),'— اختر الفترة —')+
+    ro('الفترة','vs-period')+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الزيارة (هجري)</label>'+
       '<div class="hijri-picker">'+
         '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select" id="vs-bDay">'+dOpts+'</select></div>'+
@@ -8390,7 +8540,7 @@ function supVisitFill(){
       st=document.getElementById('vs-star'), pr=document.getElementById('vs-period');
   if(v) v.value=(h&&h.venue)||'—';
   if(c) c.value=(h&&h.sector)||'—';
-  if(pr){ pr.value=(h&&h.period)?h.period:''; hqSelRefresh(pr); }
+  if(pr) pr.value=(h&&h.period)||'—';
   if(st){
     var studs=(h&&h.students)||[];
     st.innerHTML = studs.length
@@ -8417,7 +8567,7 @@ function supVisitSave(){
       supName:(STATE.user||{}).name||'',
       halqaId:hid, halqaName:h.name||'',
       venue:h.venue||'', sector:h.sector||'',
-      period:V('vs-period'),
+      period:h.period||'',
       date:(d+' '+hM[parseInt(m,10)-1]+' '+y+'هـ'),
       dY:y, dM:m, dD:d,
       visitNo:V('vs-no'), teacherPresent:V('vs-teacher'),
@@ -8481,7 +8631,7 @@ function hqTeacherCard(t,halqaName,canDelete,idx){
     hqAccRow('الحلقة',halqaName);
   var acts='';
   if(t.id) acts+='<button class="hq-mini-btn view" onclick="tmsgCompose(\''+t.id+'\')">رسالة للمعلم</button>';
-  if(t.id && STATE.role==='admin') acts+='<button class="hq-mini-btn view" onclick="hqPwOpen(\'teacher\',\''+t.id+'\',\''+hqEsc(t.name||'')+'\')">كلمة المرور</button>';
+  if(t.id && STATE.role==='admin') acts+='<button class="hq-mini-btn view" onclick="teacherEditOpen(\''+t.id+'\')">تعديل</button>';
   if(canDelete&&t.id) acts+='<button class="hq-mini-btn del" onclick="teacherDelete(\''+t.id+'\')">حذف</button>';
   var tag2='<span class="hs-rep-tot hs-rep-rank">'+hqEsc(halqaName||'—')+'</span>'+
            '<span class="hs-rep-tot hq-seen">آخر ظهور: '+hqEsc(hqLastSeenOf(t))+'</span>';
@@ -11550,7 +11700,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-29 - 63';
+  window.HQ_BUILD='2026-08-29 - 65';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
