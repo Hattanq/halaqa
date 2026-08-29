@@ -2778,6 +2778,8 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .stg-cup svg{position:static!important;width:100%;height:100%;animation:none!important;pointer-events:none}
 .stg-cup:active{transform:translateY(-50%) scale(.9)}
 @keyframes cupFloat{0%,100%{transform:translateY(-50%) rotate(-4deg)}50%{transform:translateY(-58%) rotate(4deg)}}
+.hs-cell{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-height:86px}
+.hs-cell .hs-cell-lbl{margin-top:auto}
 .hs-cell-val.sm{font-size:.78rem;line-height:1.35;word-break:break-word}
 .hs-heroes{background:rgba(0,0,0,.16);border:1px solid rgba(201,162,39,.22);border-radius:14px;padding:6px 10px}
 .hs-hero-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -6239,8 +6241,8 @@ function hqPlanCircles(sid,ro){
   var head='<div class="mp-info" style="margin-bottom:10px">'+
     '<div class="mp-info-m">'+hqEsc(hqPlanName(p))+'</div></div>';
   var foot='<button type="button" class="tl-fetch" onclick="hqPlanTable(\''+sid+'\','+(ro?1:0)+')">عرض الجدول كاملاً</button>';
-  openModal(s.name||'', head+hqStageGrid(orbs)+foot);
-  if(!ro) hqPlanBack(hqPlanHome,'‹ رجوع لخطط الطلاب');
+  openModal(ro?(s.name||''):'عودة', head+hqStageGrid(orbs)+foot);
+  if(!ro) hqBackTitle(hqPlanHome);
 }
 
 /* ---------- جدول مرحلة واحدة ---------- */
@@ -6359,15 +6361,16 @@ function hqPlanJuzGrid(type,sid){
   var list=hqPlanStartOptions(type), g='';
   for(var i=0;i<list.length;i++){
     var j=list[i];
-    g+='<button type="button" class="hqp-juz'+((j===cur)?' on':'')+'" onclick="hqPlanJoinGo(\''+type+'\',\''+sid+'\','+j+')">'+arNum(j)+'</button>';
+    g+='<button type="button" class="hqp-juz" data-j="'+j+'" onclick="hqPlanJoinGo(\''+type+'\',\''+sid+'\','+j+')">'+arNum(j)+'</button>';
   }
-  var note=(t.juz>1)?('<div class="mp-info-s">يُختار جزء البداية ويُكمل النظام ما بعده تلقائياً ('+arNum(t.juz)+' أجزاء)</div>'):'';
+  var note='';
   var del=(p&&p.approved)?('<button type="button" class="tl-fetch hqp-del" onclick="hqPlanDelAsk(\''+sid+'\')">إلغاء خطة الطالب</button>'):'';
   openModal(s.name,
     '<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">'+t.n+'</div>'+
     '<div class="mp-info-s">اختر الجزء</div>'+note+'</div>'+
     '<div class="hqp-juz-grid">'+g+'</div>'+del);
   hqBackTitle(function(){ hqPlanJoin(type); });
+  if(cur) setTimeout(function(){ hqJuzMark(type,cur); },40);
 }
 /* إبراز الجزء المختار والأجزاء التابعة له */
 function hqJuzMark(type,start){
@@ -9495,7 +9498,7 @@ function evTermScore(days){
     var _rn=(d.review&&d.review.indexOf('n:')===0)?(parseInt(d.reviewN,10)||1):0;
     s.lesson+=_ln; s.review+=_rn;
     /* مستوى الحفظ: نقطة لكل درس مُنجز في اليوم (متقن=١ · متوسط=٠٫٥ · ضعيف=٠) */
-    if(d.tajweed && EV_TAJWEED[d.tajweed]!=null) s.tajweed+=EV_TAJWEED[d.tajweed]*Math.max(1,_ln);
+    if(d.tajweed && EV_TAJWEED[d.tajweed]!=null) s.tajweed+=EV_TAJWEED[d.tajweed];   /* نقطة واحدة لليوم */
     if(d.attend==='\u062d\u0627\u0636\u0631') s.attend+=1;
     else if(d.attend==='\u0645\u062a\u0623\u062e\u0631') s.attend+=0.5;   /* الحاضر = نقطة كاملة والمتأخر نصفها (الغائب = لا شيء) */
   }
@@ -10902,8 +10905,9 @@ function openProfileEdit(sid){
     '<input class="prof-form-input" id="pf-password" type="text" placeholder="اتركها فارغة لإبقائها كما هي"></div>'
   ):'';
   var body='<div class="prof-form-wrap">'+
-    '<div class="prof-form-title">تعديل البيانات الشخصية</div>'+
     '<div class="prof-form-grid">'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">اسم الطالب</label>'+
+    '<input class="prof-form-input" id="pf-name" type="text" placeholder="الاسم الرباعي" value="'+esc(s.name||'')+'"></div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">الهوية / الإقامة</label>'+
     '<input class="prof-form-input" id="pf-nationalId" type="text" placeholder="رقم الهوية أو الإقامة" value="'+(s.nationalId||'')+'"></div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الميلاد (هجري)</label>'+
@@ -10948,6 +10952,11 @@ function saveProfileEdit(){
     }
     if(si===-1){closeModal();return;}
     var s=DB.students[si];
+    var nmEl=document.getElementById('pf-name');
+    if(nmEl && nmEl.value.trim()){
+      s.name=nmEl.value.trim();
+      try{ for(var _k in DB.users){ var _u=DB.users[_k]; if(_u&&_u.sid===s.id){ if(_u.role==='student') _u.name=s.name; else if(_u.role==='parent') _u.name='ولي أمر '+s.name.split(' ')[0]; } } }catch(e){}
+    }
     var nEl=document.getElementById('pf-nationalId'); if(nEl) s.nationalId=nEl.value.trim();
     var naEl=document.getElementById('pf-nationality'); if(naEl) s.nationality=naEl.value.trim();
     var phEl=document.getElementById('pf-phone'); if(phEl) s.phone=phEl.value.trim();
@@ -11439,7 +11448,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-28 - 58';
+  window.HQ_BUILD='2026-08-29 - 60';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -12012,7 +12021,7 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .hs-reps{display:flex;flex-direction:column;gap:8px}
 .hs-pair{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;align-items:stretch}
 .hs-pair > .hs-rep{min-width:0}
-.hs-pair-slot .hs-pair-body{display:none}
+.hs-pair-slot .hs-pair-body{display:none;position:static;max-height:none;box-shadow:none;top:auto;right:auto;left:auto}
 .hs-pair-slot .hs-pair-body.open{display:block;margin-top:8px;animation:pageReveal .25s ease both}
 .hs-reps .hs-rep-hd{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:9px 11px}
 .hs-reps .hs-rep-name{font-size:.76rem;font-weight:800;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
