@@ -1882,7 +1882,10 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .stul-arrow{color:#9fd4d0;font-size:.85rem;transition:transform .25s ease;width:14px;text-align:center;flex:none}
 .stul-item.open .stul-arrow{transform:rotate(180deg)}
 .stul-id{flex:1;min-width:0}
-.stul-name{font-weight:800;font-size:.82rem;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stul-name{font-weight:800;font-size:.82rem;color:#fff;line-height:1.35;white-space:normal;word-break:break-word}
+.stul-acts{display:none;gap:8px;justify-content:flex-start;padding:2px 12px 10px}
+.stul-item.open .stul-acts{display:flex;animation:pageReveal .25s ease both}
+.stul-acts .stul-edit{margin-inline-end:0}
 .stul-sub{font-size:.64rem;color:#9fd4d0;font-weight:600;margin-top:2px}
 .stul-del{padding:5px 12px;border-radius:9px;background:transparent;border:1px solid rgba(220,38,38,0.45);color:#ff6b6b;font-size:.7rem;font-weight:800;font-family:inherit;cursor:pointer;flex:none}
 .stul-edit{padding:5px 12px;border-radius:9px;background:transparent;border:1px solid rgba(34,197,94,0.5);color:#4ade80;font-size:.7rem;font-weight:800;font-family:inherit;cursor:pointer;flex:none;margin-inline-end:6px}
@@ -2849,7 +2852,8 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hqp-stu.busy .hqp-stu-s{color:#9abdba}
 .hqp-juz-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:2px}
 .hqp-juz{padding:14px 4px;border-radius:13px;border:1px solid rgba(201,162,39,.35);background:linear-gradient(160deg,rgba(201,162,39,.18),rgba(201,162,39,.05));color:#f0d060;font:800 1rem inherit;cursor:pointer;touch-action:manipulation}
-.hqp-juz.on{border-color:#f7d774;box-shadow:0 0 0 2px rgba(247,215,116,.25)}
+.hqp-juz.on{border-color:#f7d774;box-shadow:0 0 0 2px rgba(247,215,116,.25);background:linear-gradient(160deg,rgba(201,162,39,.3),rgba(201,162,39,.1))}
+.hqp-juz.lead{box-shadow:0 0 0 3px rgba(247,215,116,.45);color:#fff3c9}
 .ev-sc-plan{margin:-4px 0 8px;text-align:center;color:#9abdba;font-size:.7rem;font-weight:700}
 .ev-start-plan .prof-form-input{flex:1;min-width:0}
 .tl-fetch.hqp-del{border-color:rgba(185,28,28,.5);background:rgba(185,28,28,.16);color:#fca5a5}
@@ -3201,6 +3205,102 @@ function hqWipeLocal(stamp){
     localStorage.setItem('hq_dayshift','0');
   }catch(e){}
 }
+/* ===================================================================
+   النسخ الاحتياطي: تنزيل نسخة - استعادة نسخة - نسخة دورية تلقائية
+   =================================================================== */
+var HQ_BK_KEYS=['hq_halqat','hq_users','hq_supervisors','hq_teachers','hq_visits','hq_tmsgs','hq_timeline'];
+function hqBackupData(){
+  var o={app:'halaqat', v:(window.HQ_BUILD||''), at:Date.now(), seed:HQ_SEED_ID, data:{}};
+  HQ_BK_KEYS.forEach(function(k){ try{ o.data[k]=lsGet(k,null); }catch(e){} });
+  return o;
+}
+function hqBackupName(){
+  var d=new Date();
+  return 'نسخة-حلقات-المندق-'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.json';
+}
+function hqBackupDownload(){
+  try{
+    var txt=JSON.stringify(hqBackupData());
+    var url='data:application/json;charset=utf-8,'+encodeURIComponent(txt);
+    var a=document.createElement('a'); a.href=url; a.download=hqBackupName();
+    document.body.appendChild(a); a.click(); setTimeout(function(){ a.remove(); },1500);
+    try{ localStorage.setItem('hq_bk_last', String(Date.now())); }catch(e){}
+    showToast('نُزّلت النسخة الاحتياطية','success');
+    hqBackupOpen();
+  }catch(e){ showToast('تعذّر التنزيل','error'); }
+}
+function hqBackupAuto(){
+  /* نسخة تُحفظ داخل المتصفّح كشبكة أمان سريعة */
+  try{
+    localStorage.setItem('hq_bk_auto', JSON.stringify(hqBackupData()));
+    localStorage.setItem('hq_bk_last', String(Date.now()));
+  }catch(e){}
+}
+function hqBackupCheck(){
+  try{
+    var every=parseInt(localStorage.getItem('hq_bk_every')||'7',10)||7;
+    var last=parseInt(localStorage.getItem('hq_bk_last')||'0',10)||0;
+    if(Date.now()-last >= every*86400000){
+      hqBackupAuto();
+      if(typeof showToast==='function') setTimeout(function(){ showToast('🗄️ حان وقت النسخة الاحتياطية - نزّلها من بطاقة النسخ الاحتياطي','info'); },2500);
+    }
+  }catch(e){}
+}
+function hqBackupEvery(n){
+  try{ localStorage.setItem('hq_bk_every',String(n)); }catch(e){}
+  showToast('صارت الدورية كل '+arNum(n)+' يوم','success');
+  hqBackupOpen();
+}
+function hqBackupRestoreFile(inp){
+  var f=inp&&inp.files&&inp.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    var o=null; try{ o=JSON.parse(r.result); }catch(e){}
+    if(!o||!o.data||!o.data.hq_halqat){ showToast('الملف غير صالح','error'); return; }
+    window.__bkPending=o;
+    openModal('تأكيد الاستعادة',
+      '<div style="padding:6px 4px;text-align:center">'+
+      '<div style="font-size:2rem;margin-bottom:8px">♻️</div>'+
+      '<div style="font-weight:800;margin-bottom:6px">استعادة نسخة بتاريخ '+hqSeenTxt(o.at)+'</div>'+
+      '<div style="color:#fbbf24;font-size:.85rem;line-height:1.9;margin-bottom:14px">ستحلّ محلّ البيانات الحالية في هذا الجهاز، ثم تُرفع للسحابة فتصل بقيّة الأجهزة.</div>'+
+      '<button class="prof-form-save" onclick="hqBackupRestoreGo()">تأكيد الاستعادة</button></div>');
+  };
+  r.readAsText(f);
+}
+function hqBackupRestoreGo(){
+  var o=window.__bkPending; if(!o) return;
+  try{
+    HQ_BK_KEYS.forEach(function(k){ if(o.data[k]!=null) lsSave(k,o.data[k]); });
+    if(typeof cloudBumpRev==='function') cloudBumpRev();
+  }catch(e){}
+  showToast('اُستعيدت النسخة - يُعاد التحميل','success');
+  setTimeout(function(){ location.reload(); },1200);
+}
+function hqBackupOpen(){
+  var last=0, every=7, auto=false;
+  try{ last=parseInt(localStorage.getItem('hq_bk_last')||'0',10)||0; }catch(e){}
+  try{ every=parseInt(localStorage.getItem('hq_bk_every')||'7',10)||7; }catch(e){}
+  try{ auto=!!localStorage.getItem('hq_bk_auto'); }catch(e){}
+  var st=hqBackupData(), n=((st.data.hq_halqat||[]).length);
+  var stu=0; (st.data.hq_halqat||[]).forEach(function(h){ stu+=((h.students||[]).length); });
+  var body='<div class="hqacc" style="margin-bottom:12px"><div class="hqacc-body hqacc-plain">'+
+      hqAccRow('آخر نسخة', last?hqSeenTxt(last):'لا توجد')+
+      hqAccRow('الدورية', 'كل '+arNum(every)+' يوم')+
+      hqAccRow('محتوى النسخة', arNum(n)+' حلقة - '+arNum(stu)+' طالب')+
+      hqAccRow('نسخة داخل المتصفّح', auto?'موجودة':'لا توجد')+
+    '</div></div>'+
+    '<button type="button" class="tl-approve" onclick="hqBackupDownload()">تنزيل نسخة احتياطية الآن</button>'+
+    '<div class="mp-info" style="margin:12px 0 6px"><div class="mp-info-s">دورية التذكير بالنسخ</div></div>'+
+    '<div class="hqp-juz-grid" style="margin-bottom:12px">'+
+      '<button type="button" class="hqp-juz'+(every===1?' on':'')+'" onclick="hqBackupEvery(1)">يومي</button>'+
+      '<button type="button" class="hqp-juz'+(every===7?' on':'')+'" onclick="hqBackupEvery(7)">أسبوعي</button>'+
+      '<button type="button" class="hqp-juz'+(every===30?' on':'')+'" onclick="hqBackupEvery(30)">شهري</button>'+
+      '<button type="button" class="hqp-juz" onclick="hqBackupAuto();showToast(\'حُفظت نسخة داخل المتصفّح\',\'success\')">نسخة سريعة</button>'+
+    '</div>'+
+    '<label class="tl-fetch" style="display:block;text-align:center;cursor:pointer">استعادة من ملف'+
+      '<input type="file" accept=".json,application/json" style="display:none" onchange="hqBackupRestoreFile(this)"></label>';
+  openModal('النسخ الاحتياطي', body);
+}
 /* ===== نافذة أدوات التجربة المؤقّتة ===== */
 function hqShiftSet(n){
   var cur=window.HQ_DAY_SHIFT||0, nx=cur+n;
@@ -3285,6 +3385,7 @@ function seedUsers(){
 }
 migrateHalqat();
 seedUsers();
+try{ setTimeout(hqBackupCheck,4000); }catch(e){}
 
 /* أُزيلت تعبئة البيانات التجريبية نهائياً.
    كانت تمسح كل البيانات وتعيد بناء الحلقات التجريبية على أي جهاز
@@ -3640,6 +3741,7 @@ function renderDash(){
       '<div class="menu-card mc-7" onclick="tlOpen()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="16" y="28" width="32" height="24" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M23 28v-6a9 9 0 0118 0v6" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="38" r="3.5" fill="white"/><line x1="32" y1="41" x2="32" y2="46" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
       '<div class="menu-card mc-5 mc-wide" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
+      '<div class="menu-card mc-1" onclick="hqBackupOpen()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 10v26M22 28l10 10 10-10" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 40v8a6 6 0 006 6h28a6 6 0 006-6v-8" stroke="white" stroke-width="3.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">النسخ الاحتياطي</div></div>'+
       '<div class="menu-card mc-3 mc-wide mc-test" onclick="hqTestTool()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="34" r="20" stroke="white" stroke-width="3"/><path d="M32 22v12l8 5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 10l-7 6M44 10l7 6" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">أدوات التجربة (مؤقّتة)</div></div>'+
     '</div>';
     return;
@@ -6267,14 +6369,24 @@ function hqPlanJuzGrid(type,sid){
     '<div class="hqp-juz-grid">'+g+'</div>'+del);
   hqBackTitle(function(){ hqPlanJoin(type); });
 }
+/* إبراز الجزء المختار والأجزاء التابعة له */
+function hqJuzMark(type,start){
+  var js=hqPlanJuzList(type,start)||[];
+  var all=document.querySelectorAll('.hqp-juz');
+  for(var i=0;i<all.length;i++){
+    var j=parseInt(all[i].getAttribute('data-j'),10);
+    all[i].classList.toggle('on', js.indexOf(j)>=0);
+    all[i].classList.toggle('lead', j===js[0]);
+  }
+}
 function hqPlanJoinGo(type,sid,juz){
   var p=hqPlanMake(type,juz);
   if(!p){ showToast('تعذّر بناء الخطة','error'); return; }
   var td=hqPlanTermDays();
   hqPlanApprove(sid,p,null);
   var s=hqPlanStu(sid)||{name:''};
-  showToast(s.name+' — '+hqPlanName(p)+(td.real?'':' (أيام افتراضية)'), td.real?'success':'info');
-  hqPlanJoin(type);
+  showToast(s.name+' - '+hqPlanName(p)+(td.real?'':' (أيام افتراضية)'), td.real?'success':'info');
+  hqJuzMark(type,juz);          /* تبقى الشاشة مفتوحة والاختيار ظاهر */
 }
 
 /* =====================================================================
@@ -9214,25 +9326,28 @@ function hqStatsOverview(halqat, title, extraTop, extraBottom){
         return '<div class="hs-susp-row">'+hqEsc(m.name)+(m.suspReason?(' - '+hqEsc(m.suspReason)):'')+'</div>';
       }).join('')
     : '<div class="hs-susp-none">لا توجد حلقات معلّقة اليوم</div>';
+  /* الفترات: عدد حلقات العصر والمغرب */
+  var _asr=0,_mgh=0;
+  halqat.forEach(function(h){ var pr=String(h.period||''); if(pr.indexOf('عصر')>=0) _asr++; else if(pr.indexOf('مغرب')>=0) _mgh++; });
+  var perTxt=arNum(_asr)+' فترة العصر<br>'+arNum(_mgh)+' فترة المغرب';
+  function cellT(l,v){ return '<div class="hs-cell"><div class="hs-cell-val sm">'+v+'</div><div class="hs-cell-lbl">'+l+'</div></div>'; }
   var body='<div class="hs-wrap">'+
     (extraTop||'')+
-    '<div class="hs-grid hs-grid3">'+
+    '<div class="hs-sec"><div class="hs-sec-hd">معلومات عامة</div><div class="hs-grid hs-grid3">'+
       cell('عدد الحلقات',arNum(halqat.length))+
       cell('إجمالي الطلاب',arNum(totalStu))+
       cell('نسبة الحضور اليوم',arNum(attPct)+'٪')+
-    '</div>'+
-    '<div class="hs-sec"><div class="hs-sec-hd">حضور اليوم</div><div class="hs-grid hs-grid3">'+
-      cell('الحاضرون',arNum(totPres))+cell('الغائبون',arNum(totAbs))+cell('المنقطعون',arNum(totDisc))+
+      cellT('الفترة',perTxt)+
+      cell('الحاضرون اليوم',arNum(totPres))+
+      cell('الغائبون اليوم',arNum(totAbs))+
+      cell('المنقطعون',arNum(totDisc))+
+      cell('طلاب الروضة',arNum(kg))+
+      cell('طلاب الابتدائي',arNum(pri))+
+      cell('طلاب المتوسط',arNum(mid))+
+      cell('طلاب الثانوي',arNum(sec))+
+      cell('طلاب الجامعات',arNum(uni))+
+      cell('كبار السن',arNum(eld))+
     '</div></div>'+
-    '<div class="hs-sec"><div class="hs-sec-hd">أبرز المؤشرات</div><div class="hs-grid hs-grid3">'+
-      topCell('أكثر حلقة حضوراً اليوم', hqEsc(mostAtt?mostAtt.name:'—'), mostAtt?('الحضور '+pct(mostAtt.r)):'')+
-      topCell('أكثر حلقة غياباً اليوم', hqEsc(mostAbs?mostAbs.name:'—'), mostAbs?('الغياب '+pct(mostAbs.r)):'')+
-      topCell('أكثر حلقة تسميعاً اليوم', hqEsc(mostTas?mostTas.name:'—'), mostTas?('التسميع '+pct(mostTas.r)):'')+
-    '</div></div>'+
-    '<div class="hs-sec"><div class="hs-sec-hd">المراحل المسجلة</div><div class="hs-grid hs-grid5">'+
-      cell('روضة',arNum(kg))+cell('ابتدائية',arNum(pri))+cell('متوسطة',arNum(mid))+cell('ثانوية',arNum(sec))+cell('جامعي',arNum(uni))+cell('كبار السن',arNum(eld))+
-    '</div></div>'+
-    '<div class="hs-sec"><div class="hs-sec-hd">الحلقات الغير نشطة هذا اليوم</div>'+inactiveRows+'</div>'+
     '<div class="hs-sec"><div class="hs-sec-hd">حلقات علّقت الحضور اليوم</div>'+suspRows+'</div>'+
     (extraBottom||'')+
   '</div>';
@@ -11128,7 +11243,9 @@ function showStudentsData(){
         '<div class="stul-head" onclick="toggleStuItem(this)">'+
           '<span class="stul-arrow">\u25be</span>'+
           '<div class="stu-avatar">'+arNum(i+1)+'</div>'+
-          '<div class="stul-id"><div class="stul-name">'+esc(s.name)+_discHint+'</div><div class="stul-sub">'+(sub||'\u2014')+'</div></div>'+
+          '<div class="stul-id"><div class="stul-name">'+esc(s.name)+_discHint+'</div></div>'+
+        '</div>'+
+        '<div class="stul-acts">'+
           '<button class="stul-disc'+(s.discontinued?' on':'')+'" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();toggleStudentDiscontinued(this.getAttribute(\'data-sid\'))" title="\u062a\u0639\u064a\u064a\u0646 \u0627\u0644\u0637\u0627\u0644\u0628 \u0645\u0646\u0642\u0637\u0639\u0627\u064b">منقطع</button>'+
           '<button class="stul-edit" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();openProfileEdit(this.getAttribute(\'data-sid\'))" title="\u062a\u0639\u062f\u064a\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0637\u0627\u0644\u0628">تعديل</button>'+
           '<button class="stul-del" data-sid="'+esc(s.id)+'" data-sname="'+esc(s.name)+'" onclick="event.stopPropagation();handleDeleteClick(this)" title="\u062d\u0630\u0641 \u0627\u0644\u0637\u0627\u0644\u0628">حذف</button>'+
