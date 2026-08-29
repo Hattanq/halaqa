@@ -10907,7 +10907,7 @@ function openProfileEdit(sid){
   var body='<div class="prof-form-wrap">'+
     '<div class="prof-form-grid">'+
     '<div class="prof-form-field"><label class="prof-form-lbl">اسم الطالب</label>'+
-    '<input class="prof-form-input" id="pf-name" type="text" placeholder="الاسم الرباعي" value="'+esc(s.name||'')+'"></div>'+
+    '<input class="prof-form-input" id="pf-name" type="text" placeholder="الاسم الرباعي" value="'+hqEsc(s.name||'')+'"></div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">الهوية / الإقامة</label>'+
     '<input class="prof-form-input" id="pf-nationalId" type="text" placeholder="رقم الهوية أو الإقامة" value="'+(s.nationalId||'')+'"></div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الميلاد (هجري)</label>'+
@@ -11448,7 +11448,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-29 - 60';
+  window.HQ_BUILD='2026-08-29 - 61';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
