@@ -3207,6 +3207,42 @@ function hqWipeLocal(stamp){
     localStorage.setItem('hq_dayshift','0');
   }catch(e){}
 }
+/* ===== تغيير كلمة المرور (الشؤون التعليمية) ===== */
+function hqPwUserKey(kind,id){
+  for(var k in DB.users){
+    var u=DB.users[k]; if(!u) continue;
+    if(kind==='teacher' && u.role==='teacher' && (u.hid===id||k==='t_'+id)) return k;
+    if(kind==='sup' && u.role==='supervisor' && u.supId===id) return k;
+  }
+  return '';
+}
+function hqPwOpen(kind,id,name){
+  var k=hqPwUserKey(kind,id);
+  if(!k){ showToast('لا يوجد حساب دخول لهذا المستخدم','error'); return; }
+  openModal('تغيير كلمة المرور',
+    '<div class="prof-form-wrap"><div class="mp-info" style="margin-bottom:10px">'+
+      '<div class="mp-info-m">'+hqEsc(name||'')+'</div>'+
+      '<div class="mp-info-s">اسم المستخدم: '+hqEsc(DB.users[k].username||'')+'</div></div>'+
+    '<div class="prof-form-grid">'+
+      '<div class="prof-form-field"><label class="prof-form-lbl">كلمة المرور الجديدة</label>'+
+        '<input class="prof-form-input" id="pw-new" type="text" placeholder="٤ أحرف فأكثر"></div>'+
+      '<div class="prof-form-field"><label class="prof-form-lbl">تأكيد كلمة المرور</label>'+
+        '<input class="prof-form-input" id="pw-new2" type="text" placeholder="أعد كتابتها"></div>'+
+    '</div>'+
+    '<button class="prof-form-save" style="margin-top:14px" onclick="hqPwSave(\''+k+'\')">حفظ كلمة المرور</button></div>');
+}
+function hqPwSave(k){
+  var a=((document.getElementById('pw-new')||{}).value||'').trim();
+  var b=((document.getElementById('pw-new2')||{}).value||'').trim();
+  if(a.length<4){ showToast('كلمة المرور أربعة أحرف فأكثر','error'); return; }
+  if(a!==b){ showToast('كلمتا المرور غير متطابقتين','error'); return; }
+  if(!DB.users[k]){ showToast('الحساب غير موجود','error'); return; }
+  DB.users[k].pw=hqPw(a);
+  if(DB.users[k].password) delete DB.users[k].password;
+  save();
+  showToast('تم تغيير كلمة المرور','success');
+  closeModal();
+}
 /* ===================================================================
    النسخ الاحتياطي: تنزيل نسخة - استعادة نسخة - نسخة دورية تلقائية
    =================================================================== */
@@ -3678,6 +3714,9 @@ function launchApp(){
     var stats=document.getElementById('hdr-stats3');
     if(stats) stats.style.display='none';
   } else { if(sec) sec.classList.remove('active'); }
+  /* ترتيب التاريخ وتسجيل الخروج وشارة المزامنة — لكل الحسابات بلا استثناء */
+  try{ hdrArrange(); }catch(e){}
+  setTimeout(function(){ try{ hdrArrange(); }catch(e){} },0);
   // بدء مزامنة الرسائل (الدفعة ٤)
   try{
     if(typeof window.msgStart==='function'){
@@ -3687,7 +3726,10 @@ function launchApp(){
   }catch(e){}
   buildNav();
   showPage('dashboard');
-  
+  /* تثبيت مواضع التاريخ وتسجيل الخروج وشارة المزامنة في كل الحسابات وكل دخول */
+  try{ hdrArrange(); }catch(e){}
+  setTimeout(function(){ try{ hdrArrange(); }catch(e){} },100);
+  setTimeout(function(){ try{ hdrArrange(); }catch(e){} },700);
 }
 function buildNav(){
   const defs=NAV_DEFS[STATE.role]||NAV_DEFS.student;
@@ -7430,6 +7472,20 @@ function showAddSupervisor(){
       '<select class="prof-form-input" id="sv-sector"><option value="">— اختر القطاع —</option>'+
       HQ_SECTORS.map(function(o){ return '<option value="'+hqEsc(o)+'">'+hqEsc(o)+'</option>'; }).join('')+
       '</select></div>'+
+    '<div class="prof-form-field"><label class="prof-form-lbl">الإشراف بحلقة</label>'+
+      '<div class="hqpick">'+
+        '<button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
+          '<span class="hqpick-cur" id="sv-halqat-cur">حدد الحلقات</span><span class="hqpick-arw">▾</span></button>'+
+        '<div class="hqpick-list" id="sv-halqat">'+
+          ((DB.halqat||[]).length
+            ? (DB.halqat||[]).map(function(h){
+                var sup=h.supervisorName?(' — '+hqEsc(h.supervisorName)):' — بلا مشرف';
+                return '<label class="hqpick-row"><input type="checkbox" value="'+hqEsc(h.id)+'" onchange="hqPickSync(\'sv-halqat\')">'+
+                       '<span>'+hqEsc(h.name||'حلقة')+'<em style="font-style:normal;color:#9abdba;font-size:.62rem">'+sup+'</em></span></label>';
+              }).join('')
+            : '<div class="vs-hint">لا توجد حلقات</div>')+
+        '</div>'+
+      '</div></div>'+
     fld('اسم المستخدم لمشرف الحلقات','sv-user','اسم الدخول')+
     fld('كلمة المرور لمشرف الحلقات','sv-pass','كلمة المرور')+
     '</div>'+
@@ -7456,6 +7512,17 @@ function saveNewSupervisor(){
       birthDate:(by?(bd+' '+hM[parseInt(bm)-1]+' '+by+'هـ'):''),
       nationality:V('sv-nat'), phone:V('sv-phone'), sector:V('sv-sector') });
     DB.users['sup_'+sid]={username:user,pw:hqPw(pass),name:name,role:'supervisor',display:'مشرف الحلقات',supId:sid};
+    /* إلحاق المشرف بالحلقات المختارة */
+    try{
+      var _box=document.getElementById('sv-halqat');
+      if(_box){
+        var _ch=_box.querySelectorAll('input[type=checkbox]:checked');
+        for(var _i=0;_i<_ch.length;_i++){
+          var _h=(DB.halqat||[]).find(function(x){ return String(x.id)===String(_ch[_i].value); });
+          if(_h){ _h.supervisorId=sid; _h.supervisorName=name; }
+        }
+      }
+    }catch(e){}
     save();
     showToast('تمت إضافة المشرف '+name,'success');
     closeModal();
@@ -7545,8 +7612,10 @@ function renderSupProfile(wrap){
     '</div>'+
     '<button class="prof-form-save" style="margin-top:16px" onclick="supEditOpen()">تعديل البيانات</button>';
 }
-function supEditOpen(){
-  var v=supMe(); if(!v) return;
+function supEditOpen(sid){
+  var v=sid?hqSupers().find(function(x){ return String(x.id)===String(sid); }):supMe();
+  if(!v) return;
+  window._supEditId=v.id;
   var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
   var dOpts='',mOpts='';
   for(var d=1;d<=30;d++) dOpts+='<option value="'+d+'"'+((parseInt(v.bDay,10)===d)?' selected':'')+'>'+arNum(d)+'</option>';
@@ -7568,6 +7637,19 @@ function supEditOpen(){
       '<select class="prof-form-input" id="se-sector"><option value="">— اختر القطاع —</option>'+
       HQ_SECTORS.map(function(o){ return '<option value="'+hqEsc(o)+'"'+((v.sector===o)?' selected':'')+'>'+hqEsc(o)+'</option>'; }).join('')+
       '</select></div>'+
+    (sid?('<div class="prof-form-field"><label class="prof-form-lbl">الإشراف بحلقة</label>'+
+      '<div class="hqpick"><button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
+        '<span class="hqpick-cur" id="se-halqat-cur">حدد الحلقات</span><span class="hqpick-arw">▾</span></button>'+
+      '<div class="hqpick-list" id="se-halqat">'+
+        ((DB.halqat||[]).length
+          ? (DB.halqat||[]).map(function(h){
+              var mine=(String(h.supervisorId)===String(v.id));
+              var sup=h.supervisorName?(' — '+hqEsc(h.supervisorName)):' — بلا مشرف';
+              return '<label class="hqpick-row'+(mine?' on':'')+'"><input type="checkbox" value="'+hqEsc(h.id)+'"'+(mine?' checked':'')+' onchange="hqPickSync(\'se-halqat\')">'+
+                     '<span>'+hqEsc(h.name||'حلقة')+'<em style="font-style:normal;color:#9abdba;font-size:.62rem">'+sup+'</em></span></label>';
+            }).join('')
+          : '<div class="vs-hint">لا توجد حلقات</div>')+
+      '</div></div></div>'):'')+
     '</div>'+
     '<button class="prof-form-save" onclick="supEditSave()" style="margin-top:16px;">حفظ التعديلات</button>'+
   '</div>';
@@ -7575,7 +7657,9 @@ function supEditOpen(){
 }
 function supEditSave(){
   try{
-    var v=supMe(); if(!v) return;
+    var _id=window._supEditId;
+    var v=_id?hqSupers().find(function(x){ return String(x.id)===String(_id); }):supMe();
+    if(!v) return;
     function V(id){ var e=document.getElementById(id); return e?String(e.value||'').trim():''; }
     var nm=V('se-name');
     if(!nm){ showToast('يرجى إدخال الاسم','error'); return; }
@@ -7591,9 +7675,23 @@ function supEditSave(){
     for(var k in DB.users){ if(DB.users[k]&&DB.users[k].supId===v.id) DB.users[k].name=nm; }
     (DB.halqat||[]).forEach(function(h){ if(h.supervisorId===v.id) h.supervisorName=nm; });
     if(STATE.user) STATE.user.name=nm;
+    /* الحلقات التي يشرف عليها (عند التعديل من الشؤون التعليمية) */
+    try{
+      var _box=document.getElementById('se-halqat');
+      if(_box){
+        var _ch=_box.querySelectorAll('input[type=checkbox]');
+        for(var _i=0;_i<_ch.length;_i++){
+          var _h=(DB.halqat||[]).find(function(x){ return String(x.id)===String(_ch[_i].value); });
+          if(!_h) continue;
+          if(_ch[_i].checked){ _h.supervisorId=v.id; _h.supervisorName=v.name; }
+          else if(String(_h.supervisorId)===String(v.id)){ _h.supervisorId=''; _h.supervisorName=''; }
+        }
+      }
+    }catch(e){}
     save(); closeModal();
     var w=document.getElementById('prof-content'); if(w) renderSupProfile(w);
     if(typeof renderDash==='function') renderDash();
+    if(window._supEditId && typeof showSupervisorsData==='function'){ window._supEditId=null; showSupervisorsData(); }
     showToast('حُفظت البيانات','success');
   }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
 }
@@ -7635,6 +7733,8 @@ function showSupervisorsData(){
     var nv=(DB.visits||[]).filter(function(x){ return x.supId===v.id; }).length;
     return hqFlatSec(v.name, details,
       '<button class="hq-mini-btn view" onclick="supVisitsFollow(\''+v.id+'\')">متابعة زيارات المشرف'+(nv?(' ('+arNum(nv)+')'):'')+'</button>'+
+      (STATE.role==='admin'?('<button class="hq-mini-btn view" onclick="supEditOpen(\''+v.id+'\')">تعديل</button>'+
+        '<button class="hq-mini-btn view" onclick="hqPwOpen(\'sup\',\''+v.id+'\',\''+hqEsc(v.name||'')+'\')">كلمة المرور</button>'):'')+
       '<button class="hq-mini-btn del" onclick="supDelete(\''+v.id+'\')">حذف</button>', _i+1, v.sector||'');
   }).join('');
   openModal('بيانات المشرفين','<div class="hs-wrap">'+rows+
@@ -8375,11 +8475,13 @@ function hqTeacherCard(t,halqaName,canDelete,idx){
   if(!bd && t.bDay && t.bMonth && t.bYear){ bd=t.bDay+' '+hM[parseInt(t.bMonth,10)-1]+' '+t.bYear+'هـ'; }
   var rows=hqAccRow('الهوية / الإقامة',t.nid)+hqAccRow('تاريخ الميلاد',bd)+
     hqAccRow('الجنسية',t.nat)+hqAccRow('رقم الجوال',t.phone)+
-    hqAccRow('اسم المستخدم',t.username)+hqAccRow('كلمة المرور','•••••••• (مُشفّرة)')+
+    hqAccRow('اسم المستخدم',t.username)+
+    hqAccRow('كلمة المرور','•••••••• (مُشفّرة)')+
     hqAccRow('آخر ظهور',hqLastSeenOf(t))+
     hqAccRow('الحلقة',halqaName);
   var acts='';
   if(t.id) acts+='<button class="hq-mini-btn view" onclick="tmsgCompose(\''+t.id+'\')">رسالة للمعلم</button>';
+  if(t.id && STATE.role==='admin') acts+='<button class="hq-mini-btn view" onclick="hqPwOpen(\'teacher\',\''+t.id+'\',\''+hqEsc(t.name||'')+'\')">كلمة المرور</button>';
   if(canDelete&&t.id) acts+='<button class="hq-mini-btn del" onclick="teacherDelete(\''+t.id+'\')">حذف</button>';
   var tag2='<span class="hs-rep-tot hs-rep-rank">'+hqEsc(halqaName||'—')+'</span>'+
            '<span class="hs-rep-tot hq-seen">آخر ظهور: '+hqEsc(hqLastSeenOf(t))+'</span>';
@@ -11448,7 +11550,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-29 - 61';
+  window.HQ_BUILD='2026-08-29 - 63';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
