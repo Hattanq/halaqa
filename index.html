@@ -2816,7 +2816,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .hdr-logout-sm{padding:5px 10px!important;border-radius:10px!important;justify-content:center;width:100%}
 .hdr-logout-sm .hdr-logout-lbl{font-size:.6rem}
 .hdr-logout-sm svg{width:12px!important;height:12px!important}
-.hdr-sync-sm{padding:3px 10px!important;font-size:.58rem!important;margin:0 auto!important;flex:0 0 auto;align-self:center}
+.hdr-sync-sm{padding:3px 10px!important;font-size:.58rem!important;margin:0!important;flex:0 0 auto}
 .hdr-w-line .hdr-sync-sm{margin:0}
 .hdr-w-line{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .hdr-w-line .hdr-welcome-badge{margin-bottom:0}
@@ -6557,6 +6557,8 @@ function hdrArrange(){
       else if(!inRow2 && tools && pill.parentNode!==tools) tools.appendChild(pill);
       pill.classList.add('hdr-sync-sm');
     }
+    setTimeout(hdrSyncCenter,0);
+    setTimeout(hdrSyncCenter,140);
     var r3=document.getElementById('hdr-row3');
     if(r3){
       var t1=document.getElementById('hdr-plan-track'), t2=document.getElementById('hdr-tring');
@@ -6565,6 +6567,26 @@ function hdrArrange(){
     }
   }catch(e){}
 }
+/* محاذاة شارة المزامنة أفقياً تحت زر تسجيل الخروج — بلا أي إزاحة رأسية */
+function hdrSyncCenter(){
+  try{
+    var pill=document.getElementById('syncPill');
+    var wline=document.querySelector('.hdr-w-line');
+    var lo=document.querySelector('.hdr-logout-btn');
+    if(!pill||!wline||!lo) return;
+    if(pill.parentNode!==wline || pill.style.display==='none'){ pill.style.transform=''; return; }
+    pill.style.transform='';
+    var pr=pill.getBoundingClientRect(), lr=lo.getBoundingClientRect();
+    if(!pr.width||!lr.width) return;
+    var dx=(lr.left+lr.width/2)-(pr.left+pr.width/2);
+    if(Math.abs(dx)>0.5) pill.style.transform='translateX('+dx+'px)';
+  }catch(e){}
+}
+try{
+  window.addEventListener('resize',function(){ hdrSyncCenter(); });
+  window.addEventListener('orientationchange',function(){ setTimeout(hdrSyncCenter,120); });
+}catch(e){}
+
 /* شريط إنجاز الطالب لخطته خلال الفصل */
 function hdrPlanTrack(){
   var el=document.getElementById('hdr-plan-track'); if(!el) return;
@@ -11667,7 +11689,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-29 - 67';
+  window.HQ_BUILD='2026-08-29 - 68';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
