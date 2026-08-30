@@ -2358,7 +2358,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 <!-- Firebase Realtime Database — مزامنة الرسائل (الدفعة ٤) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+  import { getDatabase, ref, push, onValue, set, remove, get, runTransaction } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
   import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-storage.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
   import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app-check.js";
@@ -2552,6 +2552,14 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
         function(err){ console.warn('cloudDataSubscribe error:', err && err.code);
                        try{ cb(null, err||'subscribe-error'); }catch(e){} }); }); }
     catch(e){ console.warn('cloudDataSubscribe failed:', e); try{ cb(null,e); }catch(_){} }
+  };
+  /* معاملة ذرّية: تقرأ أحدث نسخة وتدمج ثم تكتب — تعيد المحاولة تلقائياً عند التعارض */
+  window.cloudDataTx = function(mutator, done){
+    if(!db){ try{ done && done(false,'no-db'); }catch(e){} return; }
+    (window.AUTH_READY||Promise.resolve()).catch(function(){}).then(function(){
+      return runTransaction(ref(db,'appdata/state'), function(cur){ return mutator(cur); });
+    }).then(function(){ try{ done && done(true,null); }catch(e){} })
+      .catch(function(e){ try{ done && done(false,e); }catch(_){} });
   };
   window.cloudDataGet = function(cb){
     if(!db){ cb(null, 'no-db'); return; }
@@ -2964,7 +2972,154 @@ window.HQ_DAY_SHIFT=(function(){ try{ return parseInt(localStorage.getItem('hq_d
 })();
 function lsGet(k,def){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch{return def;} }
 function lsSave(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch{} }
-function save(){ if(DB.halqat){ lsSave('hq_halqat',DB.halqat); } lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_teachers',DB.teachers||[]); lsSave('hq_suspend',DB.suspend||{}); lsSave('hq_visits',DB.visits||[]); lsSave('hq_tmsgs',DB.tmsgs||{}); lsSave('hq_timeline',DB.timeline||{}); lsSave('hq_students',DB.students);lsSave('hq_sessions',DB.sessions);lsSave('hq_grades',DB.grades);lsSave('hq_plans',DB.plans);lsSave('hq_hplans',DB.hplans||{});lsSave('hq_attend',DB.attend);lsSave('hq_users',DB.users);lsSave('hq_recitation',DB.recitation);lsSave('hq_evals',DB.evals);lsSave('hq_mistakes',DB.mistakes);lsSave('hq_exams',DB.exams); cloudPushDebounced(); }
+
+/* ===================================================================
+   الدمج بدل الاستبدال — يمنع محو تعديلات جهاز آخر
+   كل سجل (حلقة/معلم/مشرف/زيارة/حساب) يحمل ختم تعديل mt،
+   وعند التقاء نسختين تُعتمد الأحدث. والحذف يُسجَّل في قائمة tomb.
+   =================================================================== */
+var _hqSig={h:{},t:{},s:{},v:{},u:{},misc:{}};
+function hqTombStore(){ var t=lsGet('hq_tomb',null); if(!t||typeof t!=='object') t={}; return t; }
+function hqTombSave(t){ try{ lsSave('hq_tomb',t); }catch(e){} }
+function hqTombAdd(kind,id,ts){
+  var t=hqTombStore(), k=kind+':'+id;
+  if((ts||0)>(t[k]||0)) t[k]=ts||Date.now();
+  hqTombSave(t);
+}
+function hqTombMerge(a,b){
+  var o={};
+  [a||{},b||{}].forEach(function(src){
+    for(var k in src){ var v=parseInt(src[k],10)||0; if(v>(o[k]||0)) o[k]=v; }
+  });
+  return o;
+}
+function hqTombTs(t,kind,id){ return (t&&parseInt(t[kind+':'+id],10))||0; }
+/* بصمة السجل بدون ختم التعديل */
+function hqSigOf(o){
+  var m=o.mt; try{ delete o.mt; }catch(e){}
+  var str; try{ str=JSON.stringify(o); }catch(e){ str=''; }
+  if(m!==undefined) o.mt=m;
+  return str;
+}
+/* ختم ما تغيّر فعلاً — init=true عند الإقلاع فلا يُعتبر شيء جديداً */
+function hqStamp(init){
+  var now=init?1:Date.now();
+  function coll(arrKey,sigKey,kind){
+    var arr=DB[arrKey]||[], seen={};
+    for(var i=0;i<arr.length;i++){
+      var o=arr[i]; if(!o||typeof o!=='object'||!o.id) continue;
+      seen[o.id]=1;
+      var sg=hqSigOf(o);
+      if(_hqSig[sigKey][o.id]!==sg){ _hqSig[sigKey][o.id]=sg; o.mt=now; }
+      else if(!o.mt) o.mt=now;
+    }
+    for(var id in _hqSig[sigKey]){
+      if(!seen[id]){ delete _hqSig[sigKey][id]; if(!init) hqTombAdd(kind,id,Date.now()); }
+    }
+  }
+  coll('halqat','h','h'); coll('teachers','t','t');
+  coll('supervisors','s','s'); coll('visits','v','v');
+  var us=DB.users||{}, seenU={};
+  for(var k in us){
+    var o=us[k]; if(!o||typeof o!=='object') continue;
+    seenU[k]=1;
+    var sg2=hqSigOf(o);
+    if(_hqSig.u[k]!==sg2){ _hqSig.u[k]=sg2; o.mt=now; }
+    else if(!o.mt) o.mt=now;
+  }
+  for(var k2 in _hqSig.u){
+    if(!seenU[k2]){ delete _hqSig.u[k2]; if(!init) hqTombAdd('u',k2,Date.now()); }
+  }
+  /* الخط الزمني ككتلة واحدة */
+  try{
+    var tl=DB.timeline||{}, mt=tl.mt; delete tl.mt;
+    var tls=JSON.stringify(tl); if(mt!==undefined) tl.mt=mt;
+    if(_hqSig.misc.tl!==tls){ _hqSig.misc.tl=tls; tl.mt=now; }
+    else if(!tl.mt) tl.mt=now;
+    DB.timeline=tl;
+  }catch(e){}
+}
+/* يدمج النسخة البعيدة مع المحلية ويعيد النتيجة */
+function hqMergeBlob(remote){
+  var re=remote||{};
+  var tomb=hqTombMerge(hqTombStore(), re.tomb||{});
+  function mergeArr(loc,rem,kind){
+    var box={}, order=[];
+    function put(o){
+      if(!o||typeof o!=='object'||!o.id) return;
+      if(!(o.id in box)){ box[o.id]=o; order.push(o.id); }
+      else if((o.mt||0)>(box[o.id].mt||0)) box[o.id]=o;
+    }
+    (rem||[]).forEach(put); (loc||[]).forEach(put);
+    var out=[];
+    order.forEach(function(id){ if((box[id].mt||0)>hqTombTs(tomb,kind,id)) out.push(box[id]); });
+    return out;
+  }
+  function mergeMap(loc,rem,kind){
+    var box={}, keys=[];
+    function put(k,o){
+      if(!o||typeof o!=='object') return;
+      if(!(k in box)){ box[k]=o; keys.push(k); }
+      else if((o.mt||0)>(box[k].mt||0)) box[k]=o;
+    }
+    var kk;
+    for(kk in (rem||{})) put(kk,rem[kk]);
+    for(kk in (loc||{})) put(kk,loc[kk]);
+    var out={};
+    keys.forEach(function(k){ if((box[k].mt||0)>hqTombTs(tomb,kind,k)) out[k]=box[k]; });
+    return out;
+  }
+  function mergeMsgs(a,b){
+    var out={};
+    [a||{},b||{}].forEach(function(src){
+      for(var tid in src){
+        var list=out[tid]||(out[tid]=[]);
+        (src[tid]||[]).forEach(function(m){
+          if(!m) return;
+          var key=String(m.ts||0)+'|'+String(m.txt||m.text||m.body||'');
+          var hit=null;
+          for(var i=0;i<list.length;i++){
+            if(String(list[i].ts||0)+'|'+String(list[i].txt||list[i].text||list[i].body||'')===key){ hit=list[i]; break; }
+          }
+          if(hit){ if(m.read) hit.read=m.read; }
+          else list.push(m);
+        });
+      }
+    });
+    for(var t2 in out) out[t2].sort(function(x,y){ return (x.ts||0)-(y.ts||0); });
+    return out;
+  }
+  var lTl=DB.timeline||{}, rTl=re.timeline||{};
+  return {
+    halqat:      mergeArr(DB.halqat||[],      re.halqat,      'h'),
+    teachers:    mergeArr(DB.teachers||[],    re.teachers,    't'),
+    supervisors: mergeArr(DB.supervisors||[], re.supervisors, 's'),
+    visits:      mergeArr(DB.visits||[],      re.visits,      'v'),
+    users:       mergeMap(DB.users||{},       re.users,       'u'),
+    tmsgs:       mergeMsgs(re.tmsgs, DB.tmsgs),
+    timeline:    ((rTl.mt||0)>(lTl.mt||0)) ? rTl : lTl,
+    tomb:        tomb
+  };
+}
+/* يعتمد نتيجة الدمج محلياً (بلا رفع جديد) */
+function hqAdoptMerged(m){
+  if(!m) return false;
+  DB.halqat=m.halqat||[]; DB.users=m.users||{};
+  DB.supervisors=m.supervisors||[]; DB.teachers=m.teachers||[];
+  DB.visits=m.visits||[]; DB.tmsgs=m.tmsgs||{}; DB.timeline=m.timeline||{};
+  hqTombSave(m.tomb||{});
+  try{
+    lsSave('hq_halqat',DB.halqat); lsSave('hq_users',DB.users);
+    lsSave('hq_supervisors',DB.supervisors); lsSave('hq_teachers',DB.teachers);
+    lsSave('hq_visits',DB.visits); lsSave('hq_tmsgs',DB.tmsgs); lsSave('hq_timeline',DB.timeline);
+  }catch(e){}
+  var hid=(typeof STATE!=='undefined'&&STATE.activeHid)||((DB.halqat[0]||{}).id);
+  if(hid && typeof setActiveHalqa==='function') setActiveHalqa(hid);
+  hqStamp(true);   /* تحديث البصمات بلا اعتبار أي شيء جديداً */
+  return true;
+}
+
+function save(){ if(DB.halqat){ lsSave('hq_halqat',DB.halqat); } lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_teachers',DB.teachers||[]); lsSave('hq_suspend',DB.suspend||{}); lsSave('hq_visits',DB.visits||[]); lsSave('hq_tmsgs',DB.tmsgs||{}); lsSave('hq_timeline',DB.timeline||{}); lsSave('hq_students',DB.students);lsSave('hq_sessions',DB.sessions);lsSave('hq_grades',DB.grades);lsSave('hq_plans',DB.plans);lsSave('hq_hplans',DB.hplans||{});lsSave('hq_attend',DB.attend);lsSave('hq_users',DB.users);lsSave('hq_recitation',DB.recitation);lsSave('hq_evals',DB.evals);lsSave('hq_mistakes',DB.mistakes);lsSave('hq_exams',DB.exams); try{ hqStamp(); }catch(e){} cloudPushDebounced(); }
 
 /* ================= مزامنة سحابية للبيانات عبر كل الأجهزة (Firebase RTDB) ================= */
 function cloudGetCID(){
@@ -2976,7 +3131,7 @@ var HQ_SEED_ID='seed-2026-08-22';
 function cloudRev(){ try{ return parseInt(localStorage.getItem('hq_rev'),10)||0; }catch(e){ return 0; } }
 function cloudSetRev(n){ try{ localStorage.setItem('hq_rev', String(n)); }catch(e){} }
 function cloudBumpRev(){ var n=cloudRev()+1; cloudSetRev(n); return n; }
-function cloudBlob(){ return JSON.stringify({seed:HQ_SEED_ID, rev:cloudRev(), ts:Date.now(), shift:(window.HQ_DAY_SHIFT||0), wipe:(lsGet('hq_wipe',0)||0), halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], teachers:DB.teachers||[], visits:DB.visits||[], tmsgs:DB.tmsgs||{}, timeline:DB.timeline||{}}); }
+function cloudBlob(){ return JSON.stringify({seed:HQ_SEED_ID, rev:cloudRev(), ts:Date.now(), shift:(window.HQ_DAY_SHIFT||0), wipe:(lsGet('hq_wipe',0)||0), halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], teachers:DB.teachers||[], visits:DB.visits||[], tmsgs:DB.tmsgs||{}, timeline:DB.timeline||{}, tomb:hqTombStore()}); }
 function cloudSize(o){ try{ var n=(o.halqat||[]).length; (o.halqat||[]).forEach(function(h){ n+=((h.students||[]).length)*3; }); n+=Object.keys(o.users||{}).length; return n; }catch(e){ return 0; } }
 function _cloudOnHome(){
   try{
@@ -3016,11 +3171,45 @@ function cloudReportErr(e){
   if(typeof showToast==='function') showToast('\u062a\u0639\u0630\u0651\u0631\u062a \u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u2014 \u062a\u062d\u0642\u0651\u0642 \u0645\u0646 \u0627\u0644\u0625\u0646\u062a\u0631\u0646\u062a \u0648\u0642\u0648\u0627\u0639\u062f \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a','error');
 }
 function _cloudDoPush(){
+  try{ hqStamp(); }catch(e){}
+  /* المسار المفضّل: معاملة ذرّية تدمج ما في السحابة مع ما عندنا */
+  if(window.cloudDataTx){
+    var pending=null;
+    cloudSetStatus('pushing');
+    window.cloudDataTx(function(cur){
+      var rem=null;
+      try{ rem=(cur&&cur.data)?JSON.parse(cur.data):null; }catch(e){ rem=null; }
+      if(rem && rem.seed!==HQ_SEED_ID) rem=null;
+      var m=hqMergeBlob(rem);
+      var ts=Date.now();
+      var rev=Math.max(cloudRev(), (rem&&parseInt(rem.rev,10))||0)+1;
+      cloudSetRev(rev); _cloudLastTs=ts; pending=m;
+      return { data: JSON.stringify({
+          seed:HQ_SEED_ID, rev:rev, ts:ts,
+          shift:(window.HQ_DAY_SHIFT||0),
+          wipe:Math.max(parseInt(lsGet('hq_wipe',0),10)||0, parseInt(rem&&rem.wipe,10)||0),
+          halqat:m.halqat, users:m.users, supervisors:m.supervisors,
+          teachers:m.teachers, visits:m.visits, tmsgs:m.tmsgs,
+          timeline:m.timeline, tomb:m.tomb }),
+        ts:ts, cid:cloudGetCID() };
+    }, function(ok,err){
+      if(err){ cloudReportErr(err); return; }
+      try{
+        if(pending && hqAdoptMerged(pending)){
+          var sg=cloudViewSig();
+          if(sg!==_cloudSig){ _cloudSig=sg; cloudRerender(); }
+        }
+      }catch(e){}
+      _cloudErrShown=false; cloudSetStatus('synced');
+    });
+    return;
+  }
+  /* احتياطي: الكتابة المباشرة (لو لم تتوفّر المعاملة) */
   if(!window.cloudDataPush) return;
   try{
-    var ts=Date.now(); _cloudLastTs=ts;
-    cloudBumpRev();                          /* كل رفعة تزيد رقم الإصدار */
-    var p=window.cloudDataPush({data:cloudBlob(), ts:ts, cid:cloudGetCID()});
+    var ts2=Date.now(); _cloudLastTs=ts2;
+    cloudBumpRev();
+    var p=window.cloudDataPush({data:cloudBlob(), ts:ts2, cid:cloudGetCID()});
     if(p&&p.then){ p.then(function(){ _cloudErrShown=false; cloudSetStatus('synced'); }).catch(function(e){ cloudReportErr(e); }); }
   }catch(e){ cloudReportErr(e); }
 }
@@ -3045,17 +3234,12 @@ function cloudApply(val){
   }catch(e){}
   if(!obj||!obj.halqat) return false;
   if(obj.seed!==HQ_SEED_ID) return false;   /* بيانات ما قبل التعبئة التجريبية — تُتجاهل */
-  DB.halqat=obj.halqat; if(obj.users) DB.users=obj.users;
-  if(obj.supervisors) DB.supervisors=obj.supervisors;
-  if(obj.teachers) DB.teachers=obj.teachers;
-  if(obj.visits) DB.visits=obj.visits;
-  if(obj.tmsgs)  DB.tmsgs=obj.tmsgs;
+  /* نختم تغييراتنا المحلية أولاً ثم ندمج الوارد بدل استبداله */
+  try{ hqStamp(); }catch(e){}
+  var merged=hqMergeBlob(obj);
+  hqAdoptMerged(merged);
   try{ var _r=parseInt(obj.rev,10); if(isFinite(_r)&&_r>cloudRev()) cloudSetRev(_r); }catch(e){}
-  if(obj.timeline) DB.timeline=obj.timeline;
-  try{ lsSave('hq_halqat',DB.halqat); lsSave('hq_users',DB.users); lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_teachers',DB.teachers||[]); lsSave('hq_visits',DB.visits||[]); lsSave('hq_tmsgs',DB.tmsgs||{}); lsSave('hq_timeline',DB.timeline||{}); }catch(e){}
   _cloudLastTs=val.ts||Date.now();
-  var hid=(typeof STATE!=='undefined'&&STATE.activeHid)||((DB.halqat[0]||{}).id);
-  if(hid && typeof setActiveHalqa==='function') setActiveHalqa(hid);
   return true;
 }
 function cloudModalOpen(){ var bg=document.getElementById('modalBg'); return !!(bg && (bg.classList.contains('open')||bg.style.display==='flex')); }
@@ -3114,24 +3298,19 @@ function cloudRerender(){
 }
 /* المصالحة الأولى: بيانات السحابة الأغنى تُعتمد، وإلا يُرفع المحلي */
 function cloudFirstReconcile(val){
+  _cloudReconciled=true;
   if(val && val.data){
     var remote=null; try{ remote=JSON.parse(val.data); }catch(e){}
-    var localObj={halqat:DB.halqat||[], users:DB.users||{}, supervisors:DB.supervisors||[], teachers:DB.teachers||[], visits:DB.visits||[], tmsgs:DB.tmsgs||{}, timeline:DB.timeline||{}};
-    if(remote && remote.seed!==HQ_SEED_ID){ _cloudReconciled=true; _cloudDoPush(); return; }   /* السحابة قديمة → استبدلها */
-    /* الترجيح برقم الإصدار لا بحجم البيانات: الأحدث يفوز مهما كان عدد سجلاته */
-    var _rr=(remote&&parseInt(remote.rev,10))||0, _lr=cloudRev();
-    var _remoteWins = remote && (_rr!==_lr ? (_rr>_lr) : (cloudSize(remote) >= cloudSize(localObj)));
-    if(_remoteWins){
-      _cloudReconciled=true;
+    if(remote && remote.seed===HQ_SEED_ID){
+      /* لا مفاضلة بعد اليوم: نجمع الطرفين ثم نرفع النتيجة المدمَجة */
       if(cloudApply(val)){
         cloudSetStatus('updated');
-        /* أول لقطة غالباً مطابقة للمحلي — لا نُعيد الرسم إلا إذا اختلف فعلاً */
         var _sg=cloudViewSig();
         if(_sg!==_cloudSig){ _cloudSig=_sg; cloudRerender(); }
-      } else cloudSetStatus('synced');
+      }
     }
-    else { _cloudReconciled=true; _cloudDoPush(); }        /* المحلي أغنى → ارفعه */
-  } else { _cloudReconciled=true; _cloudDoPush(); }          /* لا توجد بيانات سحابية → ارفع المحلي */
+  }
+  _cloudDoPush();
 }
 function cloudInit(){
   if(!window.cloudDataSubscribe) return;
@@ -3382,6 +3561,7 @@ function hqWipeAll(){
   var stamp=Date.now();
   try{
     DB.halqat=[]; DB.users={}; DB.supervisors=[]; DB.teachers=[]; DB.visits=[]; DB.tmsgs={}; DB.timeline={};
+    try{ _hqSig={h:{},t:{},s:{},v:{},u:{},misc:{}}; hqTombSave({}); }catch(e){}
     if(window.cloudDataPush){
       window.cloudDataPush({data:JSON.stringify({seed:HQ_SEED_ID, rev:cloudRev()+1, ts:stamp, wipe:stamp, shift:0,
         halqat:[], users:{}, supervisors:[], teachers:[], visits:[], tmsgs:{}, timeline:{}}), ts:stamp, cid:cloudGetCID()});
@@ -3424,6 +3604,7 @@ function seedUsers(){
 }
 migrateHalqat();
 seedUsers();
+try{ hqStamp(true); }catch(e){}   /* بصمات الإقلاع — لا تُعتبر تعديلاً جديداً */
 try{ setTimeout(hqBackupCheck,4000); }catch(e){}
 
 /* أُزيلت تعبئة البيانات التجريبية نهائياً.
@@ -3785,9 +3966,9 @@ function renderDash(){
       '<div class="menu-card mc-4" onclick="showHalqatList()"><div class="mc-icon">'+svgListH+'</div><div class="mc-accent"></div><div class="mc-label">بيانات الحلقات</div></div>'+
       '<div class="menu-card mc-7" onclick="tlOpen()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="16" y="28" width="32" height="24" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M23 28v-6a9 9 0 0118 0v6" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="38" r="3.5" fill="white"/><line x1="32" y1="41" x2="32" y2="46" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
-      '<div class="menu-card mc-5 mc-wide" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
+      '<div class="menu-card mc-3 mc-test" onclick="hqTestTool()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="34" r="20" stroke="white" stroke-width="3"/><path d="M32 22v12l8 5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 10l-7 6M44 10l7 6" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">أدوات التجربة (مؤقّتة)</div></div>'+
       '<div class="menu-card mc-1" onclick="hqBackupOpen()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 10v26M22 28l10 10 10-10" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 40v8a6 6 0 006 6h28a6 6 0 006-6v-8" stroke="white" stroke-width="3.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">النسخ الاحتياطي</div></div>'+
-      '<div class="menu-card mc-3 mc-wide mc-test" onclick="hqTestTool()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="34" r="20" stroke="white" stroke-width="3"/><path d="M32 22v12l8 5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 10l-7 6M44 10l7 6" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">أدوات التجربة (مؤقّتة)</div></div>'+
+      '<div class="menu-card mc-5 mc-wide" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
     '</div>';
     return;
   }
@@ -11689,7 +11870,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-29 - 68';
+  window.HQ_BUILD='2026-08-30 - 69';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
