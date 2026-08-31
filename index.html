@@ -1672,6 +1672,8 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .hqacc-lbl{color:#9abdba;font-size:.8rem;font-weight:700;flex:none}
 .hqacc-val{font-weight:700;text-align:left;color:#eef;font-size:.85rem;word-break:break-word}
 .hqacc-val.dash{color:#6d8a87;font-weight:600}
+.hq-diag-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:6px 14px 10px;margin-bottom:10px}
+.hq-diag-t{font-weight:800;color:#f0d060;font-size:.85rem;padding:8px 0 4px}
 .hqacc-acts{display:flex;gap:7px;margin-top:11px;padding-top:11px;border-top:1px solid rgba(255,255,255,.08)}
 .hqacc-acts .hq-mini-btn{flex:1}
 .hqacc.pick{cursor:pointer}
@@ -2379,6 +2381,7 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 
   try { window._REM = JSON.parse(localStorage.getItem('hq_remote')||'{}'); } catch(e){ window._REM = {}; }
 
+  window.HQ_DIAG = {fb:'لم تُهيّأ', appcheck:'—', auth:'—', err:'', lastRead:'—', lastWrite:'—'};
   let db=null, app=null, stg=null;
   try {
     app = initializeApp(firebaseConfig);
@@ -2389,12 +2392,14 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
         isTokenAutoRefreshEnabled: true
       });
       console.log('✅ App Check مُفعّل');
-    }catch(e){ console.warn('App Check init failed:', e); }
+      window.HQ_DIAG.appcheck='مُفعّل';
+    }catch(e){ console.warn('App Check init failed:', e); window.HQ_DIAG.appcheck='فشل: '+((e&&(e.code||e.message))||e); }
     db  = getDatabase(app);
     try{ stg = getStorage(app); }catch(e){ console.warn('Storage init failed:', e); }
     window.MSG_READY = true;
+    window.HQ_DIAG.fb='مُهيّأة';
     console.log('✅ Firebase (Realtime DB) متصل — الرسائل');
-  } catch(e){ console.warn('Firebase init failed:', e); }
+  } catch(e){ console.warn('Firebase init failed:', e); window.HQ_DIAG.fb='فشلت: '+((e&&(e.code||e.message))||e); }
 
   /* دخول مجهول إلى Firebase: يمنح كل جهاز هوية حتى تستطيع قواعد
      القاعدة رفض أي زائر خارجي (auth != null) */
@@ -2402,9 +2407,11 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
   if(app){
     try{
       var _auth = getAuth(app);
+      window.HQ_DIAG.auth='جارية...';
       var _signin = signInAnonymously(_auth)
-        .then(function(){ console.log('Firebase Auth (مجهول) جاهز'); })
-        .catch(function(e){ console.warn('Anonymous auth failed:', e && e.code); });
+        .then(function(){ window.HQ_DIAG.auth='ناجحة'; console.log('Firebase Auth (مجهول) جاهز'); })
+        .catch(function(e){ window.HQ_DIAG.auth='فشلت: '+((e&&(e.code||e.message))||e);
+                            console.warn('Anonymous auth failed:', e && e.code); });
       window.AUTH_READY = Promise.race([ _signin, new Promise(function(r){ setTimeout(function(){ r(); },4000); }) ]);
     }catch(e){ console.warn('Auth init failed:', e); }
   }
@@ -2548,8 +2555,10 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
     if(!db){ try{ cb(null,'no-db'); }catch(e){} return; }
     try { afterAuth(function(){
       onValue(ref(db, 'appdata/state'), function(snap){
+        try{ window.HQ_DIAG.lastRead=new Date().toLocaleTimeString('ar-SA'); }catch(_){ }
         try{ cb(snap.val()); }catch(e){} },
         function(err){ console.warn('cloudDataSubscribe error:', err && err.code);
+                       try{ window.HQ_DIAG.err='اشتراك: '+((err&&(err.code||err.message))||err); }catch(_){ }
                        try{ cb(null, err||'subscribe-error'); }catch(e){} }); }); }
     catch(e){ console.warn('cloudDataSubscribe failed:', e); try{ cb(null,e); }catch(_){} }
   };
@@ -2566,7 +2575,9 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
   };
   window.cloudDataGet = function(cb){
     if(!db){ cb(null, 'no-db'); return; }
-    try { afterAuth(function(){ get(ref(db, 'appdata/state')).then(function(s){ cb(s.val()); }).catch(function(e){ cb(null, e); }); }); }
+    try { afterAuth(function(){ get(ref(db, 'appdata/state'))
+      .then(function(s){ try{ window.HQ_DIAG.lastRead=new Date().toLocaleTimeString('ar-SA'); }catch(_){ } cb(s.val()); })
+      .catch(function(e){ try{ window.HQ_DIAG.err='قراءة: '+((e&&(e.code||e.message))||e); }catch(_){ } cb(null, e); }); }); }
     catch(e){ cb(null, e); }
   };
 </script>
@@ -3048,7 +3059,9 @@ function hqMergeBlob(remote){
     }
     (rem||[]).forEach(put); (loc||[]).forEach(put);
     var out=[];
-    order.forEach(function(id){ if((box[id].mt||0)>hqTombTs(tomb,kind,id)) out.push(box[id]); });
+    /* السجل يبقى إلا إذا حُذف صراحةً وكان الحذف أحدث من آخر تعديل له.
+       (كان السجل بلا ختم mt يسقط هنا صامتاً — وهذا مصدر ضياع بيانات) */
+    order.forEach(function(id){ var tt=hqTombTs(tomb,kind,id); if(!tt || (box[id].mt||0)>tt) out.push(box[id]); });
     return out;
   }
   function mergeMap(loc,rem,kind){
@@ -3062,7 +3075,7 @@ function hqMergeBlob(remote){
     for(kk in (rem||{})) put(kk,rem[kk]);
     for(kk in (loc||{})) put(kk,loc[kk]);
     var out={};
-    keys.forEach(function(k){ if((box[k].mt||0)>hqTombTs(tomb,kind,k)) out[k]=box[k]; });
+    keys.forEach(function(k){ var tt=hqTombTs(tomb,kind,k); if(!tt || (box[k].mt||0)>tt) out[k]=box[k]; });
     return out;
   }
   function mergeMsgs(a,b){
@@ -3163,9 +3176,35 @@ function cloudSetStatus(state){
 }
 function cloudReportErr(e){
   try{ console.warn('cloud sync error:', (e&&(e.message||e.code))||e); }catch(_){}
+  try{ window.HQ_DIAG=window.HQ_DIAG||{}; window.HQ_DIAG.err=((e&&(e.code||e.message))||String(e))+' — '+new Date().toLocaleTimeString('ar-SA'); }catch(_){}
   cloudSetStatus('error');
   if(_cloudErrShown) return; _cloudErrShown=true;
   if(typeof showToast==='function') showToast('\u062a\u0639\u0630\u0651\u0631\u062a \u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u2014 \u062a\u062d\u0642\u0651\u0642 \u0645\u0646 \u0627\u0644\u0625\u0646\u062a\u0631\u0646\u062a \u0648\u0642\u0648\u0627\u0639\u062f \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a','error');
+}
+var _hqPushBlocked=false;
+/* هل النسخة المرفوعة تحفظ كل ما في السحابة؟ (عدا ما حُذف صراحةً) */
+function hqPushSafe(rem, m){
+  try{
+    var tomb=m.tomb||{};
+    function okArr(remArr, outArr, kind){
+      if(!remArr || !remArr.length) return true;
+      var have={}; (outArr||[]).forEach(function(o){ if(o&&o.id) have[o.id]=1; });
+      for(var i=0;i<remArr.length;i++){
+        var o=remArr[i]; if(!o||!o.id) continue;
+        if(!have[o.id] && !hqTombTs(tomb,kind,o.id)) return false;
+      }
+      return true;
+    }
+    function okMap(remMap, outMap, kind){
+      for(var k in (remMap||{})){
+        if(!(outMap||{})[k] && !hqTombTs(tomb,kind,k)) return false;
+      }
+      return true;
+    }
+    return okArr(rem.halqat,m.halqat,'h') && okArr(rem.teachers,m.teachers,'t')
+        && okArr(rem.supervisors,m.supervisors,'s') && okArr(rem.visits,m.visits,'v')
+        && okMap(rem.users,m.users,'u');
+  }catch(e){ return true; }
 }
 function _cloudDoPush(){
   try{ hqStamp(); }catch(e){}
@@ -3178,6 +3217,13 @@ function _cloudDoPush(){
       try{ rem=(cur&&cur.data)?JSON.parse(cur.data):null; }catch(e){ rem=null; }
       if(rem && rem.seed!==HQ_SEED_ID) rem=null;
       var m=hqMergeBlob(rem);
+      /* حارس: أي سجل موجود في السحابة ولم يُحذف صراحةً يجب أن يبقى في النسخة المرفوعة.
+         إن سقط شيء، نُلغي الكتابة كلياً بدل المخاطرة بمحو بيانات جهاز آخر. */
+      if(rem && !hqPushSafe(rem, m)){
+        _hqPushBlocked=true;
+        return;                       /* إلغاء المعاملة بلا كتابة */
+      }
+      _hqPushBlocked=false;
       var ts=Date.now();
       var rev=Math.max(cloudRev(), (rem&&parseInt(rem.rev,10))||0)+1;
       cloudSetRev(rev); _cloudLastTs=ts; pending=m;
@@ -3190,6 +3236,11 @@ function _cloudDoPush(){
           timeline:m.timeline, tomb:m.tomb }),
         ts:ts, cid:cloudGetCID() };
     }, function(ok,err){
+      if(_hqPushBlocked){
+        _hqPushBlocked=false;
+        cloudReportErr('حُجب الرفع: كان سيُسقط سجلات موجودة في السحابة');
+        return;
+      }
       if(err){ cloudReportErr(err); return; }
       try{
         if(pending && hqAdoptMerged(pending)){
@@ -3197,6 +3248,7 @@ function _cloudDoPush(){
           if(sg!==_cloudSig){ _cloudSig=sg; cloudRerender(); }
         }
       }catch(e){}
+      try{ window.HQ_DIAG.lastWrite=new Date().toLocaleTimeString('ar-SA'); }catch(_){}
       _cloudErrShown=false; cloudSetStatus('synced');
     });
     return;
@@ -3233,12 +3285,89 @@ function cloudApply(val){
   if(obj.seed!==HQ_SEED_ID) return false;   /* بيانات ما قبل التعبئة التجريبية — تُتجاهل */
   /* نختم تغييراتنا المحلية أولاً ثم ندمج الوارد بدل استبداله */
   try{ hqStamp(); }catch(e){}
+  try{ lsSave('hq_rcount',{h:((obj.halqat||[]).length), t:((obj.teachers||[]).length),
+        s:((obj.supervisors||[]).length), u:(Object.keys(obj.users||{}).length),
+        v:((obj.visits||[]).length), ts:Date.now()}); }catch(e){}
   var merged=hqMergeBlob(obj);
   hqAdoptMerged(merged);
   try{ var _r=parseInt(obj.rev,10); if(isFinite(_r)&&_r>cloudRev()) cloudSetRev(_r); }catch(e){}
   _cloudLastTs=val.ts||Date.now();
   return true;
 }
+
+/* ================= تشخيص المزامنة (حساب الشؤون التعليمية) ================= */
+function hqDiagCounts(o){
+  o=o||{};
+  return {h:((o.halqat||[]).length), t:((o.teachers||[]).length),
+          s:((o.supervisors||[]).length), u:(Object.keys(o.users||{}).length),
+          v:((o.visits||[]).length)};
+}
+function hqDiagRow(k,v,warn){
+  return '<div class="hqacc-row"><span class="hqacc-lbl">'+k+'</span>'+
+         '<span class="hqacc-val" style="'+(warn?'color:#fca5a5;font-weight:800':'')+'">'+hqEsc(String(v))+'</span></div>';
+}
+function hqSyncDiag(){
+  var D=window.HQ_DIAG||{fb:'لم تُحمَّل مكتبة فايربيس — تحقّق من الاتصال أو من مانع الإعلانات',
+                         appcheck:'—', auth:'—', err:'', lastRead:'—', lastWrite:'—'};
+  var loc=hqDiagCounts({halqat:DB.halqat,teachers:DB.teachers,supervisors:DB.supervisors,users:DB.users,visits:DB.visits});
+  var body='<div class="hs-wrap">'
+    +'<div class="hq-diag-box">'
+      +hqDiagRow('الإصدار', window.HQ_BUILD||'—')
+      +hqDiagRow('الإنترنت', navigator.onLine?'متصل':'غير متصل', !navigator.onLine)
+      +hqDiagRow('فايربيس', D.fb||'—', String(D.fb||'').indexOf('فشل')===0)
+      +hqDiagRow('حماية App Check', D.appcheck||'—', String(D.appcheck||'').indexOf('فشل')===0)
+      +hqDiagRow('المصادقة المجهولة', D.auth||'—', String(D.auth||'').indexOf('فشل')===0)
+      +hqDiagRow('آخر قراءة ناجحة', D.lastRead||'—', (D.lastRead||'—')==='—')
+      +hqDiagRow('آخر كتابة ناجحة', D.lastWrite||'—')
+      +hqDiagRow('حالة المصالحة', (window.hqDiagReconciled&&window.hqDiagReconciled())?'تمّت':'لم تتمّ — لا يُرفع شيء',
+                 !(window.hqDiagReconciled&&window.hqDiagReconciled()))
+      +hqDiagRow('آخر خطأ', D.err||'لا شيء', !!D.err)
+      +hqDiagRow('معرّف الجهاز', cloudGetCID())
+    +'</div>'
+    +'<div class="hq-diag-box"><div class="hq-diag-t">على هذا الجهاز</div>'
+      +hqDiagRow('الحلقات', arNum(loc.h))+hqDiagRow('المعلمون', arNum(loc.t))
+      +hqDiagRow('المشرفون', arNum(loc.s))+hqDiagRow('الحسابات', arNum(loc.u))
+      +hqDiagRow('الزيارات', arNum(loc.v))
+    +'</div>'
+    +'<div id="hq-diag-cloud"><div class="vs-hint">اضغط «قراءة السحابة الآن» لعرض ما فيها</div></div>'
+    +'<div class="hqacc-acts" style="justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap">'
+      +'<button class="hq-mini-btn view" onclick="hqDiagRead()">قراءة السحابة الآن</button>'
+      +'<button class="hq-mini-btn view" onclick="hqDiagPull()">سحب ودمج الآن</button>'
+    +'</div></div>';
+  openModal('🩺 تشخيص المزامنة', body);
+  hqModalTall();
+}
+function hqDiagRead(){
+  var box=document.getElementById('hq-diag-cloud'); if(!box) return;
+  box.innerHTML='<div class="vs-hint">جارٍ القراءة...</div>';
+  if(!window.cloudDataGet){ box.innerHTML='<div class="vs-hint" style="color:#fca5a5">تعذّر: مكتبة فايربيس لم تُحمَّل على هذا الجهاز</div>'; return; }
+  window.cloudDataGet(function(val,err){
+    if(err){ box.innerHTML='<div class="vs-hint" style="color:#fca5a5">فشلت القراءة: '+hqEsc(String((err&&(err.code||err.message))||err))+'</div>'; return; }
+    if(!val||!val.data){ box.innerHTML='<div class="vs-hint" style="color:#fbbf24">السحابة فارغة تماماً</div>'; return; }
+    var o=null; try{ o=JSON.parse(val.data); }catch(e){}
+    if(!o){ box.innerHTML='<div class="vs-hint" style="color:#fca5a5">تعذّر قراءة محتوى السحابة</div>'; return; }
+    var c=hqDiagCounts(o);
+    box.innerHTML='<div class="hq-diag-box"><div class="hq-diag-t">في السحابة</div>'
+      +hqDiagRow('الحلقات', arNum(c.h))+hqDiagRow('المعلمون', arNum(c.t))
+      +hqDiagRow('المشرفون', arNum(c.s))+hqDiagRow('الحسابات', arNum(c.u))
+      +hqDiagRow('الزيارات', arNum(c.v))
+      +hqDiagRow('رقم النسخة', arNum(parseInt(o.rev,10)||0))
+      +hqDiagRow('آخر كتابة', (val.ts?new Date(val.ts).toLocaleString('ar-SA'):'—'))
+      +hqDiagRow('حجم البيانات', arNum(Math.round((val.data.length/1024)))+' ك.ب')
+      +hqDiagRow('توافق البذرة', (o.seed===HQ_SEED_ID)?'مطابقة':'غير مطابقة — تُتجاهَل!', o.seed!==HQ_SEED_ID)
+      +'</div>';
+  });
+}
+function hqDiagPull(){
+  if(!window.cloudDataGet){ showToast('مكتبة فايربيس غير محمّلة','error'); return; }
+  showToast('جارٍ السحب والدمج...','info');
+  window.cloudDataGet(function(val,err){
+    if(err){ showToast('فشل السحب: '+String((err&&(err.code||err.message))||err),'error'); return; }
+    _cloudFirst=false; cloudFirstReconcile(val);
+    setTimeout(function(){ showToast('اكتمل السحب والدمج','success'); hqSyncDiag(); },900);
+  });
+}
+window.hqDiagReconciled=function(){ return _cloudReconciled; };
 function cloudModalOpen(){ var bg=document.getElementById('modalBg'); return !!(bg && (bg.classList.contains('open')||bg.style.display==='flex')); }
 var _cloudSig='';
 /* بصمة الجزء الذي يعرضه هذا الحساب فقط — تغيير في حلقة أخرى لا يعنيه */
@@ -3324,18 +3453,28 @@ function cloudInit(){
       if(_sg!==_cloudSig){ _cloudSig=_sg; cloudRerender(); }
     }
   });
-  /* مهلة احتياطية: لو تأخّرت أول لقطة (اتصال بطيء) نسمح بالرفع لاحقاً */
-  setTimeout(function(){
+  /* مهلة احتياطية: لو تأخّرت أول لقطة نقرأ مباشرة.
+     مهم: لا نعتبر الجهاز «مصالَحاً» إلا بعد قراءة ناجحة — وإلا رفع فراغه فوق بيانات غيره. */
+  var _rcTries=0;
+  function _cloudRetryRead(){
     if(_cloudReconciled) return;
-    _cloudReconciled=true;
-    /* لم تصل أول لقطة: نقرأ مرة واحدة مباشرة لنعرف الحال يقيناً */
-    if(window.cloudDataGet){
-      window.cloudDataGet(function(val,err){
-        if(err){ cloudReportErr(err); return; }
-        _cloudFirst=false; cloudFirstReconcile(val);
-      });
-    } else { cloudSetStatus(navigator.onLine?'synced':'error'); }
-  }, 6000);
+    _rcTries++;
+    if(!window.cloudDataGet){
+      if(_rcTries>6){ cloudSetStatus('error'); return; }
+      setTimeout(_cloudRetryRead, 5000); return;
+    }
+    window.cloudDataGet(function(val,err){
+      if(_cloudReconciled) return;
+      if(err){
+        cloudReportErr(err);
+        if(_rcTries===2 && typeof showToast==='function')
+          showToast('تعذّرت قراءة البيانات من السحابة — لن يُرفع شيء حتى تنجح القراءة','error');
+        setTimeout(_cloudRetryRead, 8000); return;
+      }
+      _cloudFirst=false; cloudFirstReconcile(val);
+    });
+  }
+  setTimeout(_cloudRetryRead, 6000);
 }
 /* مزامنة يدوية بالضغط على شارة الحالة: يقرأ أحدث نسخة ثم يصالح */
 function cloudForce(){
@@ -3983,6 +4122,7 @@ function renderDash(){
       '<div class="menu-card mc-7" onclick="tlOpen()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="16" y="28" width="32" height="24" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M23 28v-6a9 9 0 0118 0v6" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="38" r="3.5" fill="white"/><line x1="32" y1="41" x2="32" y2="46" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
       '<div class="menu-card mc-3 mc-test" onclick="hqTestTool()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="34" r="20" stroke="white" stroke-width="3"/><path d="M32 22v12l8 5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 10l-7 6M44 10l7 6" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">أدوات التجربة (مؤقّتة)</div></div>'+
+      '<div class="menu-card mc-6" onclick="hqSyncDiag()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 12a20 20 0 1 0 20 20" stroke="white" stroke-width="3.2" stroke-linecap="round"/><path d="M52 12v12H40" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="32" r="4" fill="white"/></svg></div><div class="mc-accent"></div><div class="mc-label">تشخيص المزامنة</div></div>'+
       '<div class="menu-card mc-1" onclick="hqBackupOpen()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 10v26M22 28l10 10 10-10" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 40v8a6 6 0 006 6h28a6 6 0 006-6v-8" stroke="white" stroke-width="3.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">النسخ الاحتياطي</div></div>'+
       '<div class="menu-card mc-5 mc-wide" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
     '</div>';
@@ -11886,7 +12026,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-31 - 71';
+  window.HQ_BUILD='2026-08-31 - 72';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
