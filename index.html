@@ -2894,29 +2894,8 @@ const LOGO=(document.getElementById('img-logo')||{src:''}).src;
 // =====================================================
 //  INITIAL DATA
 // =====================================================
-const DEFAULT_STUDENTS = [
-  {id:'s1',name:'عبدالله أحمد المالكي',age:12,code:'aaa',gender:'ذكر',guardian:'أحمد المالكي',guardianPhone:'0501234567',joinDate:'1446/01/01',level:'متوسط',targetSurah:'البقرة',memorized:12,notes:''},
-  {id:'s2',name:'محمد سعد القحطاني',age:10,code:'bbb',gender:'ذكر',guardian:'سعد القحطاني',guardianPhone:'0502345678',joinDate:'1446/01/05',level:'مبتدئ',targetSurah:'الفاتحة',memorized:5,notes:''},
-  {id:'s3',name:'إبراهيم خالد الزهراني',age:15,code:'ccc',gender:'ذكر',guardian:'خالد الزهراني',guardianPhone:'0503456789',joinDate:'1446/02/01',level:'متقدم',targetSurah:'آل عمران',memorized:28,notes:'يتميز بحفظ قوي'},
-  {id:'s4',name:'يوسف عمر العتيبي',age:7,code:'ddd',gender:'ذكر',guardian:'عمر العتيبي',guardianPhone:'0504567890',joinDate:'1446/02/10',level:'مبتدئ',targetSurah:'الناس',memorized:3,notes:''},
-  {id:'s5',name:'عمر علي الدوسري',age:14,code:'eee',guardian:'علي الدوسري',guardianPhone:'0505678901',joinDate:'1446/01/20',level:'متوسط',targetSurah:'النساء',memorized:20,notes:''},
-  {id:'s6',name:'أحمد فيصل الحربي',age:9,code:'fff',guardian:'فيصل الحربي',guardianPhone:'0506789012',joinDate:'1446/03/01',level:'مبتدئ',targetSurah:'قريش',memorized:4,notes:''},
-  {id:'s7',name:'سلطان ناصر الغامدي',age:16,code:'ggg',guardian:'ناصر الغامدي',guardianPhone:'0507890123',joinDate:'1445/12/15',level:'متقدم',targetSurah:'المائدة',memorized:35,notes:'من أفضل الطلاب'},
-];
-const DEFAULT_PLANS = {
-  s1:[
-    {day:'الأحد',newLesson:'البقرة (1-5)',review:'الفاتحة كاملة',oldLesson:'البقرة (1-3)'},
-    {day:'الاثنين',newLesson:'البقرة (6-10)',review:'البقرة (1-5)',oldLesson:'البقرة (4-5)'},
-    {day:'الثلاثاء',newLesson:'البقرة (11-15)',review:'البقرة (1-10)',oldLesson:'البقرة (6-10)'},
-    {day:'الأربعاء',newLesson:'البقرة (16-20)',review:'البقرة (1-15)',oldLesson:'البقرة (11-15)'},
-  ],
-  s3:[
-    {day:'الأحد',newLesson:'آل عمران (1-10)',review:'البقرة (الربع الأخير)',oldLesson:'آل عمران (1-5)'},
-    {day:'الاثنين',newLesson:'آل عمران (11-20)',review:'آل عمران (1-10)',oldLesson:'آل عمران (6-10)'},
-    {day:'الثلاثاء',newLesson:'آل عمران (21-30)',review:'آل عمران (1-20)',oldLesson:'آل عمران (11-20)'},
-    {day:'الأربعاء',newLesson:'آل عمران (31-40)',review:'آل عمران (1-30)',oldLesson:'آل عمران (21-30)'},
-  ],
-};
+const DEFAULT_STUDENTS = [];
+const DEFAULT_PLANS = {};
 
 // =====================================================
 //  STATE
@@ -3042,6 +3021,20 @@ function hqStamp(init){
     DB.timeline=tl;
   }catch(e){}
 }
+/* حلقة الزرع المؤقّتة: تُنشأ على أي جهاز فارغ ريثما تصل بيانات السحابة.
+   القديمة منها كانت تحمل اسم معلّم مكتوباً في الكود (teacherUser='a')،
+   فتظهر لأي معلّم جديد على أنها حلقته. تُخفى متى وُجدت حلقة حقيقية. */
+function hqIsSeedHalqa(h){
+  if(!h) return false;
+  if(h.teacherId || ((h.students||[]).length)) return false;
+  return !!h.seed || h.teacherUser==='a';
+}
+function hqDropSeedHalqat(list){
+  list=list||[];
+  if(list.length<2) return list;
+  var real=list.filter(function(h){ return !hqIsSeedHalqa(h); });
+  return real.length?real:list;
+}
 /* يدمج النسخة البعيدة مع المحلية ويعيد النتيجة */
 function hqMergeBlob(remote){
   var re=remote||{};
@@ -3107,6 +3100,7 @@ function hqMergeBlob(remote){
 /* يعتمد نتيجة الدمج محلياً (بلا رفع جديد) */
 function hqAdoptMerged(m){
   if(!m) return false;
+  m.halqat=hqDropSeedHalqat(m.halqat||[]);
   DB.halqat=m.halqat||[]; DB.users=m.users||{};
   DB.supervisors=m.supervisors||[]; DB.teachers=m.teachers||[];
   DB.visits=m.visits||[]; DB.tmsgs=m.tmsgs||{}; DB.timeline=m.timeline||{};
@@ -3289,7 +3283,7 @@ function cloudRerender(){
       var hh=document.getElementById('hdr-halqa');
       if(hh) hh.textContent=(STATE.role==='admin')?'الشؤون التعليمية':(STATE.role==='supervisor'?'مشرف الحلقات':(_ah?_ah.name:'الحلقة'));
       var hs=document.getElementById('hdr-sname');
-      if(hs && STATE.role==='teacher' && _ah) hs.textContent=_ah.teacherName||'';
+      if(hs && STATE.role==='teacher') hs.textContent=(STATE.user&&STATE.user.name)||(_ah&&_ah.teacherName)||'';
       if(typeof hdrRefreshStudentStats==='function') hdrRefreshStudentStats();
       if(STATE.page && typeof renderPage==='function'){
         var _pw=document.querySelector('.pages-wrap'), _sc=_pw?_pw.scrollTop:0;   /* لا تقفز الصفحة */
@@ -3575,11 +3569,12 @@ function hqWipeAll(){
   setTimeout(function(){ location.reload(); },1200);
 }
 function migrateHalqat(){
-  DB.halqat = lsGet('hq_halqat', null);
+  DB.halqat = hqDropSeedHalqat(lsGet('hq_halqat', null));
   if(!DB.halqat || !DB.halqat.length){
+    /* حلقة مؤقّتة ريثما تصل بيانات السحابة — بلا معلّم ولا اسم شخص،
+       وتُحذف تلقائياً بمجرد وصول حلقات حقيقية (انظر hqAdoptMerged). */
     DB.halqat = [{
-      id:'h1', name:'حلقة عُمَر بن الخطّاب', teacherName:'هتّان قرنفلة',
-      teacherUser:'a',
+      id:'h1', name:'حلقة مؤقّتة', teacherName:'', teacherUser:'', seed:true,
       students:DB.students, sessions:DB.sessions, grades:DB.grades,
       plans:DB.plans, attend:DB.attend, recitation:DB.recitation,
       evals:DB.evals, mistakes:DB.mistakes, exams:DB.exams, hplans:DB.hplans||{}
@@ -3602,7 +3597,10 @@ function seedUsers(){
     else if(!DB.users[pk].hid) DB.users[pk].hid=_hid;
   });
   /* أُزيل حساب المعلّم التجريبي a/a نهائياً */
-  DB.users.admin={username:'edu',pw:hqPw('edu123'),name:'الشؤون التعليمية',role:'admin',display:'مدير الجمعية',hid:''};
+  /* يُنشأ مرة واحدة فقط — وإلا أُعيد ضبط اسم المستخدم وكلمة المرور في كل فتح */
+  if(!DB.users.admin || DB.users.admin.role!=='admin'){
+    DB.users.admin={username:'edu',pw:hqPw('edu123'),name:'الشؤون التعليمية',role:'admin',display:'مدير الجمعية',hid:''};
+  }
   save();
 }
 migrateHalqat();
@@ -3731,8 +3729,9 @@ function hqRestoreSession(){
       setActiveHalqa((_my[0]||DB.halqat[0]||{}).id);
     }
     else if(found.role==='teacher'){
-      var _th=found.tid?(DB.halqat||[]).find(function(x){ return x.teacherId===found.tid; }):null;
-      setActiveHalqa((_th&&_th.id)||found.hid||'h1');
+      var _th=hqTeacherHalqa(found);
+      if(!_th) return false;                 /* لا حلقة له — يُعاد إلى شاشة الدخول */
+      setActiveHalqa(_th.id);
     }
     else { setActiveHalqa(found.hid||'h1'); }
     var ls=document.getElementById('loginScreen');
@@ -3741,6 +3740,14 @@ function hqRestoreSession(){
     launchApp();
     return true;
   }catch(e){ return false; }
+}
+/* حلقة هذا المعلّم — بمعرّفه أولاً ثم بالحلقة المرتبطة بحسابه، ولا شيء غير ذلك */
+function hqTeacherHalqa(u){
+  if(!u) return null;
+  var L=DB.halqat||[], i;
+  for(i=0;i<L.length;i++){ if(u.tid && String(L[i].teacherId)===String(u.tid)) return L[i]; }
+  for(i=0;i<L.length;i++){ if(u.hid && String(L[i].id)===String(u.hid)) return L[i]; }
+  return null;
 }
 function doLogin(){
   const u=document.getElementById('li-user').value.trim().toLowerCase();
@@ -3754,6 +3761,12 @@ function doLogin(){
   let found=null;
   Object.values(DB.users).forEach(x=>{ if(x&&x.username&&String(x.username).toLowerCase()===u&&x.role===STATE.loginRole&&hqPwOk(x,p)) found=x; });
   if(!found){ hqLockFail(); shake('❌ اسم المستخدم أو كلمة المرور غير صحيحة'); return; }
+  /* المعلّم لا يدخل إلا إلى حلقته هو — ولا يُسقَط على حلقة غيره */
+  var _myH=null;
+  if(found.role==='teacher'){
+    _myH=hqTeacherHalqa(found);
+    if(!_myH){ shake('⚠️ لم تُسنَد إليك حلقة بعد — راجع مشرف الحلقات'); return; }
+  }
   hqLockClear();
   try{ var _n=hqPwSweep(DB.users);
     (DB.halqat||[]).forEach(function(_h){ if(_h.teacherPass!=null){ delete _h.teacherPass; _n++; }
@@ -3769,10 +3782,7 @@ function doLogin(){
     var _my=supMyHalqat(found.supId);
     setActiveHalqa((_my[0]||DB.halqat[0]||{}).id);
   }
-  else if(found.role==='teacher'){
-    var _th=found.tid?(DB.halqat||[]).find(function(x){ return x.teacherId===found.tid; }):null;
-    setActiveHalqa((_th&&_th.id)||found.hid||'h1');
-  }
+  else if(found.role==='teacher'){ setActiveHalqa(_myH.id); }
   else { setActiveHalqa(found.hid||'h1'); }
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('loginScreen').style.display='none';
@@ -3897,7 +3907,7 @@ function launchApp(){
     var wb=document.getElementById('hdr-welcome-badge');
     if(wb) wb.textContent='مرحباً بالمعلم';
     var sn=document.getElementById('hdr-sname');
-    if(sn) sn.textContent=(_ah?_ah.teacherName:'المعلم');
+    if(sn) sn.textContent=((u&&u.name)||(_ah&&_ah.teacherName)||'المعلم');
     /* إخفاء الإحصاءات الثلاث للمعلم */
     var stats=document.getElementById('hdr-stats3');
     if(stats) stats.style.display='none';
