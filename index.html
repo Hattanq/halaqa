@@ -3624,6 +3624,27 @@ function hqBackupRestoreFile(inp){
 function hqBackupRestoreGo(){
   var o=window.__bkPending; if(!o) return;
   try{
+    /* المستعاد يجب أن يكون أحدث من أي حذف سابق، وإلا أسقطه الدمج مع السحابة
+       وعادت البيانات إلى الاختفاء بعد ثوانٍ من الاستعادة. */
+    var now=Date.now(), ids={h:[],t:[],s:[],v:[],u:[]};
+    function stampArr(a,kind){
+      if(!Array.isArray(a)) return;
+      a.forEach(function(x){ if(x&&typeof x==='object'){ x.mt=now; if(x.id) ids[kind].push(x.id); } });
+    }
+    stampArr(o.data.hq_halqat,'h'); stampArr(o.data.hq_teachers,'t');
+    stampArr(o.data.hq_supervisors,'s'); stampArr(o.data.hq_visits,'v');
+    var um=o.data.hq_users;
+    if(um&&typeof um==='object'){ for(var uk in um){ if(um[uk]&&typeof um[uk]==='object'){ um[uk].mt=now; ids.u.push(uk); } } }
+    var tl=o.data.hq_timeline;
+    if(tl&&typeof tl==='object'){ var ak=tl.activeKey; if(ak&&tl[ak]&&typeof tl[ak]==='object') tl[ak].mt=now; }
+    /* شطب سجلّ الحذف لما استُعيد فقط، وتُترك بقيّة عمليات الحذف على حالها */
+    try{
+      var tb=lsGet('hq_tomb',{})||{};
+      ['h','t','s','v','u'].forEach(function(kind){
+        ids[kind].forEach(function(id){ delete tb[kind+':'+id]; });
+      });
+      lsSave('hq_tomb', tb);
+    }catch(e){}
     HQ_BK_KEYS.forEach(function(k){ if(o.data[k]!=null) lsSave(k,o.data[k]); });
     if(typeof cloudBumpRev==='function') cloudBumpRev();
   }catch(e){}
@@ -12026,7 +12047,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-08-31 - 72';
+  window.HQ_BUILD='2026-09-03 - 73';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
