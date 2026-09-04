@@ -2964,7 +2964,38 @@ window.HQ_DAY_SHIFT=(function(){ try{ return parseInt(localStorage.getItem('hq_d
   try{ window.Date=F; }catch(e){}
 })();
 function lsGet(k,def){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch{return def;} }
-function lsSave(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch{} }
+var HQ_LS_FULL=false;
+/* كان الفشل يُبتلع صامتاً: يمتلئ تخزين المتصفّح فيظنّ المعلّم أن تقييمه حُفظ وهو لم يُحفظ */
+function lsSave(k,v){
+  try{ localStorage.setItem(k,JSON.stringify(v)); }
+  catch(e){ hqStorageFull(e); }
+}
+function hqStorageFull(e){
+  try{ window.HQ_DIAG=window.HQ_DIAG||{}; window.HQ_DIAG.err='تعذّر الحفظ على الجهاز: تخزين المتصفّح ممتلئ'; }catch(_){}
+  if(HQ_LS_FULL) return;
+  HQ_LS_FULL=true;
+  try{ console.error('localStorage full:', e); }catch(_){}
+  try{ hqStorageBanner(); }catch(_){}
+  try{ if(typeof showToast==='function') showToast('⚠️ تعذّر الحفظ على الجهاز — تخزين المتصفّح ممتلئ','error'); }catch(_){}
+}
+function hqStorageBanner(){
+  if(document.getElementById('hqLsBanner')) return;
+  var d=document.createElement('div');
+  d.id='hqLsBanner';
+  d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#7f1d1d;color:#fff;'+
+    'padding:10px 14px;font-weight:800;font-size:.85rem;text-align:center;line-height:1.7;'+
+    'box-shadow:0 2px 10px rgba(0,0,0,.4)';
+  d.innerHTML='⚠️ تخزين المتصفّح ممتلئ — لم يُحفظ آخر إدخال على هذا الجهاز.'+
+    '<br>توقّف عن الإدخال وراجع الدعم قبل المتابعة.';
+  document.body.appendChild(d);
+}
+/* حجم ما يشغله التطبيق في تخزين المتصفّح (بالبايت) */
+function hqLsBytes(){
+  var n=0;
+  try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i);
+        if(k && k.indexOf('hq_')===0){ n+=k.length+((localStorage.getItem(k)||'').length); } } }catch(e){}
+  return n*2;   /* المتصفّح يخزّن النص بترميز ثنائي البايت */
+}
 
 /* ===================================================================
    الدمج بدل الاستبدال — يمنع محو تعديلات جهاز آخر
@@ -3296,6 +3327,14 @@ function cloudApply(val){
 }
 
 /* ================= تشخيص المزامنة (حساب الشؤون التعليمية) ================= */
+/* وصف حالة التخزين المحلي — الحدّ العملي في سفاري نحو خمسة ميغابايت */
+function hqLsTxt(){
+  var b=hqLsBytes(), mb=b/1048576;
+  var t=(mb<1? Math.round(b/1024)+' ك.ب' : (Math.round(mb*10)/10)+' م.ب');
+  if(HQ_LS_FULL) return t+' — ممتلئ! لا يُحفظ شيء';
+  if(mb>=3.5) return t+' — يقترب من الحدّ';
+  return t;
+}
 function hqDiagCounts(o){
   o=o||{};
   return {h:((o.halqat||[]).length), t:((o.teachers||[]).length),
@@ -3323,6 +3362,7 @@ function hqSyncDiag(){
                  !(window.hqDiagReconciled&&window.hqDiagReconciled()))
       +hqDiagRow('آخر خطأ', D.err||'لا شيء', !!D.err)
       +hqDiagRow('معرّف الجهاز', cloudGetCID())
+      +hqDiagRow('تخزين هذا الجهاز', hqLsTxt(), hqLsBytes()>3.5*1048576)
     +'</div>'
     +'<div class="hq-diag-box"><div class="hq-diag-t">على هذا الجهاز</div>'
       +hqDiagRow('الحلقات', arNum(loc.h))+hqDiagRow('المعلمون', arNum(loc.t))
@@ -12047,7 +12087,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-09-03 - 73';
+  window.HQ_BUILD='2026-09-03 - 74';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
