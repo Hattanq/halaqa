@@ -1652,6 +1652,12 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .ev-part-val.pen{color:#fca5a5}
 .rnk-plus{color:#8ee0b4}
 .rnk-minus{color:#f6a9a4}
+.hqp-tj-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:4px 0 2px}
+.hqp-tj{font-family:inherit;font-size:.82rem;font-weight:800;color:rgba(255,255,255,.9);
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:13px;
+  padding:14px 8px;cursor:pointer;line-height:1.5;transition:background .18s,border-color .18s,transform .1s}
+.hqp-tj:active{transform:scale(.97)}
+.hqp-tj.on{background:rgba(46,204,113,.18);border-color:rgba(46,204,113,.55);color:#a7f3d0}
 .ev-dd-lock .ev-dd-btn{cursor:default;opacity:.92}
 .menu-card.mc-soon{opacity:.6;filter:saturate(.6)}
 .mc-soon-tag{display:block;font-size:.55rem;font-weight:800;color:#f0c040;background:rgba(240,192,64,.14);border:1px solid rgba(240,192,64,.3);border-radius:6px;padding:1px 6px;margin-top:4px;width:fit-content}
@@ -6059,7 +6065,8 @@ function hqJuzPages(j){
    ===================================================================== */
 /* البطاقات الخمس: juz=عدد الأجزاء · pages=صفحات الخطة · rev=بدء المراجعة بعد كم صفحة */
 var HQ_PLAN_TYPES=[
-  {k:'j1',  n:'المنهج التمهيدي',    juz:1, pages:20,  rev:3},
+  {k:'tj',  n:'منهج تصحيح التلاوة', juz:0, pages:0,   rev:2, tj:true},
+  {k:'j1',  n:'المنهج الابتدائي',   juz:1, pages:20,  rev:3},
   {k:'j2',  n:'المنهج التكميلي ١',  juz:2, pages:40,  rev:4},
   {k:'j3',  n:'المنهج التكميلي ٢',  juz:3, pages:60,  rev:6},
   {k:'j5',  n:'منهج الحُفّاظ',       juz:5, pages:100, rev:8},
@@ -6067,6 +6074,116 @@ var HQ_PLAN_TYPES=[
   {k:'old', n:'الخطة القديمة',   juz:0, pages:0,   rev:0, hide:true}
 ];
 function hqPlanType(k){ for(var i=0;i<HQ_PLAN_TYPES.length;i++){ if(HQ_PLAN_TYPES[i].k===k) return HQ_PLAN_TYPES[i]; } return null; }
+
+/* =====================================================================
+   منهج تصحيح التلاوة — مقاطع مختارة لا أجزاء كاملة
+   ===================================================================== */
+var HQ_TJ_PARTS=[
+  {k:'fat',  n:'سورة الفاتحة',   s:1,  a1:1,   a2:7},
+  {k:'amm',  n:'نصف جزء عمّ',    half:true},                 /* من الناس ← الضحى */
+  {k:'mulk', n:'سورة الملك',     s:67, a1:1,   a2:30},
+  {k:'yas',  n:'سورة يس',        s:36, a1:1,   a2:83},
+  {k:'kahf', n:'بداية الكهف',    s:18, a1:1,   a2:10},
+  {k:'baqa', n:'أواخر البقرة',   s:2,  a1:285, a2:286}
+];
+function hqTjPart(k){ for(var i=0;i<HQ_TJ_PARTS.length;i++){ if(HQ_TJ_PARTS[i].k===k) return HQ_TJ_PARTS[i]; } return null; }
+var _hqTjLn={};
+/* أسطر مقطع واحد — بترتيب الحفظ (آخر سورة أولاً كما في بقية المناهج) */
+function hqTjPartLines(k){
+  if(_hqTjLn[k]) return _hqTjLn[k];
+  var t=hqTjPart(k); if(!t) return [];
+  var all=hqBuildLines(), out=[];
+  if(t.half){
+    /* نصف جزء عمّ: من سورة الضحى (٩٣) إلى سورة الناس (١١٤)، ويُبدأ بالناس */
+    var groups=[];
+    for(var i=0;i<all.length;i++){
+      var x=all[i]; if(x.s<93||x.s>114) continue;
+      if(!groups.length||groups[groups.length-1].s!==x.s) groups.push({s:x.s,ln:[]});
+      groups[groups.length-1].ln.push(x);
+    }
+    for(var g=groups.length-1;g>=0;g--) out=out.concat(groups[g].ln);
+  } else {
+    for(var j=0;j<all.length;j++){
+      var y=all[j]; if(y.s!==t.s) continue;
+      var sa=(y.sa||y.a||1), ea=(y.a||sa);
+      if(ea<t.a1 || sa>t.a2) continue;      /* السطر خارج المدى */
+      out.push(y);
+    }
+  }
+  _hqTjLn[k]=out; return out;
+}
+/* أسطر الخطة كاملةً بترتيب المقاطع المختارة */
+function hqTjLines(segs){
+  var out=[];
+  (segs||[]).forEach(function(k){ out=out.concat(hqTjPartLines(k)); });
+  return out;
+}
+/* نهاية كل مقطع داخل الخطة (مواضع ١-based) — تُستعمل لقطع الأيام */
+function hqTjBlocks(segs){
+  var out=[], n=0;
+  (segs||[]).forEach(function(k){ n+=hqTjPartLines(k).length; out.push(n); });
+  return out;
+}
+function hqTjPages(segs){
+  var seen={}, n=0;
+  hqTjLines(segs).forEach(function(x){ if(!seen[x.p]){ seen[x.p]=1; n++; } });
+  return n;
+}
+function hqTjNames(segs){
+  return (segs||[]).map(function(k){ var t=hqTjPart(k); return t?t.n:k; }).join(' - ');
+}
+
+/* ---------- شاشة اختيار المقاطع للطالب ---------- */
+function hqTjGrid(sid){
+  var s=hqPlanStu(sid); if(!s){ showToast('الطالب غير موجود','error'); return; }
+  var p=hqPlanOf(sid);
+  var cur=(p&&p.approved&&p.type==='tj'&&p.segs)?p.segs.slice():[];
+  window._hqTjSel=cur;
+  var g='';
+  for(var i=0;i<HQ_TJ_PARTS.length;i++){
+    var t=HQ_TJ_PARTS[i];
+    g+='<button type="button" class="hqp-tj'+((cur.indexOf(t.k)>=0)?' on':'')+'" data-k="'+t.k+'" '+
+       'onclick="hqTjToggle(this)">'+t.n+'</button>';
+  }
+  var del=(p&&p.approved)?('<button type="button" class="tl-fetch hqp-del" onclick="hqPlanDelAsk(\''+sid+'\')">إلغاء خطة الطالب</button>'):'';
+  openModal(s.name,
+    '<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">منهج تصحيح التلاوة</div>'+
+    '<div class="mp-info-s">اختر ما شئت من المقاطع — واحداً أو أكثر</div></div>'+
+    '<div class="hqp-tj-grid">'+g+'</div>'+
+    '<div id="hqp-tj-info" class="vs-hint" style="text-align:center;margin-top:10px"></div>'+
+    '<button class="tl-approve" type="button" onclick="hqTjApprove(\''+sid+'\')">اعتماد الخطة</button>'+del);
+  hqBackTitle(function(){ hqPlanJoin('tj'); });
+  hqTjInfo();
+}
+function hqTjToggle(btn){
+  var k=btn.getAttribute('data-k'), sel=window._hqTjSel||[];
+  var i=sel.indexOf(k);
+  if(i>=0){ sel.splice(i,1); btn.classList.remove('on'); }
+  else { sel.push(k); btn.classList.add('on'); }
+  window._hqTjSel=sel;
+  hqTjInfo();
+}
+function hqTjInfo(){
+  var box=document.getElementById('hqp-tj-info'); if(!box) return;
+  var sel=window._hqTjSel||[];
+  if(!sel.length){ box.textContent='لم تُختَر مقاطع بعد'; return; }
+  var lines=hqTjLines(sel).length, td=hqPlanTermDays();
+  var avg=td.n?(Math.round(lines*10/td.n)/10):0;
+  box.innerHTML='المقاطع: '+arNum(sel.length)+' · الصفحات: '+arNum(hqTjPages(sel))+
+                ' · الأسطر: '+arNum(lines)+' · معدّل اليوم: '+arNum(avg)+' سطر';
+}
+function hqTjApprove(sid){
+  var sel=(window._hqTjSel||[]).slice();
+  if(!sel.length){ showToast('اختر مقطعاً واحداً على الأقل','error'); return; }
+  /* نرتّبها بترتيب البطاقات لا بترتيب الضغط */
+  var ord=[]; HQ_TJ_PARTS.forEach(function(t){ if(sel.indexOf(t.k)>=0) ord.push(t.k); });
+  var p={type:'tj', segs:ord, juz:[], start:0, approved:false, days:[]};
+  var td=hqPlanTermDays();
+  hqPlanApprove(sid,p,null);
+  showToast('اعتُمد منهج تصحيح التلاوة: '+hqTjNames(ord)+(td.real?'':' (أيام افتراضية)'), td.real?'success':'info');
+  hqPlanHome();
+}
+
 /* أجزاء الخطة متتالية إجبارياً بترتيب الحفظ في التطبيق (٣٠ ← ١) */
 function hqPlanJuzList(type,startJuz){
   var t=hqPlanType(type); if(!t||!t.juz) return [];
@@ -6084,6 +6201,7 @@ function hqPlanStartOptions(type){
 /* أسطر الخطة = أسطر أجزائها متتابعة (مع تخزين مؤقّت) */
 var _hqPlanLnCache={};
 function hqPlanLines(p){
+  if(p&&p.type==='tj') return hqTjLines(p.segs);
   var js=(p&&p.juz)||[]; if(!js.length) return [];
   var key=js.join('-');
   if(_hqPlanLnCache[key]) return _hqPlanLnCache[key];
@@ -6093,11 +6211,13 @@ function hqPlanLines(p){
 }
 /* نهاية كل جزء داخل الخطة (مواضع ١-based) */
 function hqPlanBlocks(p){
+  if(p&&p.type==='tj') return hqTjBlocks(p.segs);
   var js=(p&&p.juz)||[], out=[], n=0;
   for(var i=0;i<js.length;i++){ n+=hqJuzLines(js[i]).length; out.push(n); }
   return out;
 }
 function hqPlanPages(p){
+  if(p&&p.type==='tj') return hqTjPages(p.segs);
   var js=(p&&p.juz)||[], n=0;
   for(var i=0;i<js.length;i++) n+=hqJuzPages(js[i]);
   return n;
@@ -6343,6 +6463,7 @@ function hqPlanName(p){
   if(!p) return '';
   var t=hqPlanType(p.type); if(!t) return '';
   if(p.type==='old') return t.n;
+  if(p.type==='tj') return t.n+' - '+hqTjNames(p.segs);
   var js=(p.juz||[]).slice().sort(function(a,b){ return a-b; });
   if(!js.length) return t.n;
   if(js.length===1) return t.n+' - جزء '+hqAyN(js[0]);
@@ -6436,9 +6557,10 @@ function hqPlanPick(sid){
   for(var i=0;i<HQ_PLAN_TYPES.length;i++){
     var t=HQ_PLAN_TYPES[i]; if(t.hide) continue;
     var sub=(t.k==='old')?'الخطة الموحّدة الحالية بهيئتها الجاهزة'
-      :('الأجزاء: '+arNum(t.juz)+' - الصفحات: '+arNum(t.pages)+' - تبدأ المراجعة بعد '+arNum(t.rev)+' صفحات');
+      :((t.k==='tj')?'مقاطع مختارة لتصحيح التلاوة — تختار منها ما شئت'
+      :('الأجزاء: '+arNum(t.juz)+' - الصفحات: '+arNum(t.pages)+' - تبدأ المراجعة بعد '+arNum(t.rev)+' صفحات'));
     h+='<button type="button" class="hqp-card'+((t.k==='old')?' alt':'')+((cur&&cur.approved&&cur.type===t.k)?' sel':'')+'" '+
-       'onclick="hqPlanConfig(\''+sid+'\',\''+t.k+'\')">'+t.n+'<span class="hqp-sub">'+sub+'</span></button>';
+       'onclick="'+((t.k==='tj')?('hqTjGrid(\''+sid+'\')'):('hqPlanConfig(\''+sid+'\',\''+t.k+'\')'))+'">'+t.n+'<span class="hqp-sub">'+sub+'</span></button>';
   }
   h+='</div>';
   openModal('خطة '+s.name, h);
@@ -6783,15 +6905,16 @@ function hqPlanJoin(type){
     var other=(p&&p.approved&&p.type!==type);
     var sub=mine?('الجزء '+arNum(p.start)):(other?((hqPlanType(p.type)||{}).n||''):'');
     g+='<button type="button" class="hqp-stu'+(mine?' on':'')+(other?' busy':'')+'" '+
-       'onclick="hqPlanJuzGrid(\''+type+'\',\''+s.id+'\')">'+
+       'onclick="'+((type==='tj')?('hqTjGrid(\''+s.id+'\')'):('hqPlanJuzGrid(\''+type+'\',\''+s.id+'\')'))+'">'+
        '<span class="hqp-stu-n">'+hqEsc(s.name)+'</span>'+
        (sub?('<span class="hqp-stu-s">'+hqEsc(sub)+'</span>'):'')+'</button>';
   }
   if(!studs.length) g='<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد طلاب في الحلقة</div>';
   openModal('الانضمام إلى '+t.n,
-    '<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-s">اختر الطالب ثم حدّد الجزء</div></div>'+
+    '<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-s">'+
+      ((type==='tj')?'اختر الطالب ثم حدّد المقاطع':'اختر الطالب ثم حدّد الجزء')+'</div></div>'+
     '<div class="hqp-stu-grid">'+g+'</div>'+
-    '<button type="button" class="tl-fetch" onclick="hqPlanTypeView(\''+type+'\')">أظهر مسار الخطة</button>');
+    ((type==='tj')?'':('<button type="button" class="tl-fetch" onclick="hqPlanTypeView(\''+type+'\')">أظهر مسار الخطة</button>')));
   hqBackTitle(hqPlanTypesHome);
 }
 
@@ -7378,7 +7501,7 @@ function showHalqaStats(){
   studs.forEach(function(s){ hsTermDays(s.id).forEach(function(d){ if(d&&d.__k) _allDays[d.__k]=1; }); });
   var hsTotDays=0;
   studs.forEach(function(s){
-    var c=0; hsTermDays(s.id).forEach(function(d){ if(d&&(d.attend==='حاضر'||d.attend==='غائب'||d.attend==='متأخر')) c++; });
+    var c=0; hsTermDays(s.id).forEach(function(d){ if(d&&(d.attend==='حاضر'||d.attend==='غائب'||d.attend==='متأخر'||d.attend==='تسميع عن بعد')) c++; });
     if(c>hsTotDays) hsTotDays=c;
   });
   attList.forEach(function(x){ x.pct=hsTotDays?Math.round(x.at/hsTotDays*100):0; x.lbl=arNum(x.pct)+'٪ حضور'; });
@@ -8779,7 +8902,7 @@ function hqMetrics(h){
     if(isDiscontinued(s)) disc++;
     var st=hsStage(s.grade); if(st==='pri')pri++;else if(st==='mid')mid++;else if(st==='sec')sec++;else if(st==='uni')uni++;else if(st==='kg')kg++;else if(st==='eld')eld++;
     var rec=(DB.evals&&DB.evals[s.id])||{}; var today=(rec.days&&rec.days[tKey])||{};
-    if(today.attend==='حاضر') present++; else if(today.attend==='غائب') absent++;
+    if(today.attend==='حاضر'||today.attend==='تسميع عن بعد') present++; else if(today.attend==='غائب') absent++;
     if(today.lesson&&today.review) tasmee++;
     if(today.lesson||today.review||today.tajweed||today.attend) active=true;
     if(!active){ var ex=DB.exams&&DB.exams[s.id];
@@ -9512,7 +9635,7 @@ function hqDaysStats(days){
   var r={present:0,absent:0,late:0,score:0,tajSum:0,tajCnt:0};
   (days||[]).forEach(function(d){
     if(!d) return;
-    if(d.attend==='حاضر') r.present++;
+    if(d.attend==='حاضر'||d.attend==='تسميع عن بعد') r.present++;
     else if(d.attend==='متأخر'){ r.present++; r.late++; }
     else if(d.attend==='غائب') r.absent++;
     if(d.tajweed && EV_TAJWEED[d.tajweed]!=null){ r.tajSum+=EV_TAJWEED[d.tajweed]; r.tajCnt++; }
@@ -10133,7 +10256,7 @@ function evTermScore(days){
     s.lesson+=_ln; s.review+=_rn;
     /* مستوى الحفظ: نقطة لكل درس مُنجز في اليوم (متقن=١ · متوسط=٠٫٥ · ضعيف=٠) */
     if(d.tajweed && EV_TAJWEED[d.tajweed]!=null) s.tajweed+=EV_TAJWEED[d.tajweed];   /* نقطة واحدة لليوم */
-    if(d.attend==='\u062d\u0627\u0636\u0631') s.attend+=1;
+    if(d.attend==='\u062d\u0627\u0636\u0631' || d.attend==='\u062a\u0633\u0645\u064a\u0639 \u0639\u0646 \u0628\u0639\u062f') s.attend+=1;
     else if(d.attend==='\u0645\u062a\u0623\u062e\u0631') s.attend+=0.5;   /* الحاضر = نقطة كاملة والمتأخر نصفها (الغائب = لا شيء) */
   }
   s.total=s.lesson+s.review+s.tajweed+s.attend;
@@ -11398,7 +11521,7 @@ function openStudentEval(sid){
   var reviewCell=evRecCell('review',reqR,today.review,sid);
   function cell(lbl,inner){ return '<div class="ev-cell ev-cell-gold"><div class="ev-lbl">'+lbl+'</div>'+inner+'</div>'; }
   var _isT=(typeof STATE!=='undefined'&&STATE.role==='teacher');
-  var attendCell=cell('\u0627\u0644\u062d\u0636\u0648\u0631', evOptSelect('attend',['\u062d\u0627\u0636\u0631','\u0645\u062a\u0623\u062e\u0631','\u063a\u0627\u0626\u0628','\u063a\u0627\u0626\u0628 \u0628\u0639\u0630\u0631'],today.attend));
+  var attendCell=cell('\u0627\u0644\u062d\u0636\u0648\u0631', evOptSelect('attend',['\u062d\u0627\u0636\u0631','\u0645\u062a\u0623\u062e\u0631','\u063a\u0627\u0626\u0628','\u063a\u0627\u0626\u0628 \u0628\u0639\u0630\u0631','\u062a\u0633\u0645\u064a\u0639 \u0639\u0646 \u0628\u0639\u062f'],today.attend));
   var tajweedCell=cell('مستوى الحفظ', evOptSelect('tajweed',['حفظ مُتقن','حفظ متوسط','حفظ ضعيف'],today.tajweed));
   var _partVal=(typeof evTodayPart==='function')?evTodayPart(sid):0;   /* اليوم فقط */
   var _penVal =(typeof evTodayPen ==='function')?evTodayPen(sid) :0;
@@ -12087,7 +12210,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-09-03 - 74';
+  window.HQ_BUILD='2026-09-04 - 76';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
