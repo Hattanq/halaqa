@@ -11459,6 +11459,7 @@ function evDDPick(opt){
   dd.classList.remove('open'); evDDDock(dd);
   var _h2=dd.closest?dd.closest('.ev-cell,.ev-start-row'):null; if(_h2) _h2.classList.remove('dd-front');
   if(dd.id==='ev-attend' && typeof evApplyAbsence==='function') evApplyAbsence();
+  try{ if(typeof evtAfterPick==='function') evtAfterPick(dd.id); }catch(e){}
 }
 
 /* ===== محوّل عام: يجعل كل قوائم <select> تنسدل في طبقة علوية دون إزاحة ما تحتها ===== */
@@ -11700,6 +11701,85 @@ function evAdjustPart(sid,delta){
   }catch(e){ if(typeof showToast==='function') showToast('\u062d\u062f\u062b \u062e\u0637\u0623\u060c \u062d\u0627\u0648\u0644 \u0645\u062c\u062f\u062f\u0627\u064b','error'); }
 }
 
+
+/* =====================================================================
+   بطاقة التقييم بتبويبات: الدرس · المراجعة · الحضور · المستوى · اعتمد
+   ===================================================================== */
+var EVT_TABS=[
+  {k:'lesson', n:'الدرس'},
+  {k:'review', n:'المراجعة'},
+  {k:'attend', n:'الحضور'},
+  {k:'level',  n:'المستوى'},
+  {k:'done',   n:'اعتمد'}
+];
+var _evtSid='', _evtCur='';
+/* هل أُنجز هذا البند اليوم؟ */
+function evtDone(k){
+  var el;
+  if(k==='lesson'||k==='review'){
+    var rec=(DB.evals&&DB.evals[_evtSid])||{};
+    var d=(rec.days&&rec.days[evDateKey()])||{};
+    return !!d[k];
+  }
+  if(k==='attend'){ el=document.getElementById('ev-attend'); return !!(el&&el.getAttribute('data-val')); }
+  if(k==='level'){  el=document.getElementById('ev-tajweed'); return !!(el&&el.getAttribute('data-val')); }
+  return false;
+}
+function evtTabsHtml(){
+  var h='<div class="evt-tabs" id="evt-tabs">';
+  for(var i=0;i<EVT_TABS.length;i++){
+    var t=EVT_TABS[i];
+    h+='<button type="button" class="evt-tab'+((t.k==='done')?' fin':'')+'" data-t="'+t.k+'" '+
+       'onclick="evtGo(\''+t.k+'\')"><span class="evt-tick">✓</span>'+t.n+'</button>';
+  }
+  return h+'</div>';
+}
+/* أول تبويبة لم تُنجز بعد */
+function evtFirstOpen(){
+  for(var i=0;i<EVT_TABS.length-1;i++){ if(!evtDone(EVT_TABS[i].k)) return EVT_TABS[i].k; }
+  return 'done';
+}
+function evtGo(k,quiet){
+  var wrap=document.getElementById('evt-panes'); if(!wrap) return;
+  var panes=wrap.querySelectorAll('.evt-pane');
+  for(var i=0;i<panes.length;i++){
+    var on=(panes[i].getAttribute('data-t')===k);
+    panes[i].classList.toggle('on', on);
+  }
+  var tabs=document.querySelectorAll('#evt-tabs .evt-tab');
+  for(var j=0;j<tabs.length;j++) tabs[j].classList.toggle('cur', tabs[j].getAttribute('data-t')===k);
+  _evtCur=k;
+  evtSync();
+  if(!quiet){ try{ wrap.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){} }
+}
+/* تخضير التبويبات المنجَزة */
+function evtSync(){
+  var tabs=document.querySelectorAll('#evt-tabs .evt-tab');
+  for(var i=0;i<tabs.length;i++){
+    var k=tabs[i].getAttribute('data-t');
+    if(k==='done') continue;
+    tabs[i].classList.toggle('ok', evtDone(k));
+  }
+  var all=true;
+  for(var m=0;m<EVT_TABS.length-1;m++){ if(!evtDone(EVT_TABS[m].k)) all=false; }
+  var fin=document.querySelector('#evt-tabs .evt-tab.fin');
+  if(fin) fin.classList.toggle('ready', all);
+  var st=document.getElementById('evt-state');
+  if(st){
+    var names=[];
+    for(var n2=0;n2<EVT_TABS.length-1;n2++){ if(!evtDone(EVT_TABS[n2].k)) names.push(EVT_TABS[n2].n); }
+    st.innerHTML = names.length
+      ? ('بقي: <b>'+names.join('، ')+'</b>')
+      : 'اكتمل تقييم اليوم — احفظه ليُعتمد';
+  }
+}
+/* بعد اختيار الحضور أو المستوى ننتقل تلقائياً للتبويبة التالية */
+function evtAfterPick(id){
+  evtSync();
+  if(id==='ev-attend' && _evtCur==='attend') setTimeout(function(){ evtGo('level',true); },260);
+  if(id==='ev-tajweed' && _evtCur==='level') setTimeout(function(){ evtSync(); },60);
+}
+
 function openStudentEval(sid){
   var s=DB.students.find(function(x){return x.id===sid;}); if(!s) return;
   var _sp=evSuspToday();
@@ -11765,16 +11845,23 @@ function openStudentEval(sid){
     +_startRows
     +'<button type="button" class="ev-start-save" onclick="evSetStart(\''+sid+'\')">\u062d\u0641\u0638 \u0646\u0642\u0637\u0629 \u0627\u0644\u0628\u062f\u0627\u064a\u0629</button>'
     +'</div>'):'';
-  var _eval=_isT?('<div class="ev-eval">'
-    +recCell
-    +reviewCell
-    +'<div class="ev-row4">'+attendCell+tajweedCell+partCell+penCell+'</div>'
-    +'<div class="ev-row3">'+_startToggle+_misRepBtn+_resetBtn+'</div>'
+  _evtSid=sid;
+  var _eval=_isT?(evtTabsHtml()
+    +'<div class="evt-panes" id="evt-panes">'
+      +'<div class="evt-pane" data-t="lesson">'+recCell+'</div>'
+      +'<div class="evt-pane" data-t="review">'+reviewCell+'</div>'
+      +'<div class="evt-pane" data-t="attend">'+attendCell+'</div>'
+      +'<div class="evt-pane" data-t="level">'+tajweedCell+partCell+penCell
+        +'<div class="ev-row3">'+_startToggle+_misRepBtn+_resetBtn+'</div></div>'
+      +'<div class="evt-pane" data-t="done">'
+        +'<div class="evt-state" id="evt-state"></div>'
+        +'<button class="prof-form-save ev-save-plain" onclick="saveStudentEval(\''+sid+'\')">حفظ التقييم</button>'
+      +'</div>'
     +'</div>'+_startBox):'';
-  var body='<div class="prof-form-wrap">'+_eval
-    +(_isT?('<button class="prof-form-save ev-save-plain" onclick="saveStudentEval(\''+sid+'\')" style="margin-top:16px;">\u062d\u0641\u0638 \u0627\u0644\u062a\u0642\u064a\u064a\u0645</button>'):'')+'</div>';
+  var body='<div class="prof-form-wrap ev-eval">'+_eval+'</div>';
   openModal('\u062a\u0642\u064a\u064a\u0645: '+(s.name||''), body);
   if(typeof evApplyAbsence==='function') evApplyAbsence();
+  if(_isT){ try{ evtGo(evtFirstOpen(),true); }catch(e){} }
   setTimeout(function(){ hqAnimNums(document.getElementById('modalBody'),'.ev-got'); },160);
 }
 
@@ -12411,16 +12498,17 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-09-04 - 81';
+  window.HQ_BUILD='2026 - 1.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
     var t=document.createElement('div');
     t.id='hq-build';
     t.textContent='إصدار '+window.HQ_BUILD;
-    t.style.cssText='position:fixed;left:8px;bottom:8px;z-index:2147483647;font-size:12px;'+
-      'font-weight:700;color:#f0d060;background:rgba(0,0,0,.65);padding:3px 8px;'+
-      'border-radius:8px;pointer-events:none;letter-spacing:.3px;direction:rtl';
+    /* ختم صغير جداً حتى لا يحجب ما تحته */
+    t.style.cssText='position:fixed;left:5px;bottom:4px;z-index:2147483647;font-size:7.5px;'+
+      'font-weight:600;color:rgba(240,208,96,.55);background:transparent;padding:0;'+
+      'border-radius:0;pointer-events:none;letter-spacing:.2px;direction:rtl;line-height:1'; 
     document.body.appendChild(t);
   }
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', hqBuildStamp); }
@@ -12936,6 +13024,34 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .hq-mini-btn.view{color:#8ffff6;background:rgba(59,246,230,.12);border-color:rgba(59,246,230,.35)}
 .hq-mini-btn.del{color:#ff9e93;background:rgba(255,94,84,.14);border-color:rgba(255,94,84,.42)}
 .hq-mini-btn.edit{color:#f0d060;background:rgba(240,208,96,.12);border-color:rgba(240,208,96,.38)}
+
+/* ===== تبويبات بطاقة التقييم ===== */
+.evt-tabs{display:flex;gap:5px;margin:2px 0 12px;padding:4px;border-radius:14px;
+  background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.07)}
+.evt-tab{flex:1;min-width:0;position:relative;padding:10px 2px;border-radius:11px;
+  border:1px solid transparent;background:transparent;color:#a9c6c3;
+  font-family:inherit;font-weight:800;font-size:11.4px;line-height:1.3;cursor:pointer;
+  transition:background .22s ease,color .22s ease,border-color .22s ease,transform .12s ease;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evt-tab:active{transform:scale(.96)}
+.evt-tab.cur{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#f7d774}
+.evt-tab.ok{color:#5fe3a6}
+.evt-tab.ok.cur{background:rgba(46,204,113,.14);border-color:rgba(46,204,113,.4);color:#7ff0bb}
+.evt-tab .evt-tick{display:none;margin-inline-end:3px;font-size:10px}
+.evt-tab.ok .evt-tick{display:inline}
+.evt-tab.fin{color:#c9b06a}
+.evt-tab.fin.ready{color:#f7d774;background:rgba(247,215,116,.12);border-color:rgba(247,215,116,.35)}
+.evt-panes{position:relative}
+.evt-pane{display:none}
+.evt-pane.on{display:block;animation:evtIn .3s cubic-bezier(.22,.9,.3,1) both}
+@keyframes evtIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.evt-pane .ev-cell{margin-bottom:10px}
+.evt-pane .ev-row3{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.evt-state{text-align:center;color:#cfe4e2;font-size:13px;font-weight:700;line-height:1.9;
+  padding:16px 10px;margin-bottom:12px;border-radius:13px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.evt-state b{color:#f7d774}
+.evt-pane .prof-form-save{margin-top:0}
 
 /* ===== توحيد شكل الأزرار على نمط زر «أنجز» (.ev-act-box) ===== */
 .stul-disc,.stul-edit,.stul-del{
