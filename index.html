@@ -3460,11 +3460,9 @@ function cloudRerender(){
       var hs=document.getElementById('hdr-sname');
       if(hs && STATE.role==='teacher') hs.textContent=(STATE.user&&STATE.user.name)||(_ah&&_ah.teacherName)||'';
       if(typeof hdrRefreshStudentStats==='function') hdrRefreshStudentStats();
-      if(STATE.page && typeof renderPage==='function'){
-        var _pw=document.querySelector('.pages-wrap'), _sc=_pw?_pw.scrollTop:0;   /* لا تقفز الصفحة */
-        renderPage(STATE.page);
-        if(_pw) _pw.scrollTop=_sc;
-      }
+      /* البيانات الواردة تُدمج في الذاكرة بصمت.
+         لا تُعاد صياغة الصفحة من تحت يد المستخدم — تظهر عند انتقاله بين الشاشات،
+         وإلا بدا الأمر وكأن الصفحة تُحدَّث من نفسها كلّما عدّل حسابٌ آخر شيئاً. */
     }
   }catch(e){}
 }
@@ -3477,8 +3475,9 @@ function cloudFirstReconcile(val){
       /* لا مفاضلة بعد اليوم: نجمع الطرفين ثم نرفع النتيجة المدمَجة */
       if(cloudApply(val)){
         cloudSetStatus('updated');
-        var _sg=cloudViewSig();
-        if(_sg!==_cloudSig){ _cloudSig=_sg; cloudRerender(); }
+        /* أول مصالحة بعد الدخول: نُحدّث البصمة بلا إعادة رسم مرئية */
+        try{ _cloudSig=cloudViewSig(); }catch(e){}
+        cloudRerender();
       }
     }
   }
@@ -4074,7 +4073,9 @@ function hdrRefreshStudentStats(){
   }catch(e){}
 }
 function launchApp(){
+  /* بصمة العرض تُثبَّت بعد بناء الواجهة مباشرة، فلا تُعدّ أول لقطة سحابية «تغييراً» */
   try{ _cloudSig=cloudViewSig(); }catch(e){}
+  try{ setTimeout(function(){ try{ _cloudSig=cloudViewSig(); }catch(e){} }, 400); }catch(e){}
   document.getElementById('mainApp').classList.add('active');
   setHeaderDate();
   initImages();
@@ -4191,7 +4192,7 @@ function renderDash(){
       '<div class="menu-card mc-3 mc-test" onclick="hqTestTool()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="34" r="20" stroke="white" stroke-width="3"/><path d="M32 22v12l8 5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 10l-7 6M44 10l7 6" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">أدوات التجربة (مؤقّتة)</div></div>'+
       '<div class="menu-card mc-6" onclick="hqSyncDiag()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 12a20 20 0 1 0 20 20" stroke="white" stroke-width="3.2" stroke-linecap="round"/><path d="M52 12v12H40" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="32" r="4" fill="white"/></svg></div><div class="mc-accent"></div><div class="mc-label">تشخيص المزامنة</div></div>'+
       '<div class="menu-card mc-1" onclick="hqBackupOpen()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 10v26M22 28l10 10 10-10" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 40v8a6 6 0 006 6h28a6 6 0 006-6v-8" stroke="white" stroke-width="3.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">النسخ الاحتياطي</div></div>'+
-      '<div class="menu-card mc-5 mc-wide" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
+      '<div class="menu-card mc-5" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الجمعية</div></div>'+
     '</div>';
     return;
   }
@@ -7951,7 +7952,7 @@ function hqHalqaAcc(h,canDelete,idx){
     hqAccRow('عدد الطلاب', arNum(n))+
     hqAccRow('المنتظمون', arNum(reg));
   var acts='<button class="hq-mini-btn view" onclick="adminViewHalqa(\''+h.id+'\')">الإحصائيّات</button>'+
-    '<button class="hq-mini-btn" onclick="hqHalqaEdit(\''+h.id+'\')">تعديل</button>'+
+    '<button class="hq-mini-btn edit" onclick="hqHalqaEdit(\''+h.id+'\')">تعديل</button>'+
     (canDelete?('<button class="hq-mini-btn del" onclick="adminDeleteHalqa(\''+h.id+'\')">حذف</button>'):'');
   return hqFlatSec(h.name, body, acts, idx, h.sector||'');
 }
@@ -12381,7 +12382,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-09-04 - 79';
+  window.HQ_BUILD='2026-09-04 - 80';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -12905,6 +12906,7 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .hq-mini-btn:active{transform:scale(.95)}
 .hq-mini-btn.view{color:#8ffff6;background:rgba(59,246,230,.12);border-color:rgba(59,246,230,.35)}
 .hq-mini-btn.del{color:#ff9e93;background:rgba(255,94,84,.14);border-color:rgba(255,94,84,.42)}
+.hq-mini-btn.edit{color:#f0d060;background:rgba(240,208,96,.12);border-color:rgba(240,208,96,.38)}
 /* ترقيم بطاقات القائمة — أعلى يسار البطاقة */
 .menu-card>.mc-badge{position:absolute;top:11px;left:11px;width:25px;height:25px;border-radius:9px;
   background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(3px);
