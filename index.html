@@ -9578,7 +9578,36 @@ function tlOpen(){
     '<div class="tl-pick">'+
       '<button class="tl-pick-b" onclick="tlBuild()">بناء الخط الزمني</button>'+
       '<button class="tl-pick-b alt" onclick="tlShow()">عرض الخط الزمني</button>'+
+      '<button class="tl-pick-b alt" onclick="hqDateAdjust()">تعديل التاريخ</button>'+
     '</div>');
+}
+/* ---------- تعديل التاريخ الهجري: تقديم أو تأخير يوم ---------- */
+function hqDateAdjust(){
+  var sh=window.HQ_DAY_SHIFT||0, hj='', g='';
+  try{ var d=new Date(); g=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0'); }catch(e){}
+  try{ var _h=hijriNow(); hj=arNum(_h.day)+' '+_h.monthName+' '+arNum(_h.year)+'هـ'; }catch(e){}
+  openModal('تعديل التاريخ',
+    '<div class="hqacc" style="margin-bottom:12px"><div class="hqacc-body hqacc-plain">'+
+      (hj?hqAccRow('تاريخ التطبيق الهجري', hj):'')+
+      hqAccRow('الموافق ميلادياً', g)+
+      hqAccRow('التعديل الحالي', (sh>0?('+'+arNum(sh)):arNum(sh))+' يوم')+
+    '</div></div>'+
+    '<div class="vs-hint" style="text-align:center;margin-bottom:10px">'+
+      'يُستعمل حين يكون الشهر الهجري كاملاً أو ناقصاً فيختلف تاريخ التطبيق عن الواقع.'+
+    '</div>'+
+    '<div class="hqp-juz-grid" style="grid-template-columns:1fr 1fr;margin-bottom:10px">'+
+      '<button type="button" class="ev-act-box" onclick="hqDateShift(1)">تقديم يوم +</button>'+
+      '<button type="button" class="ev-act-box" onclick="hqDateShift(-1)">تأخير يوم −</button>'+
+    '</div>'+
+    '<button type="button" class="ev-act-box" style="width:100%" onclick="hqDateShift(0)">إعادة الضبط</button>');
+}
+function hqDateShift(n){
+  var cur=window.HQ_DAY_SHIFT||0, nx=(n===0)?0:(cur+n);
+  try{ localStorage.setItem('hq_dayshift',String(nx)); }catch(e){}
+  window.HQ_DAY_SHIFT=nx;
+  try{ if(typeof cloudPush==='function') cloudPush(); }catch(e){}
+  showToast(n===0?'أُعيد ضبط التاريخ':'عُدّل التاريخ يوماً واحداً','success');
+  setTimeout(function(){ location.reload(); },400);
 }
 function tlBuild(){
   var st=tlStore();
@@ -12382,7 +12411,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-09-04 - 80';
+  window.HQ_BUILD='2026-09-04 - 81';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -12907,6 +12936,50 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .hq-mini-btn.view{color:#8ffff6;background:rgba(59,246,230,.12);border-color:rgba(59,246,230,.35)}
 .hq-mini-btn.del{color:#ff9e93;background:rgba(255,94,84,.14);border-color:rgba(255,94,84,.42)}
 .hq-mini-btn.edit{color:#f0d060;background:rgba(240,208,96,.12);border-color:rgba(240,208,96,.38)}
+
+/* ===== توحيد شكل الأزرار على نمط زر «أنجز» (.ev-act-box) ===== */
+.stul-disc,.stul-edit,.stul-del{
+  background:rgba(255,255,255,.05) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:11px !important; color:#f7d774 !important;
+  font-weight:800 !important; padding:6px 13px !important}
+.stul-disc.on{background:rgba(247,215,116,.16) !important;border-color:rgba(247,215,116,.4) !important}
+.ev-tool,.ev-tool.bulk{
+  background:rgba(255,255,255,.05) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:13px !important; color:#f7d774 !important;
+  font:800 12.3px inherit !important; padding:13px 8px !important}
+.ev-pm-btn,.ev-pm-btn.plus,.ev-pm-btn.minus{
+  background:rgba(255,255,255,.05) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:11px !important; color:#f7d774 !important}
+.ex-exam-btn{
+  background:rgba(255,255,255,.05) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:13px !important; color:#f7d774 !important;
+  font:800 12.8px inherit !important; padding:13px 8px !important}
+.ex-exam-btn.done{background:rgba(247,215,116,.14) !important;border-color:rgba(247,215,116,.34) !important}
+.ex-sur-sel{
+  background:rgba(255,255,255,.05) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:13px !important; color:#f7d774 !important;
+  font:800 13px inherit !important; padding:12px 8px !important}
+.ex-qs-refresh,.ex-q-toggle{
+  background:rgba(255,255,255,.05) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:13px !important; color:#f7d774 !important;
+  font-weight:800 !important}
+.ex-mbtn,.ex-mbtn.plus,.ex-mbtn.minus{
+  background:rgba(255,255,255,.05) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:11px !important; color:#f7d774 !important;
+  box-shadow:none !important}
+.tl-pick{flex-direction:row !important;gap:8px !important}
+.tl-pick-b{flex:1;padding:14px 6px !important;font-size:.8rem !important;
+  background:rgba(255,255,255,.05) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:13px !important; color:#f7d774 !important}
+.tl-pick-b.alt{background:rgba(255,255,255,.05) !important;color:#f7d774 !important}
 /* ترقيم بطاقات القائمة — أعلى يسار البطاقة */
 .menu-card>.mc-badge{position:absolute;top:11px;left:11px;width:25px;height:25px;border-radius:9px;
   background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(3px);
