@@ -11729,7 +11729,7 @@ function evtTabsHtml(){
   var h='<div class="evt-tabs" id="evt-tabs">';
   for(var i=0;i<EVT_TABS.length;i++){
     var t=EVT_TABS[i];
-    h+='<button type="button" class="evt-tab'+((t.k==='done')?' fin':'')+'" data-t="'+t.k+'" '+
+    h+='<button type="button" class="evt-tab" data-t="'+t.k+'" '+
        'onclick="evtGo(\''+t.k+'\')"><span class="evt-tick">✓</span>'+t.n+'</button>';
   }
   return h+'</div>';
@@ -11738,6 +11738,25 @@ function evtTabsHtml(){
 function evtFirstOpen(){
   for(var i=0;i<EVT_TABS.length-1;i++){ if(!evtDone(EVT_TABS[i].k)) return EVT_TABS[i].k; }
   return 'done';
+}
+/* تثبيت ارتفاع اللوحات على أطولها فلا يقفز مكان التبويبات */
+function evtFixHeight(){
+  var wrap=document.getElementById('evt-panes'); if(!wrap) return;
+  var panes=wrap.querySelectorAll('.evt-pane'), i, mx=0;
+  wrap.style.minHeight='';
+  for(i=0;i<panes.length;i++){
+    var was=panes[i].classList.contains('on');
+    panes[i].classList.add('measure');
+    var h=panes[i].offsetHeight;
+    panes[i].classList.remove('measure');
+    if(!was) panes[i].classList.remove('on');
+    if(h>mx) mx=h;
+  }
+  if(mx>0) wrap.style.minHeight=mx+'px';
+}
+function evtFold(id){
+  var el=document.getElementById(id); if(!el) return;
+  el.classList.toggle('open');
 }
 function evtGo(k,quiet){
   var wrap=document.getElementById('evt-panes'); if(!wrap) return;
@@ -11750,6 +11769,7 @@ function evtGo(k,quiet){
   for(var j=0;j<tabs.length;j++) tabs[j].classList.toggle('cur', tabs[j].getAttribute('data-t')===k);
   _evtCur=k;
   evtSync();
+  try{ evtFixHeight(); }catch(e){}
   if(!quiet){ try{ wrap.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){} }
 }
 /* تخضير التبويبات المنجَزة */
@@ -11762,8 +11782,6 @@ function evtSync(){
   }
   var all=true;
   for(var m=0;m<EVT_TABS.length-1;m++){ if(!evtDone(EVT_TABS[m].k)) all=false; }
-  var fin=document.querySelector('#evt-tabs .evt-tab.fin');
-  if(fin) fin.classList.toggle('ready', all);
   var st=document.getElementById('evt-state');
   if(st){
     var names=[];
@@ -11806,18 +11824,20 @@ function openStudentEval(sid){
   var tajweedCell=cell('مستوى الحفظ', evOptSelect('tajweed',['حفظ مُتقن','حفظ متوسط','حفظ ضعيف'],today.tajweed));
   var _partVal=(typeof evTodayPart==='function')?evTodayPart(sid):0;   /* اليوم فقط */
   var _penVal =(typeof evTodayPen ==='function')?evTodayPen(sid) :0;
-  var partCell=_isT?('<div class="ev-cell ev-cell-gold ev-part-cell">'
-    +'<div class="ev-lbl">إضافة مشاركة</div>'
-    +'<input type="text" class="ev-why" id="ev-part-why" placeholder="سبب المشاركة" maxlength="60" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)">'
-    +'<button type="button" class="ev-pm-btn plus" onclick="evAdjustPart(\''+sid+'\',1)">+</button>'
-    +'<div class="ev-part-val" id="ev-part-val">+'+evFmt(_partVal)+'</div>'
-    +'</div>'):'';
-  var penCell=_isT?('<div class="ev-cell ev-cell-gold ev-part-cell">'
-    +'<div class="ev-lbl">إضافة عقوبة</div>'
-    +'<input type="text" class="ev-why" id="ev-pen-why" placeholder="سبب العقوبة" maxlength="60" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)">'
-    +'<button type="button" class="ev-pm-btn minus" onclick="evAdjustPart(\''+sid+'\',-1)">−</button>'
-    +'<div class="ev-part-val pen" id="ev-pen-val">−'+evFmt(_penVal)+'</div>'
-    +'</div>'):'';
+  var partCell=_isT?('<div class="ev-cell ev-cell-gold ev-part-cell evt-fold" id="evt-fold-part">'
+    +'<button type="button" class="evt-fold-hd" onclick="evtFold(\'evt-fold-part\')">إضافة مشاركة<span class="evt-fold-arw">▾</span></button>'
+    +'<div class="evt-fold-body">'
+      +'<input type="text" class="ev-why" id="ev-part-why" placeholder="سبب المشاركة" maxlength="60" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)">'
+      +'<button type="button" class="ev-pm-btn plus" onclick="evAdjustPart(\''+sid+'\',1)">+</button>'
+      +'<div class="ev-part-val" id="ev-part-val">+'+evFmt(_partVal)+'</div>'
+    +'</div></div>'):'';
+  var penCell=_isT?('<div class="ev-cell ev-cell-gold ev-part-cell evt-fold" id="evt-fold-pen">'
+    +'<button type="button" class="evt-fold-hd" onclick="evtFold(\'evt-fold-pen\')">إضافة عقوبة<span class="evt-fold-arw">▾</span></button>'
+    +'<div class="evt-fold-body">'
+      +'<input type="text" class="ev-why" id="ev-pen-why" placeholder="سبب العقوبة" maxlength="60" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)">'
+      +'<button type="button" class="ev-pm-btn minus" onclick="evAdjustPart(\''+sid+'\',-1)">−</button>'
+      +'<div class="ev-part-val pen" id="ev-pen-val">−'+evFmt(_penVal)+'</div>'
+    +'</div></div>'):'';
   var _startToggle='';   /* «تعيين نقطة البداية» مخفيّة — خاصة بالخطة القديمة */
   var _misRepBtn=_isT?('<button type="button" class="ev-act-box" onclick="evOpenMisReport(\''+sid+'\')">\u062a\u0642\u0631\u064a\u0631 \u0623\u062e\u0637\u0627\u0621 \u0627\u0644\u062a\u0644\u0627\u0648\u0629</button>'):'';
   var _resetBtn=_isT?('<button type="button" class="ev-act-box ev-reset-box" onclick="evResetToday(\''+sid+'\')">\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u0642\u064a\u064a\u0645</button>'):'';
@@ -12498,7 +12518,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 1.1';
+  window.HQ_BUILD='2026 - 2.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -13028,21 +13048,33 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 /* ===== تبويبات بطاقة التقييم ===== */
 .evt-tabs{display:flex;gap:5px;margin:2px 0 12px;padding:4px;border-radius:14px;
   background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.07)}
-.evt-tab{flex:1;min-width:0;position:relative;padding:10px 2px;border-radius:11px;
-  border:1px solid transparent;background:transparent;color:#a9c6c3;
-  font-family:inherit;font-weight:800;font-size:11.4px;line-height:1.3;cursor:pointer;
+/* خمسة مربعات متساوية بلون واحد */
+.evt-tab{flex:1 1 0;min-width:0;position:relative;padding:11px 2px;border-radius:11px;
+  border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.05);color:#dfeeec;
+  font-family:inherit;font-weight:800;font-size:11px;line-height:1.3;cursor:pointer;
   transition:background .22s ease,color .22s ease,border-color .22s ease,transform .12s ease;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .evt-tab:active{transform:scale(.96)}
-.evt-tab.cur{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#f7d774}
-.evt-tab.ok{color:#5fe3a6}
-.evt-tab.ok.cur{background:rgba(46,204,113,.14);border-color:rgba(46,204,113,.4);color:#7ff0bb}
+.evt-tab.cur{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.26)}
+.evt-tab.ok{color:#5fe3a6;border-color:rgba(46,204,113,.4)}
+.evt-tab.ok.cur{background:rgba(46,204,113,.14);border-color:rgba(46,204,113,.55);color:#7ff0bb}
 .evt-tab .evt-tick{display:none;margin-inline-end:3px;font-size:10px}
 .evt-tab.ok .evt-tick{display:inline}
-.evt-tab.fin{color:#c9b06a}
-.evt-tab.fin.ready{color:#f7d774;background:rgba(247,215,116,.12);border-color:rgba(247,215,116,.35)}
 .evt-panes{position:relative}
 .evt-pane{display:none}
+.evt-pane.measure{display:block !important;position:absolute;left:0;right:0;top:0;visibility:hidden;pointer-events:none;animation:none !important}
+/* الطيّ: لا يظهر إلا العنوان حتى يُضغط */
+.evt-fold{display:block !important;padding:0 !important}
+.evt-fold-hd{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:14px 14px;border:none;background:transparent;color:#f7d774;
+  font-family:inherit;font-weight:800;font-size:13px;cursor:pointer}
+.evt-fold-arw{color:#9abdba;font-size:.95rem;transition:transform .25s}
+.evt-fold.open .evt-fold-arw{transform:rotate(180deg)}
+.evt-fold-body{display:none;padding:0 12px 12px;gap:9px;align-items:center}
+.evt-fold.open .evt-fold-body{display:flex;animation:evtIn .26s ease both}
+.evt-fold-body .ev-why{flex:1;min-width:0}
+.evt-fold-body .ev-pm-btn{flex:0 0 74px;width:74px}
+.evt-fold-body .ev-part-val{flex:0 0 auto}
 .evt-pane.on{display:block;animation:evtIn .3s cubic-bezier(.22,.9,.3,1) both}
 @keyframes evtIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
 .evt-pane .ev-cell{margin-bottom:10px}
