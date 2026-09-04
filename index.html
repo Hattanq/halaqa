@@ -6110,7 +6110,14 @@ function hqTjPartLines(k){
       out.push(y);
     }
   }
-  _hqTjLn[k]=out; return out;
+  /* أسطر مكرّرة المدى (تظهر في السور القصيرة) تُسقط، وإلا تكرّر الدرس نفسه يومين */
+  var uniq=[], last='';
+  for(var u=0;u<out.length;u++){
+    var key=out[u].s+':'+(out[u].sa||out[u].a)+':'+out[u].a;
+    if(key===last) continue;
+    last=key; uniq.push(out[u]);
+  }
+  _hqTjLn[k]=uniq; return uniq;
 }
 /* أسطر الخطة كاملةً بترتيب المقاطع المختارة */
 function hqTjLines(segs){
@@ -6242,6 +6249,12 @@ function hqJDNToday(){
   return dd+Math.floor((153*m2+2)/5)+365*y2+Math.floor(y2/4)-Math.floor(y2/100)+Math.floor(y2/400)-32045;
 }
 /* عدد أيام الدراسة التي مضت (لا تُمسّ عند إعادة التوزيع) */
+/* الأيام الدراسية التي مضت منذ بدء خطة الطالب (لا منذ بدء الفصل) */
+function hqPlanElapsedFor(p,td){
+  if(!td||!td.real) return 0;
+  var e=hqPlanElapsed(td.list)-((p&&parseInt(p.off,10))||0);
+  return e>0?e:0;
+}
 function hqPlanElapsed(days){
   var t=hqJDNToday(), n=0;
   for(var i=0;i<days.length;i++){ if(days[i]<t) n++; }
@@ -6312,6 +6325,16 @@ function hqPlanCuts(lines,blocks,startLine,nDays){
   if(nDays<segs.length) segs=[{a:startLine,b:L,len:L-startLine+1}];
   var w=[]; for(i=0;i<segs.length;i++) w.push(segs[i].len);
   var alloc=(segs.length===1)?[nDays]:hqSplitInt(w,nDays);
+  /* لا يُعطى مقطع أياماً أكثر من أسطره، وإلا تكرّر آخر درس فيه بلا فائدة */
+  var cap=0; for(i=0;i<segs.length;i++) cap+=segs[i].len;
+  if(cap>=nDays){
+    var extra=0;
+    for(i=0;i<segs.length;i++){ if(alloc[i]>segs[i].len){ extra+=alloc[i]-segs[i].len; alloc[i]=segs[i].len; } }
+    for(i=0;i<segs.length && extra>0;i++){
+      var room=segs[i].len-alloc[i];
+      if(room>0){ var add=Math.min(room,extra); alloc[i]+=add; extra-=add; }
+    }
+  }
   var cuts=[];
   for(i=0;i<segs.length;i++){
     var n=alloc[i]; if(n<1) n=1;
@@ -6413,22 +6436,41 @@ function hqPlanMake(type,startJuz){
   var t=hqPlanType(type); if(!t) return null;
   return {type:type, juz:hqPlanJuzList(type,startJuz), start:(t.juz?(parseInt(startJuz,10)||30):0), approved:false, days:[]};
 }
+/* عدد أيام الخطة: لا يتجاوز عدد دروسها المتاحة.
+   منهج تصحيح التلاوة مقاطع قصيرة، فلو وُزّعت على أيام الفصل كلها
+   لظهرت أيام فارغة «لا يوجد» بين المقاطع. */
+function hqPlanDaysCap(p,N){
+  if(!p || p.type!=='tj') return N;
+  var L=(hqPlanLines(p)||[]).length;
+  if(!L) return N;
+  return Math.max(1, Math.min(N, L));
+}
 /* اعتماد الخطة لطالب: يبني الأيام على الخط الزمني المعتمَد */
 function hqPlanApprove(sid,p,tl){
   if(!sid||!p) return null;
   tl=tl||(typeof tlActive==='function'?tlActive():null);
   p.approved=true; p.ts=Date.now();
   p.term=(tl&&tl.term)||'';
-  if(p.type==='old'){ p.days=[]; p.nd=0; }
+  /* الأيام الدراسية التي مضت من الفصل — الخطة الجديدة تبدأ من اليوم لا من أوّل الفصل */
+  var _ds=hqPlanStudyDays(tl);
+  var _off=_ds.length?hqPlanElapsed(_ds):0;
+  if(p.type==='old'){ p.days=[]; p.nd=0; p.off=0; }
   else{
-    var ds=hqPlanStudyDays(tl), N=ds.length||HQ_DAYS_DEFAULT;
-    p.nd=N;
+    var _left=(_ds.length? Math.max(1,_ds.length-_off) : HQ_DAYS_DEFAULT);
+    var N=hqPlanDaysCap(p,_left);
+    p.nd=N; p.off=_off;
     p.days=hqPlanBuildDays(p,N,0);
   }
   hqPlanStore()[sid]=p;
   try{
     if(!DB.evals) DB.evals={};
     var _r=DB.evals[sid]||{days:{}};
+    /* النقاط المكتسبة من الخطة السابقة تُرحَّل رصيداً ولا تُمحى */
+    var _prev=0, _prevR=0;
+    try{ _prev=evEarned(sid,'lesson'); _prevR=evEarned(sid,'review'); }catch(e){}
+    var _cy=_r.carry||{lesson:0,review:0};
+    _r.carry={lesson:(parseInt(_cy.lesson,10)||0)+_prev,
+              review:(parseInt(_cy.review,10)||0)+_prevR};
     _r.progress={lesson:0,review:0}; _r.free={lesson:0,review:0};
     if(_r.base) delete _r.base;
     DB.evals[sid]=_r;
@@ -6440,7 +6482,7 @@ function hqPlanApprove(sid,p,tl){
 function hqPlanRebuild(sid,tl){
   var p=hqPlanOf(sid); if(!p||p.type==='old') return null;
   tl=tl||(typeof tlActive==='function'?tlActive():null);
-  var ds=hqPlanStudyDays(tl), N=ds.length||HQ_DAYS_DEFAULT;
+  var ds=hqPlanStudyDays(tl), N=hqPlanDaysCap(p, ds.length||HQ_DAYS_DEFAULT);
   var keep=Math.min(ds.length?hqPlanElapsed(ds):0,(p.days||[]).length);
   p.days=hqPlanBuildDays(p,N,keep); p.nd=N;
   try{ save(); }catch(e){}
@@ -7122,7 +7164,7 @@ function hdrPlanTrack(){
   var prog=(rec.progress&&parseInt(rec.progress.lesson,10))||0;
   var nd=p.days.length||1;
   var td=hqPlanTermDays();
-  var exp=td.real?Math.min(nd,hqPlanElapsed(td.list)):0;
+  var exp=Math.min(nd,hqPlanElapsedFor(p,td));
   var pct=Math.max(0,Math.min(100,Math.round(prog/nd*100)));
   var epct=Math.max(0,Math.min(100,Math.round(exp/nd*100)));
   var diff=prog-exp, cls='on', msg='استمر - أنت تسير على الخطة';
@@ -7150,7 +7192,7 @@ function hdrTeacherRing(){
     var nd=p.days.length||1;
     var rec=(DB.evals&&DB.evals[studs[i].id])||{};
     var pr=(rec.progress&&parseInt(rec.progress.lesson,10))||0;
-    var ex=td.real?Math.min(nd,hqPlanElapsed(td.list)):0;
+    var ex=Math.min(nd,hqPlanElapsedFor(p,td));
     sp+=Math.min(1,pr/nd); se+=Math.min(1,ex/nd); n++;
   }
   if(!n){ el.style.display='none'; return; }
@@ -7758,8 +7800,12 @@ function showAddHalqa(){
     fld('مقرّ الحلقة','ah-venue','اسم الجامع')+
     (_lockSup
       /* حساب المشرف: القطاع والمشرف معلومان — يُعبّآن تلقائيًا */
-      ? '<div class="prof-form-field"><label class="prof-form-lbl">قطاع الحلقة</label>'+
-        '<input class="prof-form-input" id="ah-sector" type="text" value="'+hqEsc(hqSuperSector(_lockSup))+'" readonly style="opacity:.75"></div>'+
+      ? ((function(){
+          var _ms=hqSupSectors(hqSupers().find(function(x){ return x.id===_lockSup; }));
+          if(_ms.length>1) return sel('قطاع الحلقة','ah-sector',_ms,'اختر القطاع');
+          return '<div class="prof-form-field"><label class="prof-form-lbl">قطاع الحلقة</label>'+
+            '<input class="prof-form-input" id="ah-sector" type="text" value="'+hqEsc(_ms[0]||'')+'" readonly style="opacity:.75"></div>';
+        })())+
         '<div class="prof-form-field"><label class="prof-form-lbl">مشرف الحلقة</label>'+
         '<input class="prof-form-input" id="ah-super" type="text" value="'+hqEsc(hqSuperName(_lockSup))+'" data-sup="'+hqEsc(_lockSup)+'" readonly style="opacity:.75"></div>'
       /* الشؤون التعليمية: المشرف يتبع القطاع المختار */
@@ -7773,16 +7819,43 @@ function showAddHalqa(){
   if(!_lockSup) setTimeout(ahSyncSup,0);
 }
 /* قطاع مشرف بعينه */
+/* قطاعات المشرف: مصفوفة، مع توافق مع الحقل القديم المفرد */
+function hqSupSectors(v){
+  if(!v) return [];
+  if(Array.isArray(v.sectors)) return v.sectors.filter(function(x){ return !!x; });
+  return v.sector?String(v.sector).split(/\s*[-،,]\s*/).filter(function(x){ return !!x; }):[];
+}
+function hqSupSectorText(v){ var a=hqSupSectors(v); return a.length?a.join(' - '):''; }
+/* صندوق اختيار متعدّد للقطاعات */
+function hqSectorsPick(boxId,cur){
+  cur=cur||[];
+  var lbl=cur.length?(cur.length>2?(arNum(cur.length)+' قطاعات'):cur.join('، ')):'حدد القطاعات';
+  return '<div class="prof-form-field"><label class="prof-form-lbl">قطاع المشرف</label>'+
+    '<div class="hqpick"><button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
+      '<span class="hqpick-cur" id="'+boxId+'-cur">'+hqEsc(lbl)+'</span><span class="hqpick-arw">▾</span></button>'+
+    '<div class="hqpick-list" id="'+boxId+'">'+
+      HQ_SECTORS.map(function(o){
+        return '<label class="hqpick-row"><input type="checkbox" value="'+hqEsc(o)+'"'+
+               ((cur.indexOf(o)>=0)?' checked':'')+' onchange="hqPickSync(\''+boxId+'\')"><span>'+hqEsc(o)+'</span></label>';
+      }).join('')+
+    '</div></div></div>';
+}
+function hqSectorsRead(boxId){
+  var out=[], b=document.getElementById(boxId); if(!b) return out;
+  var ch=b.querySelectorAll('input[type=checkbox]:checked');
+  for(var i=0;i<ch.length;i++) out.push(ch[i].value);
+  return out;
+}
 function hqSuperSector(sid){
   var v=hqSupers().find(function(x){ return x.id===sid; });
-  return (v&&v.sector)||'';
+  return v?hqSupSectorText(v):'';
 }
 /* تعبئة مشرف الحلقة تلقائيًا حسب القطاع المختار */
 function ahSyncSup(){
   var secEl=document.getElementById('ah-sector'), supEl=document.getElementById('ah-super');
   if(!secEl||!supEl||supEl.tagName!=='SELECT') return;
   var sec=(secEl.value||'').trim();
-  var list=hqSupers().filter(function(v){ return sec && (v.sector||'')===sec; });
+  var list=hqSupers().filter(function(v){ return sec && hqSupSectors(v).indexOf(sec)>=0; });
   var ph = !sec ? 'اختر القطاع أولاً' : (list.length?'اختر المشرف':'لا يوجد مشرف لهذا القطاع');
   supEl.innerHTML='<option value="">'+hqEsc(ph)+'</option>'+
     list.map(function(v){ return '<option value="'+hqEsc(v.id)+'">'+hqEsc(v.name)+'</option>'; }).join('');
@@ -7878,10 +7951,103 @@ function hqHalqaAcc(h,canDelete,idx){
     hqAccRow('عدد الطلاب', arNum(n))+
     hqAccRow('المنتظمون', arNum(reg));
   var acts='<button class="hq-mini-btn view" onclick="adminViewHalqa(\''+h.id+'\')">الإحصائيّات</button>'+
+    '<button class="hq-mini-btn" onclick="hqHalqaEdit(\''+h.id+'\')">تعديل</button>'+
     (canDelete?('<button class="hq-mini-btn del" onclick="adminDeleteHalqa(\''+h.id+'\')">حذف</button>'):'');
   return hqFlatSec(h.name, body, acts, idx, h.sector||'');
 }
 function adminViewHalqa(hid){ setActiveHalqa(hid); showHalqaStats(); }
+
+/* ---------- تعديل بيانات الحلقة ---------- */
+function hqHalqaEdit(hid){
+  var h=(DB.halqat||[]).find(function(x){ return String(x.id)===String(hid); });
+  if(!h){ showToast('الحلقة غير موجودة','error'); return; }
+  window._heHid=hid;
+  function fld(lbl,id,val){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label>'+
+    '<input class="prof-form-input" id="'+id+'" type="text" value="'+hqEsc(val||'')+'"></div>'; }
+  function sel(lbl,id,arr,ph,cur,on){
+    return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label>'+
+      '<select class="prof-form-input" id="'+id+'"'+(on?(' onchange="'+on+'"'):'')+'><option value="">'+ph+'</option>'+
+      arr.map(function(o){ var v=(o.v!=null?o.v:o), n=(o.n!=null?o.n:o);
+        return '<option value="'+hqEsc(v)+'"'+((String(v)===String(cur))?' selected':'')+'>'+hqEsc(n)+'</option>'; }).join('')+
+      '</select></div>';
+  }
+  var cd=h.days||[];
+  var daysBox='<div class="prof-form-field"><label class="prof-form-lbl">أيام الحلقة</label>'+
+    '<div class="hqpick"><button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
+      '<span class="hqpick-cur" id="he-days-cur" data-fixed="حدد الأيام">حدد الأيام</span><span class="hqpick-arw">▾</span></button>'+
+    '<div class="hqpick-list" id="he-days">'+HQ_DAYS.map(function(d){
+      return '<label class="hqpick-row"><input type="checkbox" class="he-day" value="'+hqEsc(d)+'"'+
+             ((cd.indexOf(d)>=0)?' checked':'')+' onchange="hqPickSync(\'he-days\')"><span>'+hqEsc(d)+'</span></label>';
+    }).join('')+'</div></div></div>';
+  var _lockSup=supIsSup()?((STATE.user||{}).supId||''):'';
+  var secBox, supBox;
+  if(_lockSup){
+    var _ms=hqSupSectors(hqSupers().find(function(x){ return x.id===_lockSup; }));
+    secBox=(_ms.length>1)?sel('قطاع الحلقة','he-sector',_ms,'اختر القطاع',h.sector)
+      :'<div class="prof-form-field"><label class="prof-form-lbl">قطاع الحلقة</label>'+
+        '<input class="prof-form-input" id="he-sector" type="text" value="'+hqEsc(_ms[0]||h.sector||'')+'" readonly style="opacity:.75"></div>';
+    supBox='<div class="prof-form-field"><label class="prof-form-lbl">مشرف الحلقة</label>'+
+      '<input class="prof-form-input" id="he-super" type="text" value="'+hqEsc(hqSuperName(_lockSup))+'" data-sup="'+hqEsc(_lockSup)+'" readonly style="opacity:.75"></div>';
+  } else {
+    secBox=sel('قطاع الحلقة','he-sector',HQ_SECTORS,'اختر القطاع',h.sector,'heSyncSup()');
+    supBox=sel('مشرف الحلقة','he-super',[],'اختر القطاع أولاً','');
+  }
+  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+    fld('اسم الحلقة','he-name',h.name)+
+    sel('معلم الحلقة','he-teacher',hqTeachers().map(function(t){ return {v:t.id,n:t.name}; }),'اختر المعلم',h.teacherId)+
+    sel('فترة الحلقة','he-period',HQ_PERIODS,'اختر الفترة',h.period)+
+    daysBox+
+    fld('مقرّ الحلقة','he-venue',h.venue)+
+    secBox+supBox+
+    '</div><button class="prof-form-save" onclick="hqHalqaEditSave()" style="margin-top:16px;">حفظ التعديلات</button></div>';
+  openModal('تعديل بيانات الحلقة', body);
+  setTimeout(function(){
+    try{ hqPickSync('he-days'); }catch(e){}
+    try{ if(!_lockSup) heSyncSup(h.supervisorId); }catch(e){}
+    try{ if(typeof hqSelEnhance==='function') hqSelEnhance(document); }catch(e){}
+  },60);
+}
+function heSyncSup(cur){
+  var secEl=document.getElementById('he-sector'), supEl=document.getElementById('he-super');
+  if(!secEl||!supEl||supEl.tagName!=='SELECT') return;
+  var sec=(secEl.value||'').trim();
+  var list=hqSupers().filter(function(v){ return sec && hqSupSectors(v).indexOf(sec)>=0; });
+  var ph=!sec?'اختر القطاع أولاً':(list.length?'اختر المشرف':'لا يوجد مشرف لهذا القطاع');
+  supEl.innerHTML='<option value="">'+hqEsc(ph)+'</option>'+
+    list.map(function(v){ return '<option value="'+hqEsc(v.id)+'"'+((String(v.id)===String(cur||''))?' selected':'')+'>'+hqEsc(v.name)+'</option>'; }).join('');
+  try{ if(typeof hqSelEnhance==='function') hqSelEnhance(document); }catch(e){}
+}
+function hqHalqaEditSave(){
+  try{
+    var hid=window._heHid;
+    var h=(DB.halqat||[]).find(function(x){ return String(x.id)===String(hid); });
+    if(!h){ showToast('الحلقة غير موجودة','error'); return; }
+    function V(id){ var e=document.getElementById(id); return e?String(e.value||'').trim():''; }
+    var name=V('he-name');
+    if(!name){ showToast('يرجى إدخال اسم الحلقة','error'); return; }
+    var tid=V('he-teacher');
+    if(!tid){ showToast('يرجى اختيار معلم الحلقة','error'); return; }
+    var t=hqTeacher(tid);
+    if(!t){ showToast('المعلّم غير موجود','error'); return; }
+    var days=[]; Array.prototype.forEach.call(document.querySelectorAll('.he-day'),function(c){ if(c.checked) days.push(c.value); });
+    var _se=document.getElementById('he-super');
+    var supId=_se?((_se.getAttribute&&_se.getAttribute('data-sup'))||_se.value||'').trim():'';
+    var oldTid=h.teacherId;
+    h.name=name; h.teacherId=tid; h.teacherName=t.name||''; h.teacherUser=t.username||'';
+    h.period=V('he-period'); h.days=days; h.venue=V('he-venue'); h.sector=V('he-sector');
+    h.supervisorId=supId; h.supervisorName=hqSuperName(supId);
+    /* ربط حساب المعلّم الجديد بالحلقة وفكّ ارتباط السابق إن تغيّر */
+    for(var uk in DB.users){ if(!DB.users.hasOwnProperty(uk)) continue;
+      var u=DB.users[uk]; if(!u||u.role!=='teacher') continue;
+      if(String(u.tid)===String(tid)) u.hid=h.id;
+      else if(oldTid && String(u.tid)===String(oldTid) && String(u.hid)===String(h.id)) u.hid='';
+    }
+    save();
+    showToast('حُفظت تعديلات الحلقة','success');
+    renderDash();
+    if(supIsSup()) supHalqatList(); else showHalqatList();
+  }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
+}
 
 /* عرض بيانات الحلقة */
 function adminHalqaInfo(hid){
@@ -8015,10 +8181,7 @@ function showAddSupervisor(){
     '</div>'+
     fld('الجنسية','sv-nat','مثال: سعودي')+
     fld('جوال مشرف الحلقات','sv-phone','05xxxxxxxx','tel')+
-    '<div class="prof-form-field"><label class="prof-form-lbl">قطاع المشرف</label>'+
-      '<select class="prof-form-input" id="sv-sector"><option value="">— اختر القطاع —</option>'+
-      HQ_SECTORS.map(function(o){ return '<option value="'+hqEsc(o)+'">'+hqEsc(o)+'</option>'; }).join('')+
-      '</select></div>'+
+    hqSectorsPick('sv-sectors',[])+
     '<div class="prof-form-field"><label class="prof-form-lbl">الإشراف بحلقة</label>'+
       '<div class="hqpick">'+
         '<button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
@@ -8053,11 +8216,14 @@ function saveNewSupervisor(){
     for(var k in DB.users){ if(DB.users[k] && String(DB.users[k].username).toLowerCase()===ul){ showToast('اسم المستخدم مستخدم من قبل، اختر غيره','error'); return; } }
     var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
     var bd=V('sv-bDay'), bm=V('sv-bMonth');
+    var _secs=hqSectorsRead('sv-sectors');
+    if(!_secs.length){ showToast('يرجى اختيار قطاع واحد على الأقل','error'); return; }
     var sid='sup'+Date.now();
     hqSupers().push({ id:sid, name:name, nationalId:V('sv-nid'),
       bDay:bd, bMonth:bm, bYear:by,
       birthDate:(by?(bd+' '+hM[parseInt(bm)-1]+' '+by+'هـ'):''),
-      nationality:V('sv-nat'), phone:V('sv-phone'), sector:V('sv-sector') });
+      nationality:V('sv-nat'), phone:V('sv-phone'),
+      sectors:_secs, sector:_secs.join(' - ') });
     DB.users['sup_'+sid]={username:user,pw:hqPw(pass),name:name,role:'supervisor',display:'مشرف الحلقات',supId:sid};
     /* إلحاق المشرف بالحلقات المختارة */
     try{
@@ -8184,10 +8350,7 @@ function supEditOpen(sid){
       '</div></div>'+
     fld('الجنسية','se-nat',v.nationality)+
     fld('الجوال','se-phone',v.phone,'tel')+
-    '<div class="prof-form-field"><label class="prof-form-lbl">القطاع</label>'+
-      '<select class="prof-form-input" id="se-sector"><option value="">— اختر القطاع —</option>'+
-      HQ_SECTORS.map(function(o){ return '<option value="'+hqEsc(o)+'"'+((v.sector===o)?' selected':'')+'>'+hqEsc(o)+'</option>'; }).join('')+
-      '</select></div>'+
+    hqSectorsPick('se-sectors',hqSupSectors(v))+
     (sid?('<div class="prof-form-field"><label class="prof-form-lbl">الإشراف بحلقة</label>'+
       '<div class="hqpick"><button type="button" class="hqpick-btn" onclick="hqPickToggle(this)">'+
         '<span class="hqpick-cur" id="se-halqat-cur">'+hqEsc(_curH)+'</span><span class="hqpick-arw">▾</span></button>'+
@@ -8225,7 +8388,9 @@ function supEditSave(){
     var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
     var bd=V('se-bDay'), bm=V('se-bMonth');
     v.name=nm; v.nationalId=V('se-nid'); v.nationality=V('se-nat');
-    v.phone=V('se-phone'); v.sector=V('se-sector');
+    v.phone=V('se-phone');
+    var _es=hqSectorsRead('se-sectors');
+    if(_es.length){ v.sectors=_es; v.sector=_es.join(' - '); }
     v.bDay=bd; v.bMonth=bm; v.bYear=by;
     v.birthDate = by ? (bd+' '+hM[parseInt(bm,10)-1]+' '+by+'هـ') : '';
     /* حدّث الاسم في حساب الدخول وفي الحلقات التابعة */
@@ -10311,6 +10476,12 @@ function evEarned(sid,kind){
   var p=(rec.progress&&rec.progress[kind])||0, v=p-evBase(sid,kind)-fr;
   return v>0?v:0;
 }
+/* رصيد مرحَّل من خطط سابقة في الفصل نفسه — لا يضيع بتغيير الخطة */
+function evCarry(sid,kind){
+  var rec=DB.evals&&DB.evals[sid]; if(!rec||!rec.carry) return 0;
+  return parseInt(rec.carry[kind],10)||0;
+}
+function evEarnedTotal(sid,kind){ return evEarned(sid,kind)+evCarry(sid,kind); }
 /* المشاركات (+) والعقوبات (−) منفصلتان، كل واحدة بنقطة كاملة.
    التوافق مع القديم: rec.part المفرد يُقسَّم — الموجب مشاركات والسالب عقوبات. */
 /* المشاركات (+) والعقوبات (−) تُسجَّل لكل يوم على حدة:
@@ -10338,8 +10509,8 @@ function evPenPoints(sid){
 function evCurrentScore(sid){ var t=evTerms(sid); var term=t.length; var sc=evTermScore(t[t.length-1]);
   var termIdx=Math.min(term,EX_TERMS)||1;
   sc.behavior=exTermSum(sid,termIdx);                            /* خانة «الاختبارات» = مجموع الاختبارات الثلاثة (١٠ لكل اختبار) */
-  sc.lesson=evEarned(sid,'lesson');                              /* نقطة لكل درس بعد نقطة البداية */
-  sc.review=evEarned(sid,'review');                              /* ونقطة لكل مراجعة كذلك */
+  sc.lesson=evEarnedTotal(sid,'lesson');                          /* نقطة لكل درس بعد نقطة البداية + الرصيد المرحَّل */
+  sc.review=evEarnedTotal(sid,'review');                          /* ونقطة لكل مراجعة كذلك */
   /* الدرس والمراجعة: نقطة كاملة لكل تسميع بلا أي نسبة */
   var _pl=(typeof hqPlanActive==='function')?hqPlanActive(sid):null;
   if(_pl){
@@ -12210,7 +12381,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026-09-04 - 76';
+  window.HQ_BUILD='2026-09-04 - 79';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
