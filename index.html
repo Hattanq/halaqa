@@ -12267,9 +12267,16 @@ function showJuzzMetro(juzzNum){
 
 function tiCurrentHalqa(){ return (DB.halqat||[]).find(function(x){return x.id===STATE.activeHid;})||null; }
 function tiDigitsToLatin(s){ return String(s||'').replace(/[\u0660-\u0669]/g,function(d){return String(d.charCodeAt(0)-1632);}).replace(/[\u06F0-\u06F9]/g,function(d){return String(d.charCodeAt(0)-1776);}); }
+/* تُفتح كنافذة بنفس تصميم «تعديل بيانات المعلم» عند الشؤون التعليمية */
 function renderInfo(){
   var wrap=document.getElementById('info-content');
-  if(!wrap) return;
+  if(wrap) wrap.innerHTML='';
+  setTimeout(function(){
+    try{ tiSelfEditOpen(); }catch(e){}
+    try{ showPage('dashboard'); }catch(e){}
+  },10);
+}
+function tiSelfEditOpen(){
   var h=tiCurrentHalqa();
   var t=hqTeacherOf(h)||{};
   var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
@@ -12298,8 +12305,8 @@ function renderInfo(){
     '</div>'+
     '<button class="prof-form-save" onclick="saveTeacherInfo()" style="margin-top:16px;">حفظ التعديلات</button>'+
   '</div>';
-  wrap.innerHTML='<div class="ti-card"><div class="ti-card-hd">تعديل بيانات المعلم</div>'+body+'</div>';
-  try{ if(typeof hqSelEnhance==='function') hqSelEnhance(wrap); }catch(e){}
+  openModal('تعديل بيانات المعلم', body);
+  try{ if(typeof hqSelEnhance==='function') hqSelEnhance(document.getElementById('modalBody')); }catch(e){}
 }
 function saveTeacherInfo(){
   try{
@@ -12333,6 +12340,7 @@ function saveTeacherInfo(){
       if(u2&&u2.role==='teacher'&&((h.teacherId&&u2.tid===h.teacherId)||u2.hid===h.id)){ u2.name=name; if(username)u2.username=username; if(password){ u2.pw=hqPw(password); try{delete u2.password;}catch(e){} } } }
     save();
     var hh=document.getElementById('hdr-sname'); if(hh&&STATE.role==='teacher') hh.textContent=name;
+    try{ closeModal(); }catch(e){}
     showToast('✅ تم حفظ بيانات المعلم','success');
   }catch(e){ showToast('حدث خطأ، حاول مجدداً','error'); }
 }
@@ -12553,7 +12561,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 5.1';
+  window.HQ_BUILD='2026 - 6.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
