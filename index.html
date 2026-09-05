@@ -12271,41 +12271,35 @@ function renderInfo(){
   var wrap=document.getElementById('info-content');
   if(!wrap) return;
   var h=tiCurrentHalqa();
-  var info=hqTeacherOf(h)||{};
+  var t=hqTeacherOf(h)||{};
   var hM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
-  var dSel=info.bDay||'', mSel=info.bMonth||'', ySel=info.bYear||'';
-  var dOpts='<option value="">—</option>', mOpts='<option value="">—</option>';
-  for(var d=1;d<=30;d++) dOpts+='<option value="'+d+'"'+(String(dSel)===String(d)?' selected':'')+'>'+d+'</option>';
-  for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'"'+(String(mSel)===String(mo+1)?' selected':'')+'>'+hM[mo]+'</option>';
-  function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
-  var nameV=esc(info.name||(h&&h.teacherName)||'');
-  var userV=esc(info.username||(h&&h.teacherUser)||'');
-  var passV='';
-  var body='<div class="ti-card"><div class="ti-card-hd">✏️ بيانات المعلم</div>'+
-    '<div class="prof-form-wrap">'+
-    '<div class="prof-form-grid">'+
-    '<div class="prof-form-field"><label class="prof-form-lbl">اسم المعلم (الرباعي)</label>'+
-      '<input class="prof-form-input" id="ti-name" type="text" placeholder="أدخل اسم المعلم رباعيّاً" value="'+nameV+'"></div>'+
-    '<div class="prof-form-field"><label class="prof-form-lbl">الهوية / الإقامة</label>'+
-      '<input class="prof-form-input" id="ti-nid" type="text" placeholder="رقم الهوية أو الإقامة" value="'+esc(info.nid||'')+'"></div>'+
+  var dOpts='', mOpts='', yOpts='';
+  for(var d=1;d<=30;d++) dOpts+='<option value="'+d+'"'+((parseInt(t.bDay,10)===d)?' selected':'')+'>'+arNum(d)+'</option>';
+  for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'"'+((parseInt(t.bMonth,10)===mo+1)?' selected':'')+'>'+hM[mo]+'</option>';
+  for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'"'+((''+_y)===(''+(t.bYear||''))?' selected':'')+'>'+_y+'</option>';
+  function fld(lbl,id,val,tp){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label>'+
+    '<input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" value="'+hqEsc(val||'')+'"></div>'; }
+  var uk=hqTeacherUserKey(t.id,t.username);
+  var un=(uk&&DB.users[uk]?DB.users[uk].username:t.username)||(h&&h.teacherUser)||'';
+  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+    fld('الاسم','ti-name',t.name||(h&&h.teacherName)||'')+
+    fld('الهوية / الإقامة','ti-nid',t.nid)+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الميلاد (هجري)</label>'+
       '<div class="hijri-picker">'+
         '<div><div class="hijri-lbl">اليوم</div><select class="hijri-select" id="ti-bDay">'+dOpts+'</select></div>'+
         '<div><div class="hijri-lbl">الشهر</div><select class="hijri-select" id="ti-bMonth">'+mOpts+'</select></div>'+
-        '<div><div class="hijri-lbl">السنة</div><input class="hijri-select" id="ti-bYear" type="text" inputmode="numeric" placeholder="1440" value="'+esc(ySel)+'" style="text-align:center"></div>'+
+        '<div><div class="hijri-lbl">السنة</div><select class="hijri-select" id="ti-bYear"><option value="">السنة</option>'+yOpts+'</select></div>'+
       '</div></div>'+
-    '<div class="prof-form-field"><label class="prof-form-lbl">الجنسية</label>'+
-      '<input class="prof-form-input" id="ti-nat" type="text" placeholder="مثال: سعودي" value="'+esc(info.nat||'')+'"></div>'+
-    '<div class="prof-form-field"><label class="prof-form-lbl">جوال المعلم</label>'+
-      '<input class="prof-form-input" id="ti-phone" type="tel" placeholder="05xxxxxxxx" value="'+esc(info.phone||'')+'"></div>'+
-    '<div class="prof-form-field"><label class="prof-form-lbl">اسم المستخدم (للدخول)</label>'+
-      '<input class="prof-form-input" id="ti-username" type="text" placeholder="اسم مستخدم المعلم" value="'+userV+'"></div>'+
-    '<div class="prof-form-field"><label class="prof-form-lbl">كلمة المرور</label>'+
-      '<input class="prof-form-input" id="ti-password" type="text" placeholder="كلمة مرور المعلم" value="'+passV+'"></div>'+
+    fld('الجنسية','ti-nat',t.nat)+
+    fld('الجوال','ti-phone',t.phone,'tel')+
+    '<div class="prof-form-field"><label class="prof-form-lbl">الحلقة</label>'+
+      '<input class="prof-form-input" type="text" value="'+hqEsc((h&&h.name)||'')+'" readonly style="opacity:.75"></div>'+
+    hqCredFields('ti',un)+
     '</div>'+
-    '<button class="prof-form-save" onclick="saveTeacherInfo()" style="margin-top:16px;">💾 حفظ بيانات المعلم</button>'+
-  '</div></div>';
-  wrap.innerHTML=body;
+    '<button class="prof-form-save" onclick="saveTeacherInfo()" style="margin-top:16px;">حفظ التعديلات</button>'+
+  '</div>';
+  wrap.innerHTML='<div class="ti-card"><div class="ti-card-hd">تعديل بيانات المعلم</div>'+body+'</div>';
+  try{ if(typeof hqSelEnhance==='function') hqSelEnhance(wrap); }catch(e){}
 }
 function saveTeacherInfo(){
   try{
@@ -12314,7 +12308,7 @@ function saveTeacherInfo(){
     function v(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
     var name=v('ti-name');
     if(!name){ showToast('يرجى إدخال اسم المعلم','error'); return; }
-    var username=v('ti-username'), password=v('ti-password');
+    var username=v('ti-user'), password=v('ti-pass');
     var year=tiDigitsToLatin(v('ti-bYear')).replace(/[^0-9]/g,'');
     var info={ name:name, nid:v('ti-nid'), bDay:v('ti-bDay'), bMonth:v('ti-bMonth'),
       bYear:year, nat:v('ti-nat'), phone:v('ti-phone'), username:username };
@@ -12559,7 +12553,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 4.1';
+  window.HQ_BUILD='2026 - 5.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
