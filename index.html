@@ -11222,7 +11222,11 @@ function evRecCell(kind,curLinear,todayVal,sid){
   var done=(todayVal && (String(todayVal).indexOf('n:')===0 || String(todayVal).indexOf('x:')===0 || String(todayVal).indexOf('z:')===0));
   var isLesson=(kind==='lesson');
   var lbl=isLesson?'\u0627\u0644\u062f\u0631\u0633':'\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629';
-  var viewBtn=isLesson?('<button type="button" class="ev-jp-btn view" onclick="evLessonRecite(\''+sid+'\')">\u0639\u0631\u0636 \u0627\u0644\u062a\u0633\u0645\u064a\u0639</button>'):'';
+  var _isT2=(typeof STATE!=='undefined'&&STATE.role==='teacher');
+  var viewBtn=isLesson?('<div class="ev-jp-rev">'
+    +'<button type="button" class="ev-jp-btn view" onclick="evLessonRecite(\''+sid+'\')">\u0639\u0631\u0636 \u0627\u0644\u062a\u0633\u0645\u064a\u0639</button>'
+    +(_isT2?('<button type="button" class="ev-jp-btn view" onclick="evOpenMisReport(\''+sid+'\')">تقرير الأخطاء</button>'):'')
+    +'</div>'):'';
   return '<div class="ev-cell ev-cell-rec ev-jp ev-jp-wide'+(done?' done':'')+'" data-kind="'+kind+'" data-sid="'+sid+'">'
     +'<div class="ev-lbl">'+lbl+'</div>'
     +'<div class="ev-jp-sels">'
@@ -11744,19 +11748,24 @@ function evtFixHeight(){
   var wrap=document.getElementById('evt-panes'); if(!wrap) return;
   var panes=wrap.querySelectorAll('.evt-pane'), i, mx=0;
   wrap.style.minHeight='';
+  /* نقيس والطيّات مفتوحة، فلا يرتفع شيء حين يفتحها المعلّم */
+  var folds=wrap.querySelectorAll('.evt-fold'), wasOpen=[];
+  for(i=0;i<folds.length;i++){ wasOpen.push(folds[i].classList.contains('open')); folds[i].classList.add('open'); }
   for(i=0;i<panes.length;i++){
     var was=panes[i].classList.contains('on');
     panes[i].classList.add('measure');
-    var h=panes[i].offsetHeight;
+    var h=panes[i].getBoundingClientRect().height;
     panes[i].classList.remove('measure');
     if(!was) panes[i].classList.remove('on');
     if(h>mx) mx=h;
   }
-  if(mx>0) wrap.style.minHeight=mx+'px';
+  for(i=0;i<folds.length;i++){ if(!wasOpen[i]) folds[i].classList.remove('open'); }
+  if(mx>0) wrap.style.minHeight=(Math.ceil(mx)+2)+'px';
 }
 function evtFold(id){
   var el=document.getElementById(id); if(!el) return;
   el.classList.toggle('open');
+  try{ evtFixHeight(); }catch(e){}
 }
 function evtGo(k,quiet){
   var wrap=document.getElementById('evt-panes'); if(!wrap) return;
@@ -11871,10 +11880,10 @@ function openStudentEval(sid){
       +'<div class="evt-pane" data-t="lesson">'+recCell+'</div>'
       +'<div class="evt-pane" data-t="review">'+reviewCell+'</div>'
       +'<div class="evt-pane" data-t="attend">'+attendCell+'</div>'
-      +'<div class="evt-pane" data-t="level">'+tajweedCell+partCell+penCell
-        +'<div class="ev-row3">'+_startToggle+_misRepBtn+_resetBtn+'</div></div>'
+      +'<div class="evt-pane" data-t="level">'+tajweedCell+partCell+penCell+_startToggle+'</div>'
       +'<div class="evt-pane" data-t="done">'
         +'<div class="evt-state" id="evt-state"></div>'
+        +_resetBtn
         +'<button class="prof-form-save ev-save-plain" onclick="saveStudentEval(\''+sid+'\')">حفظ التقييم</button>'
       +'</div>'
     +'</div>'+_startBox):'';
@@ -12518,7 +12527,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 2.1';
+  window.HQ_BUILD='2026 - 3.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -13084,6 +13093,8 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
 .evt-state b{color:#f7d774}
 .evt-pane .prof-form-save{margin-top:0}
+.evt-pane[data-t="done"] .ev-act-box{width:100%;margin-bottom:10px}
+.ev-cell-rec .ev-jp-rev{margin-top:8px}
 
 /* ===== توحيد شكل الأزرار على نمط زر «أنجز» (.ev-act-box) ===== */
 .stul-disc,.stul-edit,.stul-del{
