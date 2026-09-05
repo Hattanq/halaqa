@@ -9049,8 +9049,37 @@ function showTeachersData(){
   openModal('بيانات المعلمين','<div class="hs-wrap">'+rows+
     '<div class="hqacc-acts" style="justify-content:center;margin-top:10px">'+
       '<button class="hq-mini-btn view" onclick="hqPrintTeachers()">طباعة التقرير PDF</button>'+
+      '<button class="hq-mini-btn view" onclick="hqMsgAllTeachers()">رسائل للمعلمين</button>'+
     '</div></div>');
   hqModalTall();
+}
+/* رسالة واحدة تصل جميع المعلمين */
+function hqMsgAllTeachers(){
+  var list=hqTeachers()||[];
+  if(!list.length){ showToast('لا يوجد معلمون','error'); return; }
+  openModal('رسائل للمعلمين',
+    '<div class="msg-wrap">'+
+      '<div class="msg-field"><label class="msg-lbl">إلى</label>'+
+        '<input class="prof-form-input" type="text" value="جميع المعلمين ('+arNum(list.length)+')" readonly style="opacity:.75"></div>'+
+      '<div class="msg-field"><label class="msg-lbl">نص الرسالة</label>'+
+        '<textarea class="msg-ta" id="tmsgAllTa" placeholder="اكتب رسالتك هنا…"></textarea></div>'+
+      '<button class="msg-send" onclick="hqMsgAllSend()">إرسال للجميع</button>'+
+    '</div>');
+}
+function hqMsgAllSend(){
+  var ta=document.getElementById('tmsgAllTa');
+  var txt=ta?String(ta.value||'').trim():'';
+  if(!txt){ showToast('اكتب نص الرسالة أولاً','error'); return; }
+  var list=hqTeachers()||[], M=tmsgStore(), now=Date.now(), n=0;
+  list.forEach(function(t){
+    if(!t||!t.id) return;
+    if(!M[t.id]) M[t.id]=[];
+    M[t.id].push({ id:'tm'+now+'_'+(n++), text:txt, from:STATE.role||'',
+                   fromName:tmsgSenderLabel(), ts:now, read:false });
+  });
+  save();
+  showToast('أُرسلت الرسالة إلى '+arNum(n)+' معلماً','success');
+  closeModal();
 }
 function tdToggle(hdr){
   var panel=hdr.nextElementSibling; if(!panel) return;
@@ -9271,6 +9300,7 @@ function hqTeacherHalqaNames(tid){
 function hqSeenTxt(ts){
   ts=parseInt(ts,10)||0;
   if(!ts) return 'لم يدخل بعد';
+  if(Date.now()-ts < 10*60000) return 'الآن';   /* داخل الموقع حالياً */
   var d=Math.floor((Date.now()-ts)/86400000);
   if(d>10) return 'أكثر من ١٠ أيام';
   var dt=new Date(ts);
@@ -9364,7 +9394,7 @@ var TL_TERMS=[
   {k:'1448-1', n:'الفصل الدراسي الأول لعام 1448 هـ'},
   {k:'1448-2', n:'الفصل الدراسي الثاني لعام 1448 هـ'}
 ];
-var TL_HOLIDAYS=['اليوم الوطني','يوم التأسيس','إجازة الربيع','إجازة الخريف','رمضان وعيد الفطر','عيد الأضحى','أخرى'];
+var TL_HOLIDAYS=['اليوم الوطني','يوم التأسيس','أسبوع تمهيدي','إجازة الربيع','إجازة الخريف','رمضان وعيد الفطر','عيد الأضحى'];
 var TL_DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 var TL_HM=['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
 
@@ -9551,9 +9581,13 @@ function tlHolRow(v, def){
     '<div class="tl-hol-hd"><span>إجازة</span>'+
       '<button type="button" class="tl-hol-x" onclick="tlHolDel('+id+')">حذف</button></div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">نوع الإجازة</label>'+
-      '<select class="prof-form-input tlh-name">'+
+      '<select class="prof-form-input tlh-name" onchange="tlHolNameSync(this)">'+
       TL_HOLIDAYS.map(function(x){ return '<option value="'+hqEsc(x)+'"'+((v&&v.name===x)?' selected':'')+'>'+hqEsc(x)+'</option>'; }).join('')+
-      '</select></div>'+
+      '<option value="__free"'+((v&&v.name&&TL_HOLIDAYS.indexOf(v.name)<0)?' selected':'')+'>إجازة أخرى (اكتب الاسم)</option>'+
+      '</select>'+
+      '<input type="text" class="prof-form-input tlh-free" placeholder="اسم الإجازة" maxlength="40" '+
+        'style="margin-top:8px;'+((v&&v.name&&TL_HOLIDAYS.indexOf(v.name)<0)?'':'display:none')+'" '+
+        'value="'+hqEsc((v&&v.name&&TL_HOLIDAYS.indexOf(v.name)<0)?v.name:'')+'"></div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">التاريخ من</label>'+
       tlDatePicker('tlh'+id+'-f', vf, 'tlh-from')+'</div>'+
     '<div class="prof-form-field"><label class="prof-form-lbl">التاريخ إلى</label>'+
@@ -9565,6 +9599,12 @@ function tlTermStart(){
   function V(id){ var e=document.getElementById(id); return e?e.value:''; }
   var d=V('tl-fd'), m=V('tl-fm'), y=V('tl-fy');
   return (d&&m&&y)?{d:d,m:m,y:y}:null;
+}
+/* إظهار خانة الاسم الحر عند اختيار «إجازة أخرى» */
+function tlHolNameSync(sel){
+  var box=sel.closest?sel.closest('.tl-hol'):null; if(!box) return;
+  var f=box.querySelector('.tlh-free'); if(!f) return;
+  f.style.display=(sel.value==='__free')?'':'none';
 }
 function tlHolAdd(){
   var box=document.getElementById('tl-hols'); if(!box) return;
@@ -9675,8 +9715,10 @@ function tlSave(){
       if(bad) return;
       var rid=String(el.id||'').replace('tl-hol-','');
       function byId(sfx){ var x=document.getElementById('tlh'+rid+'-'+sfx); return x?String(x.value||'').trim():''; }
-      var nEl=el.querySelector('.tlh-name');
-      var h={ name:nEl?nEl.value:'',
+      var nEl=el.querySelector('.tlh-name'), fEl=el.querySelector('.tlh-free');
+      var _nm=nEl?nEl.value:'';
+      if(_nm==='__free') _nm=(fEl?String(fEl.value||'').trim():'');
+      var h={ name:_nm,
         fromD:byId('fd'), fromM:byId('fm'), fromY:byId('fy'),
         toD:byId('td'),   toM:byId('tm'),   toY:byId('ty') };
       /* لا نحفظ إجازة ناقصة أو معكوسة التاريخ */
@@ -9760,9 +9802,8 @@ function tlShow(){
       '<div class="tl-term">'+hqEsc(tl.termName||'')+'</div>'+
       '<div class="tl-range">'+hqEsc(tl.fromStr)+'  ←  '+hqEsc(tl.toStr)+'</div>'+
     '</div>'+
-    months.map(function(mm,i){
+    [(wk.all||wk)].map(function(mm,i){
       return '<div class="tl-month">'+
-        '<div class="tl-month-hd">الشهر '+hqOrd(i+1)+'</div>'+
         '<div class="tl-weeks">'+mm.map(function(w){
           return '<div class="tl-week'+(w.hol?' tl-week-hol':'')+'">'+
             '<div class="tl-week-n">'+(w.hol?'أسبوع إجازة':('أسبوع '+arNum(w.no)))+'</div>'+
@@ -9780,9 +9821,6 @@ function tlShow(){
       hqAccRow('الأيام الدراسية للأسبوع', arNum(per)+' أيام')+
       hqAccRow('عدد الأسابيع الدراسية', arNum(studyWk))+
       hqAccRow('عدد الأيام الدراسية', arNum(Math.max(0, studyWk*per - wk.reduce(function(a,w){ return a+(w.holDays||0); },0))))+
-      hqAccRow('أيام إجازة داخل الأسابيع', arNum(wk.reduce(function(a,w){ return a+(w.holDays||0); },0)))+
-      hqAccRow('عدد الإجازات', arNum((tl.holidays||[]).length))+
-      hqAccRow('أسابيع حُذفت للإجازات', arNum(wk.holWeeks||0))+
     '</div></div>'+
     (wk.holIgnored?('<div class="ev-susp-card" style="margin-top:12px">'+
       '<div class="ev-susp-ttl">تنبيه: الإجازات لم تُخصم</div>'+
@@ -9792,7 +9830,8 @@ function tlShow(){
     ((tl.holidays||[]).length?('<div class="hs-sec"><div class="hs-sec-hd">الإجازات</div>'+
       '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
       tl.holidays.map(function(x){
-        return hqAccRow(x.name, tlDateStr(x.fromD,x.fromM,x.fromY)+' ← '+tlDateStr(x.toD,x.toM,x.toY));
+        function _sd(d,m,y){ return arNum(d)+'/'+arNum(m)+'/'+arNum(y); }
+        return hqAccRow(x.name, _sd(x.fromD,x.fromM,x.fromY)+' ← '+_sd(x.toD,x.toM,x.toY));
       }).join('')+'</div></div></div>'):'');
 
   openModal('الخط الزمني','<div class="hs-wrap">'+body+'</div>');
@@ -10172,30 +10211,31 @@ function showAllHalqatStats(){
   var g=hqJamStats(halqat);
 
   /* (١) عامة */
+  function _gc(l,v,id){ return '<div class="hs-cell"><div class="hs-cell-val"'+(id?(' id="'+id+'"'):'')+'>'+v+'</div><div class="hs-cell-lbl">'+l+'</div></div>'; }
   var gen=hqFoldSec('إحصائيّات عامة للجمعية',
-    '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
-      '<span id="hq-gen-anchor"></span>'+
-      hqAccRow('عدد حلقات الجمعية', arNum(g.halqat))+
-      hqAccRow('عدد مشرفي الحلقات', arNum(g.supers))+
-      hqAccRow('عدد القطاعات', arNum(g.sectors))+
-      hqAccRow('عدد معلمي الحلقات', arNum(g.teachers))+
-      hqAccRow('عدد طلاب الحلقات', arNum(g.students))+
-      hqAccRow('عدد الطلاب المنتظمين', arNum(g.regular))+
-      hqAccRow('عدد الطلاب المنقطعين', arNum(g.disc))+
-      hqAccRow('عدد طلاب المرحلة الابتدائية', arNum(g.pri))+
-      hqAccRow('عدد طلاب المرحلة المتوسطة', arNum(g.mid))+
-      hqAccRow('عدد طلاب المرحلة الثانوية', arNum(g.sec))+
-      hqAccRow('عدد طلاب المرحلة الجامعية', arNum(g.uni))+
-      hqAccRow('عدد طلاب كبار السن', arNum(g.eld))+
-      hqAccRow('عدد حلقات فترة العصر', arNum(g.asr))+
-      hqAccRow('عدد حلقات فترة المغرب', arNum(g.maghrib))+
-      hqAccRow('عدد الأيام الدراسية', arNum(g.days))+
-      '<div class="hqacc-row"><span class="hqacc-lbl">عدد صفحات الحفظ</span><span class="hqacc-val" id="hq-gp-lesson">…</span></div>'+
-      '<div class="hqacc-row"><span class="hqacc-lbl">عدد صفحات المراجعة</span><span class="hqacc-val" id="hq-gp-review">…</span></div>'+
-      '<div class="hqacc-acts" style="justify-content:center">'+
-        '<button class="hq-mini-btn view" onclick="hqPrintGeneral()">طباعة التقرير PDF</button>'+
-      '</div>'+
-    '</div></div>');
+    '<span id="hq-gen-anchor"></span>'+
+    '<div class="hs-grid hs-grid3">'+
+      _gc('حلقات الجمعية', arNum(g.halqat))+
+      _gc('مشرفو الحلقات', arNum(g.supers))+
+      _gc('القطاعات', arNum(g.sectors))+
+      _gc('معلمو الحلقات', arNum(g.teachers))+
+      _gc('طلاب الحلقات', arNum(g.students))+
+      _gc('الطلاب المنتظمون', arNum(g.regular))+
+      _gc('الطلاب المنقطعون', arNum(g.disc))+
+      _gc('المرحلة الابتدائية', arNum(g.pri))+
+      _gc('المرحلة المتوسطة', arNum(g.mid))+
+      _gc('المرحلة الثانوية', arNum(g.sec))+
+      _gc('المرحلة الجامعية', arNum(g.uni))+
+      _gc('كبار السن', arNum(g.eld))+
+      _gc('حلقات العصر', arNum(g.asr))+
+      _gc('حلقات المغرب', arNum(g.maghrib))+
+      _gc('الأيام الدراسية', arNum(g.days))+
+      _gc('صفحات الحفظ', '…', 'hq-gp-lesson')+
+      _gc('صفحات المراجعة', '…', 'hq-gp-review')+
+    '</div>'+
+    '<div class="hqacc-acts" style="justify-content:center;margin-top:12px">'+
+      '<button class="hq-mini-btn view" onclick="hqPrintGeneral()">طباعة التقرير PDF</button>'+
+    '</div>');
 
   /* (٢) ترتيب الحلقات */
   var ranks=hqFoldSec('إحصائيّات حلقات الجمعية',
@@ -11791,14 +11831,6 @@ function evtSync(){
   }
   var all=true;
   for(var m=0;m<EVT_TABS.length-1;m++){ if(!evtDone(EVT_TABS[m].k)) all=false; }
-  var st=document.getElementById('evt-state');
-  if(st){
-    var names=[];
-    for(var n2=0;n2<EVT_TABS.length-1;n2++){ if(!evtDone(EVT_TABS[n2].k)) names.push(EVT_TABS[n2].n); }
-    st.innerHTML = names.length
-      ? ('بقي: <b>'+names.join('، ')+'</b>')
-      : 'اكتمل تقييم اليوم — احفظه ليُعتمد';
-  }
 }
 /* بعد اختيار الحضور أو المستوى ننتقل تلقائياً للتبويبة التالية */
 function evtAfterPick(id){
@@ -11881,11 +11913,10 @@ function openStudentEval(sid){
       +'<div class="evt-pane" data-t="review">'+reviewCell+'</div>'
       +'<div class="evt-pane" data-t="attend">'+attendCell+'</div>'
       +'<div class="evt-pane" data-t="level">'+tajweedCell+partCell+penCell+_startToggle+'</div>'
-      +'<div class="evt-pane" data-t="done">'
-        +'<div class="evt-state" id="evt-state"></div>'
-        +_resetBtn
+      +'<div class="evt-pane" data-t="done"><div class="evt-done-row">'
+        +'<button class="prof-form-save ev-save-plain" onclick="evResetToday(\''+sid+'\')">إعادة التقييم</button>'
         +'<button class="prof-form-save ev-save-plain" onclick="saveStudentEval(\''+sid+'\')">حفظ التقييم</button>'
-      +'</div>'
+      +'</div></div>'
     +'</div>'+_startBox):'';
   var body='<div class="prof-form-wrap ev-eval">'+_eval+'</div>';
   openModal('\u062a\u0642\u064a\u064a\u0645: '+(s.name||''), body);
@@ -12250,7 +12281,8 @@ function renderInfo(){
   var nameV=esc(info.name||(h&&h.teacherName)||'');
   var userV=esc(info.username||(h&&h.teacherUser)||'');
   var passV='';
-  var body='<div class="prof-form-wrap">'+
+  var body='<div class="ti-card"><div class="ti-card-hd">✏️ بيانات المعلم</div>'+
+    '<div class="prof-form-wrap">'+
     '<div class="prof-form-grid">'+
     '<div class="prof-form-field"><label class="prof-form-lbl">اسم المعلم (الرباعي)</label>'+
       '<input class="prof-form-input" id="ti-name" type="text" placeholder="أدخل اسم المعلم رباعيّاً" value="'+nameV+'"></div>'+
@@ -12272,7 +12304,7 @@ function renderInfo(){
       '<input class="prof-form-input" id="ti-password" type="text" placeholder="كلمة مرور المعلم" value="'+passV+'"></div>'+
     '</div>'+
     '<button class="prof-form-save" onclick="saveTeacherInfo()" style="margin-top:16px;">💾 حفظ بيانات المعلم</button>'+
-  '</div>';
+  '</div></div>';
   wrap.innerHTML=body;
 }
 function saveTeacherInfo(){
@@ -12527,7 +12559,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 3.1';
+  window.HQ_BUILD='2026 - 4.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -13051,8 +13083,8 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .hq-mini-btn{font-family:inherit;font-weight:700;font-size:.74rem;padding:7px 12px;border-radius:10px;cursor:pointer;border:1px solid;transition:transform .1s ease,background .15s ease}
 .hq-mini-btn:active{transform:scale(.95)}
 .hq-mini-btn.view{color:#8ffff6;background:rgba(59,246,230,.12);border-color:rgba(59,246,230,.35)}
-.hq-mini-btn.del{color:#ff9e93;background:rgba(255,94,84,.14);border-color:rgba(255,94,84,.42)}
-.hq-mini-btn.edit{color:#f0d060;background:rgba(240,208,96,.12);border-color:rgba(240,208,96,.38)}
+/* لون واحد لكل أزرار البطاقات — كما زر «الإحصائيّات» */
+.hq-mini-btn.del,.hq-mini-btn.edit{color:#8ffff6;background:rgba(59,246,230,.12);border-color:rgba(59,246,230,.35)}
 
 /* ===== تبويبات بطاقة التقييم ===== */
 .evt-tabs{display:flex;gap:5px;margin:2px 0 12px;padding:4px;border-radius:14px;
@@ -13093,7 +13125,17 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
 .evt-state b{color:#f7d774}
 .evt-pane .prof-form-save{margin-top:0}
-.evt-pane[data-t="done"] .ev-act-box{width:100%;margin-bottom:10px}
+/* صفحة بيانات المعلم — بنفس هيئة نافذة «تعديل بيانات الطالب» */
+#info-content{padding:14px 14px 24px}
+.ti-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;padding:14px 14px 18px}
+.ti-card-hd{font-weight:800;font-size:1rem;color:#f0d060;text-align:right;
+  padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid rgba(201,162,39,.22)}
+#info-content .prof-form-wrap{padding:0}
+#info-content .prof-form-grid{gap:12px}
+#info-content .prof-form-lbl{margin-bottom:4px}
+.evt-done-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.evt-done-row .prof-form-save{margin:0}
 .ev-cell-rec .ev-jp-rev{margin-top:8px}
 
 /* ===== توحيد شكل الأزرار على نمط زر «أنجز» (.ev-act-box) ===== */
@@ -13840,7 +13882,7 @@ function misOpenType(key){
     MIS_TYPES.map(function(t){ return '<button class="mtype-btn" style="'+(cur&&cur.t===t.k?'border-color:'+t.c+';background:'+t.c+'22':'')+'" onclick="misSet(\''+key+'\','+t.k+')"><i style="background:'+t.c+'"></i>'+t.n+'</button>'; }).join('')+
     (cur?'<button class="mtype-btn" style="color:#fca5a5" onclick="misSet(\''+key+'\',0)">\u2715 إزالة الخطأ</button>':'')+
     (MIS.kind==='lesson'?'<button class="mtype-btn" style="'+(MIS.stop===key?'border-color:#0ea5e9;background:#0ea5e922;':'')+'color:#7dd3fc" onclick="misSetStop('+(MIS.stop===key?'null':'\''+key+'\'')+')"><i style="background:#0ea5e9"></i>'+(MIS.stop===key?'إلغاء نهاية التسميع':'نهاية التسميع')+'</button>':'')+
-    '<button class="mtype-btn" style="color:#cbd5e1" onclick="closeModal();misSelStart(\''+key+'\')"><i style="background:#c9a227"></i>تحديد عدة كلمات</button>'+
+
   '</div>';
   openModal('نوع الخطأ',body);
 }
