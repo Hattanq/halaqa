@@ -3026,9 +3026,12 @@ function hqTombMerge(a,b){
 function hqTombTs(t,kind,id){ return (t&&parseInt(t[kind+':'+id],10))||0; }
 /* بصمة السجل بدون ختم التعديل */
 function hqSigOf(o){
-  var m=o.mt; try{ delete o.mt; }catch(e){}
+  var m=o.mt, ls=o.lastSeen;
+  try{ delete o.mt; }catch(e){}
+  try{ delete o.lastSeen; }catch(e){}   /* آخر ظهور يتغيّر بكل دخول ولا يُعدّ تعديلاً */
   var str; try{ str=JSON.stringify(o); }catch(e){ str=''; }
   if(m!==undefined) o.mt=m;
+  if(ls!==undefined) o.lastSeen=ls;
   return str;
 }
 /* ختم ما تغيّر فعلاً — init=true عند الإقلاع فلا يُعتبر شيء جديداً */
@@ -3112,7 +3115,18 @@ function hqMergeBlob(remote){
     for(kk in (rem||{})) put(kk,rem[kk]);
     for(kk in (loc||{})) put(kk,loc[kk]);
     var out={};
-    keys.forEach(function(k){ var tt=hqTombTs(tomb,kind,k); if(!tt || (box[k].mt||0)>tt) out[k]=box[k]; });
+    keys.forEach(function(k){
+      var tt=hqTombTs(tomb,kind,k);
+      if(tt && (box[k].mt||0)<=tt) return;
+      var w=box[k];
+      /* آخر ظهور: الأحدث من الجهتين مهما كان الفائز */
+      try{
+        var a=((loc||{})[k]||{}).lastSeen||0, b=((rem||{})[k]||{}).lastSeen||0;
+        var mx=Math.max(a,b,w.lastSeen||0);
+        if(mx) w.lastSeen=mx;
+      }catch(e){}
+      out[k]=w;
+    });
     return out;
   }
   function mergeMsgs(a,b){
@@ -3926,7 +3940,7 @@ function hqRestoreSession(){
     var se=lsGet('hq_sess',null); if(!se||!se.u) return false;
     var found=DB.users[se.u];
     if(!found || found.role!==se.r) return false;
-    STATE.user=found; STATE.role=found.role; STATE.loginRole=found.role;
+    STATE.user=found; STATE.role=found.role; STATE.loginRole=found.role; STATE.userKey=se.u;
     try{ found.lastSeen=Date.now(); save(); }catch(e){}
     if(found.role==='admin'){ setActiveHalqa((DB.halqat[0]||{}).id); }
     else if(found.role==='supervisor'){
@@ -3981,7 +3995,7 @@ function doLogin(){
   STATE.user=found; STATE.role=found.role;
   try{ found.lastSeen=Date.now(); save(); }catch(e){}   /* آخر ظهور */
   try{ var _uk=null; for(var _k in DB.users){ if(DB.users[_k]===found){ _uk=_k; break; } }
-       if(_uk) lsSave('hq_sess',{u:_uk, r:found.role, t:Date.now()}); }catch(e){}
+       if(_uk){ STATE.userKey=_uk; lsSave('hq_sess',{u:_uk, r:found.role, t:Date.now()}); } }catch(e){}
   if(found.role==='admin'){ setActiveHalqa((DB.halqat[0]||{}).id); }
   else if(found.role==='supervisor'){
     var _my=supMyHalqat(found.supId);
@@ -12452,7 +12466,7 @@ function deleteStudent(sid){
 
 /* ===== student self-service credentials ===== */
 function showChangeCredentials(){
-  var u=STATE.user; if(!u){ showToast('\u062a\u0639\u0630\u0651\u0631 \u062a\u062d\u062f\u064a\u062f \u0627\u0644\u062d\u0633\u0627\u0628','error'); return; }
+  var u=hqLiveUser(); if(!u){ showToast('\u062a\u0639\u0630\u0651\u0631 \u062a\u062d\u062f\u064a\u062f \u0627\u0644\u062d\u0633\u0627\u0628','error'); return; }
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
   var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
     '<div class="prof-form-field"><label class="prof-form-lbl">\u0627\u0633\u0645 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645</label>'+
@@ -12464,9 +12478,24 @@ function showChangeCredentials(){
   '</div>';
   openModal('🔑 \u062a\u063a\u064a\u064a\u0631 \u0627\u0633\u0645 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u0648\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631', body);
 }
+/* السجل الحيّ للحساب الحالي داخل DB.users */
+function hqLiveUser(){
+  try{
+    if(STATE.userKey && DB.users[STATE.userKey]) return DB.users[STATE.userKey];
+    if(STATE.user && STATE.user.username){
+      for(var k in DB.users){
+        var x=DB.users[k];
+        if(x && x.role===STATE.role && String(x.username)===String(STATE.user.username)){
+          STATE.userKey=k; return x;
+        }
+      }
+    }
+  }catch(e){}
+  return STATE.user||null;
+}
 function saveCredentials(){
   try{
-    var u=STATE.user; if(!u){ showToast('\u062a\u0639\u0630\u0651\u0631 \u062a\u062d\u062f\u064a\u062f \u0627\u0644\u062d\u0633\u0627\u0628','error'); return; }
+    var u=hqLiveUser(); if(!u){ showToast('\u062a\u0639\u0630\u0651\u0631 \u062a\u062d\u062f\u064a\u062f \u0627\u0644\u062d\u0633\u0627\u0628','error'); return; }
     var nu=((document.getElementById('cc-user')||{}).value||'').trim();
     var np=((document.getElementById('cc-pass')||{}).value||'').trim();
     if(!nu){ showToast('\u064a\u0631\u062c\u0649 \u0625\u062f\u062e\u0627\u0644 \u0627\u0633\u0645 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645','error'); return; }
@@ -12561,7 +12590,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 6.1';
+  window.HQ_BUILD='2026 - 7.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
