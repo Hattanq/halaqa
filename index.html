@@ -11269,45 +11269,158 @@ function hqDayDateTxt(){
   var greg=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+'م';
   return (h?(arNum(h.day)+' '+h.monthName+' '+arNum(h.year)+'هـ - '):'')+greg;
 }
+/* مدى النوع المختار: الشهر (أربعة أسابيع) أو الأسبوع من الخط الزمني — أو اليوم من اللاقط */
+function dqFillRange(){
+  var box=document.getElementById('dq-range'); if(!box) return;
+  var kind=(document.getElementById('dq-kind')||{}).value||'';
+  hqDayClear();
+  if(kind==='month'){
+    var o='<option value="">— اختر الشهر —</option>';
+    for(var m=1;m<=ksMonthCount();m++) o+='<option value="'+m+'">الشهر '+hqOrd(m)+'</option>';
+    box.innerHTML=ksFld('اختر الشهر','dq-idx',o,'hqDayClear()');
+  } else if(kind==='week'){
+    var w='<option value="">— اختر الأسبوع —</option>', wc=hqWeeksCount();
+    for(var i=1;i<=wc;i++) w+='<option value="'+i+'">الأسبوع '+hqOrd(i)+'</option>';
+    box.innerHTML=ksFld('اختر الأسبوع','dq-idx',w,'hqDayClear()');
+  } else if(kind==='day'){
+    var t={y:1448,m:1,d:1};
+    try{ t=tlJ2H(ksJdToday()); }catch(e){}
+    box.innerHTML='<div class="hqfld"><label class="hqacc-lbl">اختر اليوم</label>'+
+      tlDatePicker('dq-dt',{d:t.d,m:t.m,y:t.y})+'</div>';
+  } else box.innerHTML='';
+}
+/* حدّا الأسبوع أو الشهر (يوليوسيّاً) — تقويميّان متّصلان كما في كشف الطالب */
+function dqSpanJD(kind,idx){
+  var tl=(typeof tlActive==='function')?tlActive():null, wk=null;
+  try{ wk=tl?tlWeeks(tl):null; }catch(e){ wk=null; }
+  if(!wk||!wk.length) return null;
+  function sp(i){
+    if(!wk[i]) return null;
+    return { lo:(i===0)?(wk[0].jdFrom-6):wk[i].jdFrom,
+             hi:(i+1<wk.length)?(wk[i+1].jdFrom-1):(wk[i].jdFrom+6) };
+  }
+  if(kind==='week') return sp(idx-1);
+  if(kind==='month'){
+    var a=(idx-1)*4, sa=sp(a); if(!sa) return null;
+    var sb=sp(Math.min(wk.length-1,a+3));
+    return {lo:sa.lo, hi:sb.hi};
+  }
+  return null;
+}
+/* جدول للشاشة (لا للطباعة) بهيئة جدول الخطة */
+function dqScreenTable(cols,rows){
+  return '<div style="overflow:auto;margin:6px 0 4px"><table class="hqp-tbl" style="font-size:.7rem"><tr>'+
+    cols.map(function(c){ return '<th>'+hqEsc(c)+'</th>'; }).join('')+'</tr>'+
+    rows.map(function(r,i){ return '<tr><td class="hqp-num">'+arNum(i+1)+'</td>'+
+      r.map(function(v){ return '<td>'+hqEsc(v==null||v===''?'—':String(v))+'</td>'; }).join('')+'</tr>'; }).join('')+
+    '</table></div>';
+}
+/* عدّ حلقة واحدة داخل مدى من الأيام (قراءة فقط) */
+async function hqRangeCount(h,lo,hi){
+  return await hqWithHalqaA(h, async function(){
+    var studs=hqStudentsOf(h), o={tot:studs.length,pres:0,abs:0,les:0,rev:0,acted:false,days:{},susp:0,reason:''};
+    studs.forEach(function(s){
+      evEntryList(s.id).forEach(function(e){
+        if(!isFinite(e.jd)||e.jd<lo||e.jd>hi) return;
+        var d=e.d||{};
+        if(!(d.attend||d.lesson||d.review||d.tajweed)) return;
+        o.acted=true; o.days[e.k]=1;
+        if(d.attend==='حاضر'||d.attend==='متأخر'||d.attend==='تسميع عن بعد') o.pres++;
+        else if(d.attend==='غائب') o.abs++;
+        if(d.lesson&&String(d.lesson).indexOf('n:')===0) o.les++;
+        if(d.review&&String(d.review).indexOf('n:')===0) o.rev++;
+      });
+    });
+    var sp=DB.suspend||{};
+    for(var k in sp){ var jd=hqJdOfKey(k); if(isFinite(jd)&&jd>=lo&&jd<=hi){ o.susp++; if(!o.reason) o.reason=(sp[k]&&sp[k].reason)||''; } }
+    o.nDays=Object.keys(o.days).length;
+    return o;
+  });
+}
 async function hqDayShow(){
   var box=document.getElementById('dq-result'); if(!box) return;
   var hid=(document.getElementById('dq-halqa')||{}).value||'';
+  var kind=(document.getElementById('dq-kind')||{}).value||'';
   if(!hid){ showToast('اختر الحلقة','error'); return; }
-  var h=(DB.halqat||[]).find(function(x){ return x.id===hid; });
-  if(!h){ showToast('لم تُوجد الحلقة','error'); return; }
+  if(!kind){ showToast('اختر نوع الإحصائية','error'); return; }
+  var lo, hi, span='', isDay=(kind==='day');
+  if(isDay){
+    var dd=parseInt((document.getElementById('dq-dtd')||{}).value,10)||0;
+    var mm=parseInt((document.getElementById('dq-dtm')||{}).value,10)||0;
+    var yy=parseInt((document.getElementById('dq-dty')||{}).value,10)||0;
+    if(!dd||!mm||!yy){ showToast('اختر اليوم والشهر والسنة','error'); return; }
+    var jd=tlH2J(yy,mm,dd);
+    if(!isFinite(jd)){ showToast('تاريخ غير صالح','error'); return; }
+    lo=hi=jd; span=tlDateStr(dd,mm,yy);
+  } else {
+    var idx=parseInt((document.getElementById('dq-idx')||{}).value,10)||0;
+    if(!idx){ showToast(kind==='week'?'اختر الأسبوع':'اختر الشهر','error'); return; }
+    var sj=dqSpanJD(kind,idx);
+    if(!sj){ showToast('لا يوجد خط زمني معتمَد لهذا الفصل','error'); return; }
+    lo=sj.lo; hi=sj.hi; span=ksSpanText(kind,idx);
+  }
+  var all=(window._hqStatsHalqat||DB.halqat||[]);
+  var list=(hid==='all')?all:all.filter(function(x){ return x.id===hid; });
+  if(!list.length){ showToast('لم تُوجد الحلقة','error'); return; }
+  var kindN=ksKindName(kind), spanLbl=isDay?'التاريخ':(kind==='week'?'مدى الأسبوع':'مدى الشهر');
+  var ttl={day:'إحصائية اليوم',week:'إحصائية الأسبوع',month:'إحصائية الشهر'}[kind]||'الإحصائية';
+  var todayJD=ksJdToday();
   box.innerHTML='<div class="hqacc-load">جارٍ الحساب…</div>';
-  var r=await hqDayCount(h);
-  var dateTxt=hqDayDateTxt();
-  var rows=[['التاريخ',dateTxt],['الحلقة',h.name||'—'],['معلّم الحلقة',hqTeacherNamesOf(h)||'—'],
-            ['مجموع طلاب الحلقة',arNum(r.tot)],['عدد الحضور',arNum(r.pres)],['عدد الغياب',arNum(r.abs)],
-            ['أنجزوا الدرس',arNum(r.les)],['أنجزوا المراجعة',arNum(r.rev)]];
-  if(r.susp) rows.push(['تعليق الحضور اليوم', r.reason||'معلَّق']);
-  window._dqLast={ halqa:h.name||'', rows:rows,
-    chart:[{l:'عدد الحضور',v:r.pres},{l:'عدد الغياب',v:r.abs},
-           {l:'أنجزوا الدرس',v:r.les},{l:'أنجزوا المراجعة',v:r.rev}] };
-  box.innerHTML='<div class="hqres">'+
-    rows.map(function(x){ return hqAccRow(x[0], x[1]); }).join('')+
-    '<div class="hqacc-acts" style="justify-content:center">'+
-      '<button class="hq-mini-btn view" onclick="hqPrintDayStats()">طباعة التقرير PDF</button>'+
-    '</div>'+
-  '</div>';
+  try{
+    if(hid!=='all'){
+      var h=list[0], r=await hqRangeCount(h,lo,hi);
+      var rows=[[spanLbl,span],['نوع الإحصائية',kindN],['الحلقة',h.name||'—'],['معلّم الحلقة',hqTeacherNamesOf(h)||'—'],
+                ['مجموع طلاب الحلقة',arNum(r.tot)]];
+      if(!isDay) rows.push(['أيام مسجَّلة في المدى',arNum(r.nDays)]);
+      rows.push(['عدد الحضور',arNum(r.pres)],['عدد الغياب',arNum(r.abs)],
+                ['أنجزوا الدرس',arNum(r.les)],['أنجزوا المراجعة',arNum(r.rev)]);
+      if(isDay && lo===todayJD) rows.push(['دخول المعلم', hqDayTeacherTxt(r,h)]);
+      if(r.susp) rows.push([isDay?'تعليق الحضور':'أيام تعليق الحضور', isDay?(r.reason||'معلَّق'):arNum(r.susp)]);
+      window._dqLast={ title:ttl+' - '+(h.name||''), meta:rows.slice(0,4), rows:rows.slice(4), table:null,
+        chart:[{l:'عدد الحضور',v:r.pres},{l:'عدد الغياب',v:r.abs},{l:'أنجزوا الدرس',v:r.les},{l:'أنجزوا المراجعة',v:r.rev}] };
+      box.innerHTML='<div class="hqres">'+rows.map(function(x){ return hqAccRow(x[0], x[1]); }).join('')+
+        '<div class="hqacc-acts" style="justify-content:center"><button class="hq-mini-btn view" onclick="hqPrintDayStats()">طباعة التقرير PDF</button></div></div>';
+      return;
+    }
+    /* جميع الحلقات: إجمالي ثم صفّ لكل حلقة */
+    var T={tot:0,pres:0,abs:0,les:0,rev:0,act:0}, trs=[];
+    for(var i=0;i<list.length;i++){
+      var hh=list[i], o=await hqRangeCount(hh,lo,hi);
+      T.tot+=o.tot; T.pres+=o.pres; T.abs+=o.abs; T.les+=o.les; T.rev+=o.rev; if(o.acted) T.act++;
+      trs.push([hh.name||'—', arNum(o.tot), arNum(o.pres), arNum(o.abs), arNum(o.les), arNum(o.rev),
+                isDay?hqDayTeacherTxt(o,hh):(o.acted?'قيّمت':'لم تقيّم')]);
+    }
+    var cards=[['حلقات الجمعية',arNum(list.length)],['مجموع الطلاب',arNum(T.tot)],['عدد الحضور',arNum(T.pres)],['عدد الغياب',arNum(T.abs)],
+               ['أنجزوا الدرس',arNum(T.les)],['أنجزوا المراجعة',arNum(T.rev)],['حلقات قيّمت',arNum(T.act)],['حلقات لم تقيّم',arNum(list.length-T.act)]];
+    var cols=['#','الحلقة','الطلاب','الحضور','الغياب','الدرس','المراجعة',isDay?'دخول المعلم':'الحالة'];
+    window._dqLast={ title:ttl+' - جميع الحلقات', meta:[[spanLbl,span],['نوع الإحصائية',kindN],['الحلقات',arNum(list.length)]],
+      rows:cards, table:{cols:cols,rows:trs},
+      chart:[{l:'عدد الحضور',v:T.pres},{l:'عدد الغياب',v:T.abs},{l:'أنجزوا الدرس',v:T.les},{l:'أنجزوا المراجعة',v:T.rev}] };
+    box.innerHTML='<div class="hqres">'+
+      hqAccRow(spanLbl,span)+hqAccRow('نوع الإحصائية',kindN)+
+      cards.map(function(x){ return hqAccRow(x[0], x[1]); }).join('')+
+      '<div class="hq-diag-t" style="margin-top:10px">تفصيل الحلقات</div>'+
+      dqScreenTable(cols, trs)+
+      '<div class="hqacc-acts" style="justify-content:center"><button class="hq-mini-btn view" onclick="hqPrintDayStats()">طباعة التقرير PDF</button></div></div>';
+  }catch(e){ box.innerHTML=''; showToast('تعذّر الحساب','error'); }
 }
 function hqPrintDayStats(){
   var L=window._dqLast;
-  if(!L||!L.rows||!L.rows.length){ showToast('اجلب البيانات أولاً','error'); return; }
+  if(!L||!L.rows||!L.rows.length){ showToast('اجلب الإحصائية أولاً','error'); return; }
   var nums=L.rows.filter(function(x){ return /^[0-9٠-٩]+$/.test(String(x[1])); });
+  var others=L.rows.filter(function(x){ return !/^[0-9٠-٩]+$/.test(String(x[1])); });
   var inner=
-    '<div class="pr-meta">'+L.rows.slice(0,3).map(function(m){
+    '<div class="pr-meta">'+(L.meta||[]).map(function(m){
       return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>';
     }).join('')+'</div>'+
-    '<div class="pr-sec">إحصائية اليوم</div>'+
+    '<div class="pr-sec">الإجمالي</div>'+
     '<div class="pr-grid">'+nums.map(function(x){
-      return '<div class="pr-card">'+
-             '<div class="pr-num">'+hqEsc(x[1])+'</div>'+
-             '<div class="pr-lbl">'+hqEsc(x[0])+'</div></div>';
+      return '<div class="pr-card"><div class="pr-num">'+hqEsc(x[1])+'</div><div class="pr-lbl">'+hqEsc(x[0])+'</div></div>';
     }).join('')+'</div>'+
-    ((L.chart&&L.chart.some(function(x){ return (+x.v||0)>0; }))?hqPrChart('مؤشّرات اليوم', L.chart):'');
-  hqPrintDoc('إحصائية اليوم - '+(L.halqa||''), inner);
+    (others.length?hqPrTable(['#','البيان','القيمة'], others.map(function(r){ return [r[0], r[1]]; })):'')+
+    (L.table?('<div class="pr-sec">تفصيل الحلقات</div>'+hqPrTable(L.table.cols, L.table.rows)):'')+
+    ((L.chart&&L.chart.some(function(x){ return (+x.v||0)>0; }))?hqPrChart('المؤشّرات', L.chart):'');
+  hqPrintDoc(L.title||'الإحصائية', inner);
 }
 
 /* ===== إحصائية اليوم: عدّ حلقة واحدة (قراءة فقط) ===== */
@@ -11444,20 +11557,18 @@ function showAllHalqatStats(){
     }).join('')+
     '</div></div>');
 
-  /* (٣) إحصائيات اليوم */
-  function sel(lbl,id,opts,on){
-    return '<div class="hqfld"><label class="hqacc-lbl">'+lbl+'</label>'+
-      '<select class="hqsel" id="'+id+'"'+(on?(' onchange="'+on+'"'):'')+'>'+opts+'</select></div>';
-  }
+  /* (٣) إحصائيات اليوم / الأسبوع / الشهر — على هيئة «كشف مستوى الطالب»:
+     الحلقة (أو جميع الحلقات) ثم نوع الإحصائية ثم مداها، ثم الجلب والطباعة */
   var dayS=hqFoldSec('إحصائيات اليوم',
     '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
-      sel('اختر الحلقة','dq-halqa','<option value="">— اختر الحلقة —</option>'+
+      ksFld('اختر الحلقة','dq-halqa','<option value="">— اختر الحلقة —</option>'+
+        '<option value="all">جميع الحلقات</option>'+
         halqat.map(function(h){ return '<option value="'+hqEsc(h.id)+'">'+hqEsc(h.name||'')+'</option>'; }).join(''),'hqDayClear()')+
-      '<button class="tl-fetch" onclick="hqDayShow()">جلب البيانات</button>'+
+      ksFld('اختر نوع الإحصائية','dq-kind','<option value="">— اختر نوع الإحصائية —</option>'+
+        KS_KINDS.map(function(x){ return '<option value="'+x.k+'">'+x.n+'</option>'; }).join(''),'dqFillRange()')+
+      '<div id="dq-range"></div>'+
+      '<button class="tl-fetch" onclick="hqDayShow()">جلب الإحصائية</button>'+
       '<div id="dq-result"></div>'+
-      '<div class="hqacc-acts" style="justify-content:center;margin-top:10px">'+
-        '<button class="hq-mini-btn view" onclick="hqDayPrintAll()">طباعة التقرير لجميع الحلقات</button>'+
-      '</div>'+
     '</div></div>');
 
   openModal('إحصائيات وتقارير الجمعية','<div class="hs-wrap">'+gen+ranks+dayS+
@@ -13058,8 +13169,31 @@ function evtSync(){
     tabs[i].classList.toggle('lock', !free && k!==first);
   }
 }
+/* اختيار الحضور أو المستوى يُحفظ في سجل اليوم فوراً: شاشات «عرض التسميع» و«تقرير الأخطاء»
+   تعيد بناء البطاقة عند العودة، فكان الاختيار غير المحفوظ يضيع وتعود البطاقة إلى مربع الحضور */
+function evtPersistPick(id){
+  try{
+    if(!_evtSid) return;
+    var el=document.getElementById(id); if(!el) return;
+    var f=(id==='ev-attend')?'attend':((id==='ev-tajweed')?'tajweed':'');
+    if(!f) return;
+    var v=el.getAttribute('data-val')||'';
+    if(!DB.evals) DB.evals={};
+    var rec=DB.evals[_evtSid]||{progress:{lesson:0,review:0},days:{}};
+    if(!rec.days) rec.days={};
+    var k=evDateKey(), d=rec.days[k]||{};
+    var absent=(f==='attend')&&(v==='غائب'||v==='غائب بعذر');
+    if((d[f]||'')===v && !(absent&&d.tajweed)) return;
+    if(v) d[f]=v; else delete d[f];
+    if(absent) delete d.tajweed;   /* الغائب بلا مستوى حفظ */
+    rec.days[k]=d; DB.evals[_evtSid]=rec;
+    save();
+    if(typeof renderGrades==='function') renderGrades();
+  }catch(e){}
+}
 /* بعد الحضور أو المستوى ننتقل تلقائياً للخطوة التالية — ما دام المسار الموجَّه قائماً */
 function evtAfterPick(id){
+  evtPersistPick(id);
   evtSync();
   if(_evtFree) return;   /* بعد الإتمام: التعديل لا يقفز بالمعلّم إلى تبويبة أخرى */
   if(id==='ev-attend' && _evtCur==='attend'){
