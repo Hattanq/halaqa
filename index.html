@@ -9549,28 +9549,77 @@ function hqPrintDoc(title, inner){
   hqPrClose();
   var host=document.createElement('div');
   host.id='pdfReport';
-  host.innerHTML=
-    '<div class="pr-tools">'+
-      '<button class="pr-go" onclick="hqPrGo()">طباعة - حفظ PDF</button>'+
-      '<button class="pr-x" onclick="hqPrClose()">إغلاق</button>'+
-    '</div>'+
-    '<div class="pr-stage"><div class="pr-page">'+ hqPrDeco()+
-      /* الرأس داخل thead ليتكرّر في أعلى كل صفحة من صفحات الـ PDF (كانت الصفحات التالية بلا رأس) */
-      '<table class="pr-doc"><thead><tr><td>'+
-      '<div class="pr-top">'+
+  var top='<div class="pr-frame"></div><div class="pr-top">'+
         '<div class="pr-ttl"><h1>'+hqEsc(title)+'</h1>'+
           '<p>الجمعية الخيرية لتحفيظ القرآن الكريم بمحافظة المندق</p></div>'+
         '<div class="pr-brand">'+logo+
           '<div class="pr-date"><span>'+hqEsc(hij)+'</span><span>'+hqEsc(greg)+'</span></div>'+
         '</div>'+
-      '</div>'+
-      '</td></tr></thead><tbody><tr><td>'+ inner +
-      '<div class="pr-foot"><span>حلقات المندق - تقرير آليّ</span>'+
-        '<span>صدر بتاريخ '+hqEsc(greg)+'</span></div>'+
-      '</td></tr></tbody></table>'+
+      '</div>';
+  function foot(n,tot){
+    return '<div class="pr-foot"><span>حلقات المندق - تقرير آليّ</span>'+
+      '<span>صفحة '+arNum(n)+' من '+arNum(tot)+'</span>'+
+      '<span>صدر بتاريخ '+hqEsc(greg)+'</span></div>';
+  }
+  host.innerHTML=
+    '<div class="pr-tools">'+
+      '<button class="pr-go" onclick="hqPrGo()">طباعة - حفظ PDF</button>'+
+      '<button class="pr-x" onclick="hqPrClose()">إغلاق</button>'+
+    '</div>'+
+    '<div class="pr-stage"><div class="pr-page pr-measure">'+ hqPrDeco()+ top +
+      '<div class="pr-body">'+ inner +'</div>'+ foot(1,1)+
     '</div></div>';
   document.body.appendChild(host);
+  /* تقسيم المحتوى صفحاتٍ بالقياس الفعلي، ولكل صفحة رأسها وتذييلها ورقمها
+     (تكرار الرأس عبر thead لم يعمل على سفاري iOS) */
+  try{ hqPrPaginate(host, hqPrDeco(), top, foot); }catch(e){}
   hqPrFit();
+}
+function hqPrOuterH(el){
+  if(!el) return 0;
+  var cs=getComputedStyle(el);
+  return el.offsetHeight+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0);
+}
+function hqPrPaginate(host, deco, top, footFn){
+  var page=host.querySelector('.pr-page.pr-measure'); if(!page) return;
+  var body=page.querySelector('.pr-body'); if(!body) return;
+  function mm(v){ return v*96/25.4; }
+  var topH=hqPrOuterH(page.querySelector('.pr-top')), footH=hqPrOuterH(page.querySelector('.pr-foot'));
+  /* A4 ٢٩٧مم − حشو الورقة ٢٣مم − هامش أمان ٢٦مم لهوامش الطابعة التي لا تُلغى على iOS */
+  var avail=mm(297)-mm(23)-mm(26)-topH-footH;
+  var kids=Array.prototype.slice.call(body.children);
+  var items=kids.map(function(b){ return {el:b, h:hqPrOuterH(b), keep:b.classList.contains('pr-sec')}; });
+  var pages=[], cur=[], used=0;
+  for(var i=0;i<items.length;i++){
+    var it=items[i], need=it.h;
+    if(it.keep && i+1<items.length) need+=items[i+1].h;      /* العنوان لا يُترك وحيداً آخر الصفحة */
+    if(cur.length && used+need>avail){ pages.push(cur); cur=[]; used=0; }
+    cur.push(it.el); used+=it.h;
+  }
+  if(cur.length) pages.push(cur);
+  var stage=page.parentNode, frag=document.createDocumentFragment();
+  pages.forEach(function(els,n){
+    var pg=document.createElement('div'); pg.className='pr-page';
+    pg.innerHTML=deco+top;
+    var bd=document.createElement('div'); bd.className='pr-body';
+    els.forEach(function(e){ bd.appendChild(e); });
+    pg.appendChild(bd);
+    pg.insertAdjacentHTML('beforeend', footFn(n+1,pages.length));
+    frag.appendChild(pg);
+  });
+  stage.innerHTML=''; stage.appendChild(frag);
+}
+/* جدول طويل يُقسَّم كتلاً صغيرة لتوزَّع على الصفحات (رأس الأعمدة يتكرّر مع كل كتلة) */
+function hqPrTableChunks(cols, rows, per){
+  per=per||18; var out='';
+  for(var i=0;i<rows.length;i+=per){
+    var part=rows.slice(i,i+per), base=i;
+    out+='<table class="pr-tbl"><thead><tr>'+cols.map(function(c){ return '<th>'+hqEsc(c)+'</th>'; }).join('')+'</tr></thead><tbody>'+
+      part.map(function(r,k){ return '<tr><td class="n">'+arNum(base+k+1)+'</td>'+
+        r.map(function(v){ return '<td>'+hqEsc(v==null||v===''?'—':String(v))+'</td>'; }).join('')+'</tr>'; }).join('')+
+      '</tbody></table>';
+  }
+  return out||hqPrTable(cols,[]);
 }
 /* ملاءمة عرض الورقة للشاشة في المعاينة */
 function hqPrFit(){
@@ -9605,7 +9654,10 @@ function hqPrCSS(){
 }
 /* حفظ التقرير صورةً PNG */
 /* الطباعة تُستدعى من نقرة المستخدم مباشرة — وإلا منعها سفاري */
+var _hqPrLast=0;
 function hqPrGo(){
+  var now=Date.now(); if(now-_hqPrLast<1500) return;   /* نقرتان متتاليتان تجعلان سفاري يحجب الطباعة «التلقائية» */
+  _hqPrLast=now;
   try{ window.print(); }
   catch(e){ showToast('تعذّرت الطباعة','error'); }
 }
@@ -11319,27 +11371,40 @@ function dqScreenTable(cols,rows){
       r.map(function(v){ return '<td>'+hqEsc(v==null||v===''?'—':String(v))+'</td>'; }).join('')+'</tr>'; }).join('')+
     '</table></div>';
 }
-/* عدّ حلقة واحدة داخل مدى من الأيام (قراءة فقط) */
-async function hqRangeCount(h,lo,hi){
+/* «أنجز»: نقطة (n:) أو بلا نقطة حين المراجعة «لا يوجد» (z:) — كلاهما إنجاز في التقارير */
+function rpDoneMark(v){ v=String(v||''); return v.indexOf('n:')===0||v.indexOf('z:')===0; }
+function rpPct(a,b){ return b?Math.round(a/b*100):0; }
+/* عدّ حلقة واحدة داخل مدى من الأيام (قراءة فقط). nExp = أيام الدراسة المتوقَّعة في المدى (٠ = ما سُجّل فعلاً) */
+async function hqRangeCount(h,lo,hi,nExp){
   return await hqWithHalqaA(h, async function(){
-    var studs=hqStudentsOf(h), o={tot:studs.length,pres:0,abs:0,les:0,rev:0,acted:false,days:{},susp:0,reason:''};
+    var studs=hqStudentsOf(h), o={tot:studs.length,pres:0,abs:0,les:0,rev:0,taj:0,ev:0,exp:0,acted:false,days:{},susp:0,reason:''};
     studs.forEach(function(s){
       evEntryList(s.id).forEach(function(e){
         if(!isFinite(e.jd)||e.jd<lo||e.jd>hi) return;
         var d=e.d||{};
         if(!(d.attend||d.lesson||d.review||d.tajweed)) return;
-        o.acted=true; o.days[e.k]=1;
+        o.acted=true; o.days[e.k]=1; o.ev++;
         if(d.attend==='حاضر'||d.attend==='متأخر'||d.attend==='تسميع عن بعد') o.pres++;
-        else if(d.attend==='غائب') o.abs++;
-        if(d.lesson&&String(d.lesson).indexOf('n:')===0) o.les++;
-        if(d.review&&String(d.review).indexOf('n:')===0) o.rev++;
+        else if(d.attend==='غائب'||d.attend==='غائب بعذر') o.abs++;
+        if(rpDoneMark(d.lesson)) o.les++;
+        if(rpDoneMark(d.review)) o.rev++;
+        if(d.tajweed) o.taj++;
       });
     });
     var sp=DB.suspend||{};
     for(var k in sp){ var jd=hqJdOfKey(k); if(isFinite(jd)&&jd>=lo&&jd<=hi){ o.susp++; if(!o.reason) o.reason=(sp[k]&&sp[k].reason)||''; } }
     o.nDays=Object.keys(o.days).length;
+    o.exp=studs.length*(nExp||o.nDays||0);   /* طالب × يوم متوقَّع */
+    o.pctEv=rpPct(o.ev,o.exp);
     return o;
   });
+}
+/* أيام الدراسة المتوقَّعة داخل المدى من الخط الزمني (٠ إن لم يوجد) */
+function dqExpDays(lo,hi){
+  try{
+    var ds=hqPlanStudyDays(typeof tlActive==='function'?tlActive():null);
+    return ds.filter(function(j){ return j>=lo&&j<=hi; }).length;
+  }catch(e){ return 0; }
 }
 /* حساب الإحصائية المطلوبة (يوم/أسبوع/شهر — حلقة أو الجميع) — تُعيد كائن الطباعة أو null */
 async function dqBuild(){
@@ -11368,34 +11433,38 @@ async function dqBuild(){
   if(!list.length){ showToast('لم تُوجد الحلقة','error'); return null; }
   var kindN=ksKindName(kind), spanLbl=isDay?'التاريخ':(kind==='week'?'مدى الأسبوع':'مدى الشهر');
   var ttl={day:'إحصائية اليوم',week:'إحصائية الأسبوع',month:'إحصائية الشهر'}[kind]||'الإحصائية';
-  var todayJD=ksJdToday();
+  var todayJD=ksJdToday(), nExp=isDay?1:dqExpDays(lo,hi);
+  /* بطاقات النسب: [العنوان، النسبة، التفصيل] */
+  function pc(l,a,b,unit){ return [l, arNum(rpPct(a,b))+'٪', arNum(a)+' من '+arNum(b)+(unit?(' '+unit):'')]; }
+  function ratioRows(r){
+    var att=r.pres+r.abs;
+    return [ pc('نسبة الحضور',r.pres,att,'يوم حضور وغياب'), pc('نسبة الغياب',r.abs,att,'يوم حضور وغياب'),
+             pc('نسبة إنجاز الدرس',r.les,r.pres,'حاضراً'), pc('نسبة إنجاز المراجعة',r.rev,r.pres,'حاضراً'),
+             pc('نسبة تقييم المستوى',r.taj,r.pres,'حاضراً'), pc('نسبة التقييم',r.ev,r.exp,'طالب/يوم متوقَّع') ];
+  }
   try{
     if(hid!=='all'){
-      var h=list[0], r=await hqRangeCount(h,lo,hi);
+      var h=list[0], r=await hqRangeCount(h,lo,hi,nExp);
       var rows=[[spanLbl,span],['نوع الإحصائية',kindN],['الحلقة',h.name||'—'],['معلّم الحلقة',hqTeacherNamesOf(h)||'—'],
                 ['مجموع طلاب الحلقة',arNum(r.tot)]];
       if(!isDay) rows.push(['أيام مسجَّلة في المدى',arNum(r.nDays)]);
-      rows.push(['عدد الحضور',arNum(r.pres)],['عدد الغياب',arNum(r.abs)],
-                ['أنجزوا الدرس',arNum(r.les)],['أنجزوا المراجعة',arNum(r.rev)]);
+      rows=rows.concat(ratioRows(r));
       if(isDay && lo===todayJD) rows.push(['دخول المعلم', hqDayTeacherTxt(r,h)]);
       if(r.susp) rows.push([isDay?'تعليق الحضور':'أيام تعليق الحضور', isDay?(r.reason||'معلَّق'):arNum(r.susp)]);
-      return { title:ttl+' - '+(h.name||''), meta:rows.slice(0,4), rows:rows.slice(4), table:null, all:rows,
-        chart:[{l:'عدد الحضور',v:r.pres},{l:'عدد الغياب',v:r.abs},{l:'أنجزوا الدرس',v:r.les},{l:'أنجزوا المراجعة',v:r.rev}] };
+      return { title:ttl+' - '+(h.name||''), meta:rows.slice(0,4), rows:rows.slice(4), table:null, all:rows };
     }
     /* جميع الحلقات: إجمالي ثم صفّ لكل حلقة */
-    var T={tot:0,pres:0,abs:0,les:0,rev:0,act:0}, trs=[];
+    var T={tot:0,pres:0,abs:0,les:0,rev:0,taj:0,ev:0,exp:0,act:0}, trs=[];
     for(var i=0;i<list.length;i++){
-      var hh=list[i], o=await hqRangeCount(hh,lo,hi);
-      T.tot+=o.tot; T.pres+=o.pres; T.abs+=o.abs; T.les+=o.les; T.rev+=o.rev; if(o.acted) T.act++;
-      trs.push([hh.name||'—', arNum(o.tot), arNum(o.pres), arNum(o.abs), arNum(o.les), arNum(o.rev),
-                isDay?hqDayTeacherTxt(o,hh):(o.acted?'قيّمت':'لم تقيّم')]);
+      var hh=list[i], o=await hqRangeCount(hh,lo,hi,nExp);
+      T.tot+=o.tot; T.pres+=o.pres; T.abs+=o.abs; T.les+=o.les; T.rev+=o.rev; T.taj+=o.taj; T.ev+=o.ev; T.exp+=o.exp; if(o.acted) T.act++;
+      trs.push([hh.name||'—', arNum(o.tot), arNum(o.pres), arNum(o.abs), arNum(o.les), arNum(o.rev), arNum(o.taj), arNum(o.pctEv)+'٪']);
     }
-    var cards=[['حلقات الجمعية',arNum(list.length)],['مجموع الطلاب',arNum(T.tot)],['عدد الحضور',arNum(T.pres)],['عدد الغياب',arNum(T.abs)],
-               ['أنجزوا الدرس',arNum(T.les)],['أنجزوا المراجعة',arNum(T.rev)],['حلقات قيّمت',arNum(T.act)],['حلقات لم تقيّم',arNum(list.length-T.act)]];
-    var cols=['#','الحلقة','الطلاب','الحضور','الغياب','الدرس','المراجعة',isDay?'دخول المعلم':'الحالة'];
+    var cards=[['حلقات الجمعية',arNum(list.length)],['مجموع الطلاب',arNum(T.tot)]].concat(ratioRows(T),
+              [pc('حلقات قيّمت',T.act,list.length,'حلقة'), pc('حلقات لم تقيّم',list.length-T.act,list.length,'حلقة')]);
+    var cols=['#','الحلقة','الطلاب','الحضور','الغياب','الدرس','المراجعة','المستوى','نسبة التقييم'];
     return { title:ttl+' - جميع الحلقات', meta:[[spanLbl,span],['نوع الإحصائية',kindN],['الحلقات',arNum(list.length)]],
-      rows:cards, table:{cols:cols,rows:trs}, all:[[spanLbl,span],['نوع الإحصائية',kindN]].concat(cards),
-      chart:[{l:'عدد الحضور',v:T.pres},{l:'عدد الغياب',v:T.abs},{l:'أنجزوا الدرس',v:T.les},{l:'أنجزوا المراجعة',v:T.rev}] };
+      rows:cards, table:{cols:cols,rows:trs}, all:[[spanLbl,span],['نوع الإحصائية',kindN]].concat(cards) };
   }catch(e){ showToast('تعذّر الحساب','error'); return null; }
 }
 /* عرض الإحصائية على الشاشة (يُستعمل حيث توجد خانة نتيجة مرئية) */
@@ -11404,26 +11473,26 @@ async function hqDayShow(){
   box.innerHTML='<div class="hqacc-load">جارٍ الحساب…</div>';
   var L=await dqBuild(); if(!L){ box.innerHTML=''; return; }
   window._dqLast=L;
-  box.innerHTML='<div class="hqres">'+(L.all||[]).map(function(x){ return hqAccRow(x[0], x[1]); }).join('')+
+  box.innerHTML='<div class="hqres">'+(L.all||[]).map(function(x){ return hqAccRow(x[0], x[1]+(x[2]?(' ('+x[2]+')'):'')); }).join('')+
     (L.table?('<div class="hq-diag-t" style="margin-top:10px">تفصيل الحلقات</div>'+dqScreenTable(L.table.cols, L.table.rows)):'')+
     '<div class="hqacc-acts" style="justify-content:center"><button class="hq-mini-btn view" onclick="hqPrintDayStats()">طباعة التقرير PDF</button></div></div>';
 }
 function hqPrintDayStats(){
   var L=window._dqLast;
   if(!L||!L.rows||!L.rows.length){ showToast('اجلب الإحصائية أولاً','error'); return; }
-  var nums=L.rows.filter(function(x){ return /^[0-9٠-٩]+$/.test(String(x[1])); });
-  var others=L.rows.filter(function(x){ return !/^[0-9٠-٩]+$/.test(String(x[1])); });
+  var isNum=function(x){ return /^[0-9٠-٩]+٪?$/.test(String(x[1])); };
+  var nums=L.rows.filter(isNum), others=L.rows.filter(function(x){ return !isNum(x); });
   var inner=
     '<div class="pr-meta">'+(L.meta||[]).map(function(m){
       return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>';
     }).join('')+'</div>'+
     '<div class="pr-sec">الإجمالي</div>'+
-    '<div class="pr-grid">'+nums.map(function(x){
-      return '<div class="pr-card"><div class="pr-num">'+hqEsc(x[1])+'</div><div class="pr-lbl">'+hqEsc(x[0])+'</div></div>';
-    }).join('')+'</div>'+
+    rpGrid(nums.map(function(x){
+      return '<div class="pr-card"><div class="pr-num">'+hqEsc(x[1])+'</div><div class="pr-lbl">'+hqEsc(x[0])+
+             (x[2]?('<span class="pr-lbl-sub">'+hqEsc(x[2])+'</span>'):'')+'</div></div>';
+    }))+
     (others.length?hqPrTable(['#','البيان','القيمة'], others.map(function(r){ return [r[0], r[1]]; })):'')+
-    (L.table?('<div class="pr-sec">تفصيل الحلقات</div>'+hqPrTable(L.table.cols, L.table.rows)):'')+
-    ((L.chart&&L.chart.some(function(x){ return (+x.v||0)>0; }))?hqPrChart('المؤشّرات', L.chart):'');
+    (L.table?('<div class="pr-sec">تفصيل الحلقات</div>'+hqPrTableChunks(L.table.cols, L.table.rows, 18)):'');
   hqPrintDoc(L.title||'الإحصائية', inner);
 }
 
@@ -11526,7 +11595,7 @@ function showAllHalqatStats(){
   window._hqStatsHalqat=halqat;
   function card(id,ico,ttl,sub,on){
     return '<button type="button" class="rp-card" id="'+id+'" onclick="'+on+'">'+
-      '<span class="rp-ico">'+ico+'</span><span class="rp-ttl">'+ttl+'</span><span class="rp-sub">'+sub+'</span></button>';
+      '<span class="rp-ttl">'+ttl+'</span><span class="rp-sub">'+sub+'</span></button>';
   }
   var body='<div class="hs-wrap"><div class="rp-grid">'+
     card('rp-c1','🧮','تقرير الأعداد والتسجيل بالجمعية','الطلاب والمعلمون والحلقات والمراحل','rpPrintCounts()')+
@@ -11546,13 +11615,14 @@ function showAllHalqatStats(){
     '<button class="tl-fetch" onclick="rpPrintPeriod()">طباعة التقرير PDF</button>'+
   '</div></div>';
   openModal('تقارير الجمعية', body);
+  hqModalTall();   /* الورقة بكامل الشاشة فتظهر البطاقات في أعلاها */
 }
 /* نافذة مختصرة تحت بطاقة تقرير الحضور */
 function rpTogglePeriod(){
   var p=document.getElementById('rp-pop'), c=document.getElementById('rp-c3'); if(!p) return;
   var open=!p.classList.contains('open');
   p.classList.toggle('open',open); if(c) c.classList.toggle('on',open);
-  if(open){ try{ p.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){} }
+  if(open){ try{ p.scrollIntoView({block:'nearest'}); }catch(e){} }
 }
 async function rpPrintPeriod(){
   var L=await dqBuild(); if(!L) return;
@@ -11563,11 +11633,25 @@ function rpNumCard(v,l,cls){
   return '<div class="pr-card'+(cls?(' '+cls):'')+'"><div class="pr-num">'+hqEsc(String(v))+'</div><div class="pr-lbl">'+hqEsc(l)+'</div></div>';
 }
 /* بطاقة حلقة/معلّم: اسم وسطر ثانٍ وقيمة */
-function rpInfoCard(name,sub,val){
+function rpInfoCard(name,sub,val,small){
   return '<div class="pr-card pr-icard"><div class="pr-iname">'+hqEsc(name||'—')+'</div>'+
-    '<div class="pr-isub">'+hqEsc(sub||'—')+'</div><div class="pr-ival">'+hqEsc(String(val==null?'—':val))+'</div></div>';
+    '<div class="pr-isub">'+hqEsc(sub||'—')+'</div><div class="pr-ival'+(small?' sm':'')+'">'+hqEsc(String(val==null?'—':val))+'</div></div>';
 }
-function rpGrid(cards){ return '<div class="pr-grid">'+cards.join('')+'</div>'; }
+/* آخر ظهور مختصر في سطر واحد: اليوم بالساعة، وغيره بتاريخ هجري قصير */
+function rpSeenShort(ts){
+  try{
+    var d=new Date(ts), n=new Date();
+    var same=d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();
+    if(same) return 'اليوم '+d.toLocaleTimeString('ar-SA',{hour:'numeric',minute:'2-digit'});
+    var h=tlJ2H(hqJdYMD(d.getFullYear(),d.getMonth()+1,d.getDate()));
+    return arNum(h.d)+' '+TL_HM[h.m-1]+' '+arNum(h.y);
+  }catch(e){ return hqSeenTxt(ts); }
+}
+function rpGrid(cards){
+  var out='';
+  for(var i=0;i<cards.length;i+=4) out+='<div class="pr-grid">'+cards.slice(i,i+4).join('')+'</div>';
+  return out;
+}
 function rpSec(t){ return '<div class="pr-sec">'+hqEsc(t)+'</div>'; }
 
 /* (١) تقرير الأعداد والتسجيل */
@@ -11597,8 +11681,8 @@ async function rpHalqaRecite(h){
         if(d.attend==='غائب'||d.attend==='غائب بعذر') return;
         if(!(d.attend||d.lesson||d.review||d.tajweed)) return;
         days++;
-        if(d.lesson&&String(d.lesson).indexOf('n:')===0) done++;
-        if(d.review&&String(d.review).indexOf('n:')===0) done++;
+        if(rpDoneMark(d.lesson)) done++;
+        if(rpDoneMark(d.review)) done++;
       });
     });
     return {pct:days?Math.round(done/(2*days)*100):0, done:done, days:days};
@@ -11697,7 +11781,7 @@ async function rpTeacherToday(h){
     var key=evDateKey(), studs=hqStudentsOf(h).filter(function(s){ return !isDiscontinued(s); }), n=0;
     studs.forEach(function(s){
       var rec=(DB.evals||{})[s.id]||{}, d=(rec.days||{})[key]||{};
-      if(d.lesson&&String(d.lesson).indexOf('n:')===0 && d.review&&String(d.review).indexOf('n:')===0) n++;
+      if(rpDoneMark(d.lesson) && rpDoneMark(d.review)) n++;
     });
     return {done:n, tot:studs.length};
   });
@@ -11723,10 +11807,10 @@ async function rpPrintTeachers(){
     var td=rows.slice().sort(function(a,b){ return (b.td.done/(b.td.tot||1))-(a.td.done/(a.td.tot||1)); });
     var reg=rows.slice().sort(function(a,b){ return b.reg-a.reg; });
     var inner=
-      rpSec('آخر ظهور للمعلم')+rpGrid(seen.map(function(o){ return rpInfoCard(o.t.name, o.hn, o.seen?hqSeenTxt(o.seen):'لم يدخل بعد'); }))+
+      rpSec('آخر ظهور للمعلم')+rpGrid(seen.map(function(o){ return rpInfoCard(o.t.name, o.hn, o.seen?rpSeenShort(o.seen):'لم يدخل بعد', true); }))+
+      rpSec('عدد طلاب المعلمين (المنتظمون)')+rpGrid(reg.map(function(o){ return rpInfoCard(o.t.name, o.hn, arNum(o.reg)); }))+
       rpSec('المعلم الأكثر حرصاً (الحضور + الدرس + المراجعة + المستوى)')+rpGrid(dil.map(function(o){ return rpInfoCard(o.t.name, o.hn, arNum(o.dil)+'٪'); }))+
-      rpSec('مدى تقييم المعلّمين للطلاب — اليوم '+hqDayDateTxt())+rpGrid(td.map(function(o){ return rpInfoCard(o.t.name, o.hn, arNum(o.td.done)+'/'+arNum(o.td.tot)); }))+
-      rpSec('عدد طلاب المعلمين (المنتظمون)')+rpGrid(reg.map(function(o){ return rpInfoCard(o.t.name, o.hn, arNum(o.reg)); }));
+      rpSec('مدى تقييم المعلّمين للطلاب — اليوم '+hqDayDateTxt())+rpGrid(td.map(function(o){ return rpInfoCard(o.t.name, o.hn, arNum(o.td.done)+'/'+arNum(o.td.tot)); }));
     hqPrintDoc('تقرير متابعة معلمي الحلقات', inner);
   }catch(e){ showToast('تعذّر تجهيز التقرير','error'); }
 }
@@ -12970,15 +13054,20 @@ function hqSelFloat(wrap){
   m.classList.add('hqsel-float');
   var r=btn.getBoundingClientRect();
   var vh=window.innerHeight||document.documentElement.clientHeight;
-  var below=vh-r.bottom-14;       /* الانسدال لأسفل دائمًا */
+  var below=vh-r.bottom-14, above=r.top-14;
   m.style.position='fixed';
   m.style.left=Math.max(6,r.left)+'px';
   m.style.right='auto';           /* بدونها يفوز right:0 في اتجاه RTL فتقفز القائمة لحافة الشاشة */
   m.style.width=r.width+'px';
   m.style.minWidth='0';
-  m.style.maxHeight=Math.min(260, Math.max(96, below))+'px';
   m.style.zIndex='100000';
-  m.style.top=(r.bottom+5)+'px'; m.style.bottom='auto';
+  if(below<170 && above>below){   /* قرب أسفل الشاشة: تنسدل لأعلى بدل أن تُقصّ */
+    m.style.maxHeight=Math.min(260, Math.max(96, above))+'px';
+    m.style.top='auto'; m.style.bottom=(vh-r.top+5)+'px';
+  } else {
+    m.style.maxHeight=Math.min(260, Math.max(96, below))+'px';
+    m.style.top=(r.bottom+5)+'px'; m.style.bottom='auto';
+  }
 }
 function hqSelBuildMenu(wrap){
   var s=wrap.querySelector('select'), menu=hqSelMenuOf(wrap);
@@ -13005,10 +13094,12 @@ function hqSelCloseAll(except){
     else if(!w.classList.contains('open')) hqSelDock(w);
   }
 }
+var _hqSelOpenedAt=0;
 function hqSelToggle(wrap){
   var isOpen=wrap.classList.contains('open');
   hqSelCloseAll();
   if(!isOpen){
+    _hqSelOpenedAt=Date.now();   /* مهلة قصيرة لا يُغلق فيها التمرير القائمةَ التي فُتحت للتو */
     hqSelBuildMenu(wrap);                 /* يُبنى عند الفتح ليواكب أي تغيير في الخيارات */
     wrap.classList.add('open');
     hqSelFloat(wrap);
@@ -13068,6 +13159,7 @@ function hqSelEnhance(root){
     document.addEventListener('scroll',function(ev){
       var t=ev.target;
       if(t&&t.classList&&(t.classList.contains('hqsel-menu')||t.classList.contains('hqrow-body')||t.classList.contains('ev-dd-menu'))) return;
+      if(Date.now()-_hqSelOpenedAt<500){ hqRowCloseAll(); if(typeof evDDCloseAll==='function') evDDCloseAll(); return; }
       hqSelCloseAll(); hqRowCloseAll(); if(typeof evDDCloseAll==='function') evDDCloseAll();
     },true);
     window.addEventListener('resize',function(){ hqSelCloseAll(); hqRowCloseAll(); if(typeof evDDCloseAll==='function') evDDCloseAll(); },false);
@@ -14376,12 +14468,12 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 #pdfReport .pr-date span:last-child{ color:#8fb3ae; font-weight:600; }
 
 #pdfReport .pr-sec{ position:relative; z-index:2; font-size:12pt; font-weight:900; color:#e7cf95;
-  margin:0 0 5mm; padding-inline-start:3mm; border-inline-start:3px solid #cbb27a; }
+  margin:3mm 0 5mm; padding-inline-start:3mm; border-inline-start:3px solid #cbb27a; }
 
 /* البطاقات: إطار رفيع وزوايا دائرية كما في المرفق */
 #pdfReport .pr-hero, #pdfReport .pr-grid{ position:relative; z-index:2; display:grid; gap:4mm; }
 #pdfReport .pr-hero{ grid-template-columns:repeat(4,1fr); margin-bottom:9mm; }
-#pdfReport .pr-grid{ grid-template-columns:repeat(4,1fr); margin-bottom:7mm; }
+#pdfReport .pr-grid{ grid-template-columns:repeat(4,1fr); margin-bottom:4mm; }
 #pdfReport .pr-card{ border:1px solid rgba(203,178,122,.45); border-radius:4mm;
   background:rgba(255,255,255,.045); padding:6mm 3mm 5mm; text-align:center; }
 #pdfReport .pr-card.hero{ background:rgba(255,255,255,.09); border-color:rgba(203,178,122,.7); }
@@ -14394,11 +14486,13 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 #pdfReport .pr-iname{ font-size:9.5pt; font-weight:900; color:#ffffff; line-height:1.35; min-height:8.5mm; }
 #pdfReport .pr-isub{ font-size:7.5pt; font-weight:700; color:#9fc0bc; margin-top:1mm; line-height:1.3; min-height:6mm; }
 #pdfReport .pr-ival{ font-size:15pt; font-weight:900; color:#f0dba6; margin-top:2mm; line-height:1; }
-/* الورقة جدولٌ رأسه يتكرّر في أعلى كل صفحة مطبوعة */
-#pdfReport table.pr-doc{ width:100%; border-collapse:collapse; position:relative; z-index:2; }
-#pdfReport table.pr-doc>thead{ display:table-header-group; }
-#pdfReport table.pr-doc td{ padding:0; vertical-align:top; }
-#pdfReport table.pr-doc>thead .pr-top{ margin-bottom:7mm; }
+#pdfReport .pr-lbl-sub{ display:block; font-size:7.5pt; font-weight:700; color:#9fc0bc; margin-top:1mm; }
+#pdfReport .pr-ival.sm{ font-size:9pt; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2.5mm; }
+/* إطار ذهبي على أطراف الورقة */
+#pdfReport .pr-frame{ position:absolute; inset:4mm; border:0.5mm solid rgba(203,178,122,.45); border-radius:3mm; pointer-events:none; z-index:1; }
+#pdfReport .pr-body{ position:relative; z-index:2; }
+#pdfReport .pr-page + .pr-page{ margin-top:6mm; }
+#pdfReport .pr-foot{ display:flex; justify-content:space-between; gap:4mm; }
 
 /* المخطط البياني */
 #hqImgSave{position:fixed;inset:0;z-index:100000;background:#06322e;display:flex;flex-direction:column;overflow:auto;direction:rtl}
@@ -14460,28 +14554,30 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 
 @media print{
   @page{ size:A4 portrait; margin:0; }
-  html,body{ background:#0e6b62 !important; height:auto !important; overflow:visible !important; }
+  html,body{ background:#0b4a48 !important; height:auto !important; overflow:visible !important;
+             margin:0 !important; padding:0 !important;
+             -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
   body > *{ display:none !important; }
   body > #pdfReport{
     display:block !important; position:static !important; inset:auto !important;
     z-index:auto !important; opacity:1 !important; pointer-events:auto !important; overflow:visible !important;
   }
   #pdfReport{ position:static !important; padding:0 !important; overflow:visible !important;
-              background:transparent !important; }
+              background:#0b4a48 !important; }
   #pdfReport .pr-tools{ display:none !important; }
   #pdfReport .pr-stage{ transform:none !important; width:auto !important; }
   #pdfReport, #pdfReport *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-  /* لا ورقة بيضاء زائدة في نهاية أي تقرير */
+  /* كل ورقة صفحة مطبوعة مستقلة برأسها وتذييلها؛ الأخيرة بلا فاصل بعدها فلا ورقة بيضاء زائدة */
   #pdfReport .pr-page{
-    width:auto !important; min-height:0 !important; height:auto !important;
-    page-break-after:avoid !important; break-after:avoid !important;
+    width:auto !important; min-height:262mm !important; height:auto !important; margin:0 !important;
+    page-break-after:always !important; break-after:page !important;
   }
+  #pdfReport .pr-page:last-child{ page-break-after:avoid !important; break-after:avoid !important; }
+  #pdfReport .pr-page + .pr-page{ margin-top:0 !important; }
   #pdfReport .pr-foot{ page-break-after:avoid !important; break-after:avoid !important; margin-bottom:0 !important; }
   #pdfReport .pr-sec{ break-after:avoid !important; }
   #pdfReport .pr-rank, #pdfReport .pr-chart, #pdfReport .pr-card{ break-inside:avoid !important; }
-  #pdfReport table.pr-doc>thead{ display:table-header-group !important; }
-  #pdfReport table.pr-doc>thead .pr-top{ padding-top:2mm; }
-  #pdfReport .pr-grid, #pdfReport .pr-hero{ break-inside:auto !important; }
+  #pdfReport .pr-grid, #pdfReport .pr-hero, #pdfReport .pr-tbl{ break-inside:avoid !important; }
 }
 
 /* ===== مؤشّر السحب للتحديث ===== */
