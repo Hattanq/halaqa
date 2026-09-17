@@ -4703,11 +4703,16 @@ function launchApp(){
 }
 /* موجة اللمس على تبويب الشريط السفلي */
 function navTap(b){ try{ b.classList.remove('tapped'); void b.offsetWidth; b.classList.add('tapped'); }catch(e){} }
+/* الانتقال من الشريط: إن كانت نافذة مفتوحة أُغلقت أولاً (الشريط ظاهر فوقها منذ 14.5) */
+function navGo(id){
+  try{ var bg=document.getElementById('modalBg'); if(bg&&bg.style.display==='flex') closeModal(); }catch(e){}
+  showPage(id);
+}
 function buildNav(){
   const defs=NAV_DEFS[STATE.role]||NAV_DEFS.student;
   const isTwo=defs.length===2;
   document.getElementById('bottomNav').innerHTML=defs.map((n,i)=>`
-    <button class="nav-btn ${STATE.page===n.id?'active':''}" id="nb-${n.id}" onclick="navTap(this);showPage('${n.id}')">
+    <button class="nav-btn ${STATE.page===n.id?'active':''}" id="nb-${n.id}" onclick="navTap(this);navGo('${n.id}')">
       <span class="nav-gem"><i class="nav-orbit"></i><i class="nav-halo"></i><i class="nav-spark s1"></i><i class="nav-spark s2"></i><i class="nav-spark s3"></i><div class="nav-icon-wrap">${n.icon}</div></span>
       <div class="nav-label">${n.lbl}</div>
     </button>${isTwo&&i===0?'<div class="nav-divider"></div>':''}`).join('');
@@ -4798,11 +4803,11 @@ function renderDash(){
     const msgStuSVG=`<svg viewBox="0 0 64 64" fill="none"><rect x="8" y="14" width="48" height="34" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M8 20l24 16 24-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="48" cy="46" r="10" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/><path d="M44 46h8M48 42v8" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>`;
     const msgParSVG=msgStuSVG; const _msgParSVGOld=`<svg viewBox="0 0 64 64" fill="none"><rect x="6" y="14" width="46" height="32" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M6 20l23 15 23-15" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="50" cy="46" r="11" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/><path d="M50 41v5.5l3.5 3.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     wrap.innerHTML=`<div class="menu-grid">
+      <div class="menu-card mc-3" onclick="showTodayRecitation()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M10 14h44v36H10z" rx="4" stroke="white" stroke-width="3" fill="rgba(255,255,255,.08)"/><path d="M32 14v36" stroke="white" stroke-width="2.4"/><path d="M16 24h10M16 31h10M16 38h8M38 24h10M38 31h10M38 38h8" stroke="white" stroke-width="2.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تسميع اليوم</div></div>
+      <div class="menu-card mc-2" onclick="showPage('grades')"><div class="mc-icon"><img src="${cSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تقييم الطلاب</div></div>
       <div class="menu-card mc-1" onclick="showAddStudent()"><div class="mc-icon">${addSVG}</div><div class="mc-accent"></div><div class="mc-label">إضافة طالب</div></div>
       <div class="menu-card mc-4" onclick="showStudentsData()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="20" cy="20" r="9" stroke="white" stroke-width="2.5"/><circle cx="44" cy="20" r="9" stroke="white" stroke-width="2.5"/><path d="M4 50c0-9 7-16 16-16s16 7 16 16" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M36 50c0-9 7-16 16-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label" id="mc-stu-count">بيانات الطلاب</div></div>
       <div class="menu-card mc-4" onclick="hqPlanTypesHome()"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تحديد خطة الطالب</div></div>
-      <div class="menu-card mc-2" onclick="showPage('grades')"><div class="mc-icon"><img src="${cSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تقييم الطلاب</div></div>
-      <div class="menu-card mc-3" onclick="showTodayRecitation()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M10 14h44v36H10z" rx="4" stroke="white" stroke-width="3" fill="rgba(255,255,255,.08)"/><path d="M32 14v36" stroke="white" stroke-width="2.4"/><path d="M16 24h10M16 31h10M16 38h8M38 24h10M38 31h10M38 38h8" stroke="white" stroke-width="2.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تسميع اليوم</div></div>
       <div class="menu-card mc-5" onclick="showRankTable(null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطلاب</div></div>
       <div class="menu-card mc-3" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
       <div class="menu-card mc-1" onclick="showMsgStudents()">${(function(){var u=msgUnreadAllTeacher('stu');return u>0?'<div class="msg-dot">'+u+'</div>':'';})()}<div class="mc-icon">${msgStuSVG}</div><div class="mc-accent"></div><div class="mc-label">رسالة للطلاب</div></div>
@@ -4811,7 +4816,7 @@ function renderDash(){
       <div class="menu-card mc-3" onclick="hqOfflineOpen()"><div class="mc-icon">${HQ_SVG_OFFLINE}</div><div class="mc-accent"></div><div class="mc-label">تحميل البيانات</div></div>
       <div class="menu-card mc-6 mc-soon" onclick="remComingSoon()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="24" y="8" width="16" height="28" rx="8" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M17 30a15 15 0 0030 0" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="32" y1="45" x2="32" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/><line x1="23" y1="54" x2="41" y2="54" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">التسميع عن بُعد<span class="mc-soon-tag">قريباً</span></div></div>
       ${(function(){var _t=tmsgMyTid();var _u=_t?tmsgUnread(_t):0;return '<div class="menu-card mc-2" onclick="tmsgInbox()">'+(_u>0?('<div class="msg-dot">'+_u+'</div>'):'')+'<div class="mc-icon">'+msgStuSVG+'</div><div class="mc-accent"></div>'+'<div class="mc-label">رسائل المشرف والشؤون التعليمية</div></div>';})()}
-      <div class="menu-card mc-5 mc-wide" onclick="showTeacherReports()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="10" y="34" width="10" height="20" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="27" y="22" width="10" height="32" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="44" y="12" width="10" height="42" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><path d="M8 54h48" stroke="white" stroke-width="2.6" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تقارير الحلقة</div></div>
+      <div class="menu-card mc-5" onclick="showTeacherReports()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="10" y="34" width="10" height="20" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="27" y="22" width="10" height="32" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="44" y="12" width="10" height="42" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><path d="M8 54h48" stroke="white" stroke-width="2.6" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تقارير الحلقة</div></div>
 </div>`;
     var mcStu=document.getElementById('mc-stu-count');
     if(mcStu) mcStu.textContent='بيانات الطلاب ('+DB.students.length+')';
@@ -12575,6 +12580,7 @@ function renderRecitation(){
 function evRealKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 function evKeyOfDate(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 var EV_WD=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+var EV_HM=['محرم','صفر','ربيع ١','ربيع ٢','جمادى ١','جمادى ٢','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];   /* أسماء الأشهر مختصرة لمربعات الأيام */
 /* هل هذا اليوم ضمن نافذة التقييم (أحد الأسبوع الحالي ← اليوم)؟ */
 function evDayAllowed(k){
   if(!k) return false;
@@ -12608,7 +12614,7 @@ function evWeekDays(){
   for(var j=0;j<dows.length;j++){ var i=dows[j];
     var d=new Date(sun.getFullYear(),sun.getMonth(),sun.getDate()+i), k=evKeyOfDate(d), hj=null;
     try{ hj=tlJ2H(hqJdOfKey(k)); }catch(e){}
-    out.push({key:k, name:EV_WD[i], hd:hj?hj.d:d.getDate(), future:i>dow, today:k===tk});
+    out.push({key:k, name:EV_WD[i], hd:hj?hj.d:d.getDate(), hm:hj?(EV_HM[hj.m-1]||''):'', future:i>dow, today:k===tk});
   }
   return out;
 }
@@ -12619,6 +12625,12 @@ function evDayLabel(k,short){
   return EV_WD[d.getDay()]+' '+t;
 }
 function evDayIsToday(){ return evDateKey()===evRealKey(); }   /* اليوم الفعلي لا الافتراضي */
+/* لمسة واحدة على آيفون: touchend يُنفّذ فوراً ويُلغي click التالي، والفأرة تصل عبر click */
+var _evDayTapAt=0;
+function evDayTap(ev,k){
+  try{ if(ev&&ev.type==='touchend'){ ev.preventDefault(); _evDayTapAt=Date.now(); } else if(Date.now()-_evDayTapAt<700) return; }catch(e){}
+  evDaySet(k);
+}
 function evDaySet(k){
   if(!evDayAllowed(k)){ showToast('يُقيَّم الأسبوع الحالي فقط، ولا يُقيَّم يوم لم يأتِ بعد','error'); return; }
   STATE.evDay=k;
@@ -12630,14 +12642,14 @@ function evDayState(k){
   var studs=(DB.students||[]).filter(function(s){ return !isDiscontinued(s); }), n=0;
   if(evSuspStore()[k]) return 'susp';
   studs.forEach(function(s){ var rec=(DB.evals||{})[s.id]||{}, d=(rec.days||{})[k]; if(d&&evIsComplete(d)) n++; });
-  return !studs.length?'':(n>=studs.length?'full':(n?'part':''));
+  return (studs.length&&n>=studs.length)?'full':'';   /* لا نقطة إلا باكتمال تقييم الجميع */
 }
 function evWeekStrip(){
   var w=evWeekDays(), cur=evDateKey(), h='';
   for(var i=0;i<w.length;i++){ var x=w[i], st=x.future?'':evDayState(x.key);
     h+='<button type="button" class="ev-wd'+(x.key===cur?' sel':'')+(x.today?' today':'')+(x.future?' future':'')+(st?(' st-'+st):'')+'"'
-      +(x.future?' disabled':' onclick="evDaySet(\''+x.key+'\')"')+' aria-label="'+x.name+'">'
-      +'<span class="ev-wd-n">'+x.name+'</span><span class="ev-wd-d">'+arNum(x.hd)+'</span><i class="ev-wd-st"></i></button>';
+      +(x.future?' disabled':' onclick="evDayTap(event,\''+x.key+'\')" ontouchend="evDayTap(event,\''+x.key+'\')"')+' aria-label="'+x.name+'">'
+      +'<span class="ev-wd-n">'+x.name+'</span><span class="ev-wd-d"><b>'+arNum(x.hd)+'</b> '+x.hm+'</span><i class="ev-wd-st"></i></button>';
   }
   return '<div class="ev-week"><div class="ev-week-hd"><span>يوم التقييم</span></div>'
     +'<div class="ev-week-strip" style="grid-template-columns:repeat('+Math.max(1,w.length)+',1fr)">'+h+'</div></div>';
@@ -13316,10 +13328,8 @@ function renderGrades(){
   if(!DB.evals) DB.evals={};
   var list=DB.students.slice();
   if(STATE.role!=='teacher'){ var meId=STATE.user?STATE.user.sid:''; list=list.filter(function(s){return s.id===meId;}); }
-  list.sort(function(a,b){
-    var d=evCurrentScore(b.id).score.total-evCurrentScore(a.id).score.total;
-    return d!==0?d:(a.name||'').localeCompare(b.name||'','ar');
-  });
+  /* أبجدياً بالاسم كاملاً: يُقارَن الاسم الأول ثم الثاني ثم ما بعده */
+  list.sort(function(a,b){ return String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'ar'); });
   var key=evDateKey();
   var cards=list.map(function(s,i){
     var rec=DB.evals[s.id]||{}; var _day=(rec.days&&rec.days[key])||null;
@@ -13986,6 +13996,7 @@ function hqJdToYMD(jd){
 function hqKeyOfJd(jd){ var o=hqJdToYMD(jd); return o.y+'-'+o.m+'-'+o.d; }
 var HQ_AUTOABS_EPOCH=hqJdYMD(2026,9,6);   /* إطلاق التطبيق للحلقات: لا تُغيَّب أيام قبله */
 function evAutoAbsentSweep(){
+  return 0;   /* أُلغي التغييب التلقائي (إصدار 14.4): المعلّم يقيّم أيام الأسبوع بنفسه ولا يُسجَّل غياب إلا بيده */
   try{
     var r=(typeof STATE!=='undefined')?STATE.role:'';
     if(r!=='teacher'&&r!=='admin'&&r!=='supervisor') return 0;
@@ -14994,7 +15005,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 14.3';
+  window.HQ_BUILD='2026 - 14.5';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -15438,7 +15449,9 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 
 /* ===== شريط التبويبات السفلي: جواهر ذهبية حيّة (التبويب المفعّل يرتفع فوق حافّة الشريط) ===== */
 .bottom-nav{ background:linear-gradient(180deg,rgba(9,58,54,.96) 0%,#072d2a 55%,#051f1d 100%); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-  border-top:1px solid rgba(240,208,96,.22); box-shadow:0 -8px 32px rgba(0,0,0,.42); overflow:visible; height:66px; min-height:66px; }
+  border-top:1px solid rgba(240,208,96,.22); box-shadow:0 -8px 32px rgba(0,0,0,.42); overflow:visible; height:66px; min-height:66px; z-index:2500; }
+/* الشريط يبقى ظاهراً فوق النوافذ المنزلقة: الورقة تقف فوق حافّته لا خلفه */
+.modal-bg{ padding-bottom:calc(66px + env(safe-area-inset-bottom,0px)); box-sizing:border-box; }
 /* خيط ضوء يعبر الحافّة العليا باستمرار */
 .bottom-nav::before{ content:''; position:absolute; top:-1px; left:0; right:0; height:1px; pointer-events:none; z-index:0;
   background:linear-gradient(90deg,rgba(240,208,96,0) 0%,rgba(240,208,96,0) 30%,rgba(255,240,180,.95) 50%,rgba(240,208,96,0) 70%,rgba(240,208,96,0) 100%);
@@ -15451,10 +15464,9 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 .bottom-nav .nav-gem{ --ac:#fff7dc; position:relative; width:38px; height:38px; border-radius:13px; flex:0 0 auto;
   display:flex; align-items:center; justify-content:center; margin-bottom:4px;
   background:linear-gradient(145deg,#ffe99b 0%,#f2c74a 48%,#c9a227 100%); border:1px solid rgba(255,244,200,.75);
-  box-shadow:0 4px 12px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(120,85,10,.3);
-  filter:saturate(.78) brightness(.84);
+  box-shadow:0 0 0 3px #062a27, 0 6px 14px rgba(0,0,0,.4), 0 0 18px rgba(240,208,96,.5), inset 0 1px 0 rgba(255,255,255,.6), inset 0 -2px 0 rgba(120,85,10,.3);
   transition:transform .45s cubic-bezier(.34,1.56,.64,1), filter .35s ease, border-color .35s ease, box-shadow .35s ease; }
-.bottom-nav .nav-orbit{ position:absolute; inset:-3px; border-radius:16px; padding:1.5px; pointer-events:none; opacity:.3;
+.bottom-nav .nav-orbit{ position:absolute; inset:-5px; border-radius:18px; padding:1.5px; pointer-events:none; opacity:.75;
   background:conic-gradient(from 0deg, rgba(240,208,96,0) 0 62%, rgba(255,236,160,.95) 80%, rgba(240,208,96,0) 100%);
   -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
   animation:navOrbit 8s linear infinite; }
@@ -15469,7 +15481,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 .bottom-nav .nav-icon-wrap svg .i-acs{ stroke:var(--ac); stroke-width:1.6; stroke-linecap:round; fill:none; transition:stroke .35s ease; }
 /* لمس تبويب غير مفعّل */
 .bottom-nav .nav-btn:not(.active):active .nav-gem{ transform:scale(.88); }
-.bottom-nav .nav-btn:not(.active):hover .nav-gem{ transform:translateY(-2px); filter:none; }
+.bottom-nav .nav-btn:not(.active):hover .nav-gem{ transform:translateY(-2px); }
 /* المفعّل: ترتفع الجوهرة فوق الشريط وتتذهّب، والأيقونة داكنة تطفو، ومدار ضوئي وهالة نابضة وشرارات */
 .bottom-nav .nav-btn.active .nav-gem{ transform:translateY(-2px); filter:none; border-color:rgba(255,244,200,.95);
   box-shadow:0 0 0 3px #062a27, 0 8px 18px rgba(0,0,0,.45), 0 0 24px rgba(240,208,96,.6), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(120,85,10,.35);
@@ -15487,7 +15499,18 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 .bottom-nav .nav-btn.active .nav-label{ font-weight:900; font-size:.68rem; color:#f7dd86;
   background:linear-gradient(90deg,#e8c24e 0%,#fff2c0 50%,#e8c24e 100%); background-size:200% 100%;
   -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:navShine 3s ease-in-out infinite; }
-.bottom-nav .nav-divider{ width:1px; margin:18px 0; background:linear-gradient(180deg,rgba(240,208,96,0),rgba(240,208,96,.35),rgba(240,208,96,0)); align-self:stretch; }
+.bottom-nav .nav-divider{ position:relative; width:2px; margin:10px 0; border-radius:2px; align-self:stretch; flex:0 0 2px; overflow:visible;
+  background:linear-gradient(180deg,rgba(240,208,96,0) 0%,rgba(240,208,96,.7) 25%,#ffe9a0 50%,rgba(240,208,96,.7) 75%,rgba(240,208,96,0) 100%);
+  box-shadow:0 0 8px rgba(240,208,96,.45); }
+/* خرزة ضوء تصعد وتهبط على الخيط */
+.bottom-nav .nav-divider::before{ content:''; position:absolute; left:50%; top:12%; width:6px; height:6px; margin-left:-3px; border-radius:50%;
+  background:#fff6cc; box-shadow:0 0 10px 3px rgba(255,236,160,.85); animation:navBead 3.2s ease-in-out infinite; }
+/* معيّن ذهبي في المنتصف ينبض ويدور ببطء */
+.bottom-nav .nav-divider::after{ content:''; position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
+  background:linear-gradient(145deg,#ffe99b,#c9a227); border:1px solid rgba(255,244,200,.9); transform:rotate(45deg);
+  box-shadow:0 0 8px rgba(240,208,96,.6); animation:navDiamond 4s ease-in-out infinite; }
+@keyframes navBead{ 0%,100%{ top:12%; opacity:.35; } 50%{ top:82%; opacity:1; } }
+@keyframes navDiamond{ 0%,100%{ transform:rotate(45deg) scale(1); box-shadow:0 0 8px rgba(240,208,96,.6); } 50%{ transform:rotate(225deg) scale(1.25); box-shadow:0 0 14px rgba(255,236,160,.95); } }
 /* موجة خفيفة عند اللمس */
 .bottom-nav .nav-btn::after{ content:''; position:absolute; left:50%; top:50%; width:8px; height:8px; border-radius:50%; background:rgba(240,208,96,.35);
   transform:translate(-50%,-50%) scale(0); opacity:0; pointer-events:none; }
@@ -15503,7 +15526,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 @keyframes navShine{ 0%,100%{ background-position:0% 50%; } 50%{ background-position:100% 50%; } }
 @media (prefers-reduced-motion: reduce){
   .bottom-nav::before, .bottom-nav .nav-btn, .bottom-nav .nav-gem, .bottom-nav .nav-orbit, .bottom-nav .nav-halo, .bottom-nav .nav-spark,
-  .bottom-nav .nav-icon-wrap, .bottom-nav .nav-label{ transition:none; animation:none; }
+  .bottom-nav .nav-icon-wrap, .bottom-nav .nav-label, .bottom-nav .nav-divider::before, .bottom-nav .nav-divider::after{ transition:none; animation:none; }
 }
 
 /* ===== يوم التقييم: شريط أيام الأسبوع في صفحة «تقييم الطلاب» ===== */
@@ -15515,7 +15538,8 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   background:rgba(255,255,255,.04); color:rgba(255,255,255,.72); cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; font-family:inherit;
   transition:transform .35s cubic-bezier(.34,1.56,.64,1), background .3s, border-color .3s, color .3s, box-shadow .3s; }
 .ev-wrap .ev-wd-n{ font-size:.56rem; font-weight:700; letter-spacing:-.01em; }
-.ev-wrap .ev-wd-d{ font-size:1.02rem; font-weight:900; line-height:1; }
+.ev-wrap .ev-wd-d{ font-size:.58rem; font-weight:700; line-height:1.1; white-space:nowrap; opacity:.9; }
+.ev-wrap .ev-wd-d b{ font-size:.92rem; font-weight:900; }
 .ev-wrap .ev-wd-st{ position:absolute; bottom:3px; width:5px; height:5px; border-radius:50%; background:transparent; }
 .ev-wrap .ev-wd.st-full .ev-wd-st{ background:#5fe3a1; box-shadow:0 0 6px #5fe3a1; }
 .ev-wrap .ev-wd.st-part .ev-wd-st{ background:#fbbf24; box-shadow:0 0 6px #fbbf24; }
@@ -15523,7 +15547,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 .ev-wrap .ev-wd.today{ border-color:rgba(95,227,161,.55); }
 .ev-wrap .ev-wd.today .ev-wd-n{ color:#7CffB0; }
 .ev-wrap .ev-wd.future{ opacity:.3; pointer-events:none; }
-.ev-wrap .ev-wd:not(.sel):active{ transform:scale(.9); }
+.ev-wrap .ev-wd:not(.sel):active{ filter:brightness(1.35); border-color:rgba(240,208,96,.55); }
 .ev-wrap .ev-wd.sel{ background:linear-gradient(145deg,#ffe99b,#f2c74a 55%,#c9a227); color:#0b3b36; border-color:rgba(255,244,200,.9); transform:translateY(-3px);
   box-shadow:0 8px 18px rgba(0,0,0,.35), 0 0 16px rgba(240,208,96,.45), inset 0 1px 0 rgba(255,255,255,.6); animation:evWdPop .45s cubic-bezier(.34,1.56,.64,1); }
 .ev-wrap .ev-wd.sel .ev-wd-n{ color:#0b3b36; }
