@@ -4714,6 +4714,7 @@ function buildNav(){
 }
 function showPage(id){
   STATE.page=id;
+  if(id!=='grades') STATE.evDay=null;
   if(id!=='mistakes') document.body.classList.remove('mis-reading');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg=document.getElementById('pg-'+id);
@@ -7779,7 +7780,7 @@ function trTodayTargets(sid){
   var tL='', tR='';
   try{ tL=p?hqPlanDayText(sid,'lesson',nL):(upText('lesson',nL)||''); }catch(e){}
   try{ tR=p?hqPlanDayText(sid,'review',nR):(upText('review',nR)||''); }catch(e){}
-  var key=evDateKey(), d=(rec.days&&rec.days[key])||{};
+  var key=evRealKey(), d=(rec.days&&rec.days[key])||{};
   return {p:p, nL:nL, nR:nR, tL:tL, tR:tR, day:d, stage:p?(hqStageName(sid,nL)||''):'', done:evIsComplete(d),
           absent:evIsAbsentVal(d.attend), dL:!!d.lesson, dR:!!d.review, plan:p?hqPlanName(p):'بلا خطة معتمَدة'};
 }
@@ -8554,7 +8555,7 @@ async function trPrintKs(){
 }
 /* حسابات مشتركة لتقارير المعلّم */
 async function trStuStats(){
-  var studs=(DB.students||[]), out=[], tKey=evDateKey(), totDays=0;
+  var studs=(DB.students||[]), out=[], tKey=evRealKey(), totDays=0;
   studs.forEach(function(s){ var c=0; hsTermDays(s.id).forEach(function(d){ if(d&&(d.attend==='حاضر'||d.attend==='غائب'||d.attend==='متأخر'||d.attend==='تسميع عن بعد'||d.attend==='غائب بعذر')) c++; }); if(c>totDays) totDays=c; });
   for(var i=0;i<studs.length;i++){
     var s=studs[i], td=hsTermDays(s.id), at=0, ab=0;
@@ -8623,7 +8624,7 @@ function showHalqaStats(){
   var n=studs.length;
   if(!n){ openModal('\u0625\u062d\u0635\u0627\u0626\u064a\u0651\u0627\u062a \u0627\u0644\u062d\u0644\u0642\u0629','<div class="empty-state"><div class="empty-state-icon">\ud83d\udcca</div>\u0644\u0627 \u064a\u0648\u062c\u062f \u0637\u0644\u0627\u0628 \u0628\u0639\u062f</div>'); return; }
   if(!DB.evals) DB.evals={};
-  var tKey=evDateKey();
+  var tKey=evRealKey();
   function esc(v){ v=(v===undefined||v===null)?'':String(v); return v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   /* حساب عام + تصنيف الفئات + حضور اليوم + قوائم الغياب/الانتظام (نسبة من ٧٢ يوماً) */
@@ -10324,7 +10325,7 @@ function tdToggle(hdr){
 
 function hqMetrics(h){
   setActiveHalqa(h.id);
-  var studs=DB.students||[]; var tKey=evDateKey();
+  var studs=DB.students||[]; var tKey=evRealKey();
   var present=0,absent=0,disc=0,sum=0,cnt=0,pri=0,mid=0,sec=0,uni=0,kg=0,eld=0,tasmee=0,active=false;
   studs.forEach(function(s){
     if(isDiscontinued(s)) disc++;
@@ -10339,8 +10340,8 @@ function hqMetrics(h){
   });
   return {id:h.id,name:h.name,students:studs.length,present:present,absent:absent,disc:disc,
     avg:(cnt?sum/cnt:0),pri:pri,mid:mid,sec:sec,uni:uni,kg:kg,eld:eld,tasmee:tasmee,active:active,
-    suspended:!!((h.suspend||{})[evDateKey()]),
-    suspReason:(((h.suspend||{})[evDateKey()])||{}).reason||''};
+    suspended:!!((h.suspend||{})[evRealKey()]),
+    suspReason:(((h.suspend||{})[evRealKey()])||{}).reason||''};
 }
 // =====================================================
 //  مشرف الحلقات — عروض مقصورة على حلقاته
@@ -11858,7 +11859,7 @@ function hqPrintDayStats(){
 
 /* ===== إحصائية اليوم: عدّ حلقة واحدة (قراءة فقط) ===== */
 async function hqDayCount(h){
-  var key=evDateKey();
+  var key=evRealKey();
   return await hqWithHalqaA(h, async function(){
     var studs=hqStudentsOf(h), o={tot:studs.length,pres:0,abs:0,les:0,rev:0,susp:false,reason:'',acted:false};
     studs.forEach(function(s){
@@ -12363,7 +12364,7 @@ async function rpTeacherDiligence(h){
    ومستواه (أنجز أو لم ينجز، وأيّ مستوى) — لا إنجاز الدرس والمراجعة فقط */
 async function rpTeacherToday(h){
   return await hqWithHalqaA(h, async function(){
-    var key=evDateKey(), studs=hqStudentsOf(h).filter(function(s){ return !isDiscontinued(s); }), n=0;
+    var key=evRealKey(), studs=hqStudentsOf(h).filter(function(s){ return !isDiscontinued(s); }), n=0;
     studs.forEach(function(s){
       var rec=(DB.evals||{})[s.id]||{}, d=(rec.days||{})[key]||{};
       if(d.attend==='غائب'||d.attend==='غائب بعذر'){ n++; return; }
@@ -12568,7 +12569,70 @@ function renderRecitation(){
       '<div class="rec-list">'+rows+'</div>'+
     '</div>';
 }
-function evDateKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+/* ===== يوم التقييم =====
+   المعلّم يقيّم أي يوم من الأسبوع الحالي (من الأحد إلى اليوم) حتى نهاية يوم السبت؛ ومع أول أحد يُقفل الأسبوع الماضي.
+   evRealKey = تاريخ اليوم الفعلي، evDateKey = اليوم الذي يعمل عليه المعلّم (المختار إن كان مسموحاً، وإلا اليوم). */
+function evRealKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function evKeyOfDate(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+var EV_WD=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+/* هل هذا اليوم ضمن نافذة التقييم (أحد الأسبوع الحالي ← اليوم)؟ */
+function evDayAllowed(k){
+  if(!k) return false;
+  var j=hqJdOfKey(k); if(!isFinite(j)) return false;
+  var now=new Date(), tj=hqJdYMD(now.getFullYear(),now.getMonth()+1,now.getDate());
+  return j>=tj-now.getDay() && j<=tj;
+}
+function evDateKey(){
+  var k=(typeof STATE!=='undefined'&&STATE.role==='teacher')?(STATE.evDay||''):'';
+  return (k&&evDayAllowed(k))?k:evRealKey();
+}
+/* أيام الأسبوع الحالي السبعة بمفاتيحها وأرقامها الهجرية */
+function evWeekDays(){
+  var now=new Date(), dow=now.getDay(), sun=new Date(now.getFullYear(),now.getMonth(),now.getDate()-dow), tk=evRealKey(), out=[];
+  for(var i=0;i<7;i++){
+    var d=new Date(sun.getFullYear(),sun.getMonth(),sun.getDate()+i), k=evKeyOfDate(d), hj=null;
+    try{ hj=tlJ2H(hqJdOfKey(k)); }catch(e){}
+    out.push({key:k, name:EV_WD[i], hd:hj?hj.d:d.getDate(), future:i>dow, today:k===tk});
+  }
+  return out;
+}
+/* «الخميس ٦ ربيع الثاني ١٤٤٨هـ» */
+function evDayLabel(k,short){
+  var d=new Date(); try{ var pp=String(k).split('-'); d=new Date(+pp[0],(+pp[1]||1)-1,+pp[2]||1); }catch(e){}
+  var t=''; try{ var h=tlJ2H(hqJdOfKey(k)); t=short?(arNum(h.d)+' '+TL_HM[h.m-1]):tlDateStr(h.d,h.m,h.y); }catch(e){ t=k; }
+  return EV_WD[d.getDay()]+' '+t;
+}
+function evDayIsToday(){ return evDateKey()===evRealKey(); }
+function evDaySet(k){
+  if(!evDayAllowed(k)){ showToast('يُقيَّم الأسبوع الحالي فقط، ولا يُقيَّم يوم لم يأتِ بعد','error'); return; }
+  STATE.evDay=(k===evRealKey())?null:k;
+  try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){}
+  renderGrades();
+}
+/* حال كل يوم في الشريط: كم طالباً منتظماً اكتمل تقييمه فيه */
+function evDayState(k){
+  var studs=(DB.students||[]).filter(function(s){ return !isDiscontinued(s); }), n=0;
+  if(evSuspStore()[k]) return 'susp';
+  studs.forEach(function(s){ var rec=(DB.evals||{})[s.id]||{}, d=(rec.days||{})[k]; if(d&&evIsComplete(d)) n++; });
+  return !studs.length?'':(n>=studs.length?'full':(n?'part':''));
+}
+function evWeekStrip(){
+  var w=evWeekDays(), cur=evDateKey(), h='';
+  for(var i=0;i<w.length;i++){ var x=w[i], st=x.future?'':evDayState(x.key);
+    h+='<button type="button" class="ev-wd'+(x.key===cur?' sel':'')+(x.today?' today':'')+(x.future?' future':'')+(st?(' st-'+st):'')+'"'
+      +(x.future?' disabled':' onclick="evDaySet(\''+x.key+'\')"')+' aria-label="'+x.name+'">'
+      +'<span class="ev-wd-n">'+x.name+'</span><span class="ev-wd-d">'+arNum(x.hd)+'</span><i class="ev-wd-st"></i></button>';
+  }
+  return '<div class="ev-week"><div class="ev-week-hd"><span>يوم التقييم</span><span class="ev-week-note">الأسبوع الحالي · متاح حتى نهاية السبت</span></div>'
+    +'<div class="ev-week-strip">'+h+'</div></div>'
+    +(evDayIsToday()?'':('<div class="ev-day-bar"><span>تقييم يوم <b>'+evDayLabel(cur,true)+'</b></span>'
+      +'<button type="button" onclick="evDaySet(evRealKey())">العودة إلى اليوم</button></div>'));
+}
+/* شارة اليوم داخل بطاقة تقييم الطالب */
+function evDayPill(){
+  var k=evDateKey(), td=(k===evRealKey());
+  return '<div class="ev-daypill'+(td?'':' past')+'">'+(td?'اليوم · ':'تقييم بأثر رجعي · ')+evDayLabel(k)+'</div>';
+}
 
 var EV_TERM_DAYS=56;
 var EV_TERM_NAMES=['','\u0627\u0644\u0623\u0648\u0644','\u0627\u0644\u062b\u0627\u0646\u064a','\u0627\u0644\u062b\u0627\u0644\u062b','\u0627\u0644\u0631\u0627\u0628\u0639','\u0627\u0644\u062e\u0627\u0645\u0633','\u0627\u0644\u0633\u0627\u062f\u0633','\u0627\u0644\u0633\u0627\u0628\u0639','\u0627\u0644\u062b\u0627\u0645\u0646','\u0627\u0644\u062a\u0627\u0633\u0639','\u0627\u0644\u0639\u0627\u0634\u0631'];
@@ -13247,14 +13311,16 @@ function renderGrades(){
     var rec=DB.evals[s.id]||{}; var _day=(rec.days&&rec.days[key])||null;
     var done=(_day&&evIsComplete(_day))||evIsSuspended();
     var partial=(!!_day && !done);   /* بدأ المعلّم تقييمه ولم يكتمل */
+    /* غياب سجّله البرنامج تلقائياً عن يوم سابق: يُميَّز حتى يعرف المعلّم أنه لم يقيّمه بنفسه */
+    var _auto=!!(_day && _day.auto===1 && evIsAbsentVal(_day.attend) && !evIsSuspended());
     var sc=evCurrentScore(s.id).score;
     var _off=isDiscontinued(s);
-    return '<div class="ev-stu'+(done?' done':'')+(partial?' partial':'')+(_off?' disc':'')+'" onclick="openStudentEval(\''+s.id+'\')">'
+    return '<div class="ev-stu'+(done&&!_auto?' done':'')+(partial?' partial':'')+(_auto?' autoabs':'')+(_off?' disc':'')+'" onclick="openStudentEval(\''+s.id+'\')">'
       +'<div class="stu-avatar">'+arNum(i+1)+'</div>'
       +'<div class="ev-stu-name">'+(s.name||'')+(_off?' <span class="ev-stu-disc">\u0645\u0646\u0642\u0637\u0639</span>':'')+'</div>'
-      +(partial?'<span class="ev-stu-partial">غير مكتمل</span>':'')
+      +(partial?'<span class="ev-stu-partial">غير مكتمل</span>':(_auto?'<span class="ev-stu-partial auto">غياب تلقائي</span>':''))
       +'<span class="ev-stu-score">'+evFmt(sc.total)+'</span>'
-      +(partial?'':('<span class="ev-stu-chevron">'+(done?'\u2713':'\u203a')+'</span>'))
+      +(partial?'':('<span class="ev-stu-chevron">'+((done&&!_auto)?'\u2713':'\u203a')+'</span>'))
       +'</div>';
   }).join('');
   if(!cards) cards='<div class="empty-state"><div class="empty-state-icon">\ud83d\udcca</div>\u0644\u0627 \u064a\u0648\u062c\u062f \u0637\u0644\u0627\u0628</div>';
@@ -13266,7 +13332,8 @@ function renderGrades(){
     +'</div>'
     ):'';
   wrap.innerHTML='<div class="ev-wrap"><div class="rec-top"><div class="rec-title">\u062a\u0642\u064a\u064a\u0645 \u0627\u0644\u0637\u0644\u0627\u0628</div></div>'
-    +(_sus?('<div class="ev-susp-bar">حضور اليوم مُعلَّق - '+hqEsc(_sus.reason)+(_sus.days>1?(' - '+arNum(_sus.days)+' أيام'):'')+'</div>'):'')
+    +(_isT2?evWeekStrip():'')
+    +(_sus?('<div class="ev-susp-bar">'+(evDayIsToday()?'حضور اليوم مُعلَّق':('حضور '+evDayLabel(key)+' مُعلَّق'))+' - '+hqEsc(_sus.reason)+(_sus.days>1?(' - '+arNum(_sus.days)+' أيام'):'')+'</div>'):'')
     +'<div class="ev-stu-list">'+cards+'</div>'
     +_bar+'</div>';
   setTimeout(function(){ hqAnimNums(wrap,'.ev-stu-score'); },120);
@@ -13971,7 +14038,7 @@ window.addEventListener('pageshow',function(){ hqSeenTouch(); });
 var _hqDayKeyWatch='';
 setInterval(function(){
   try{
-    var k=evDateKey(); if(!_hqDayKeyWatch){ _hqDayKeyWatch=k; return; }
+    var k=evRealKey(); if(!_hqDayKeyWatch){ _hqDayKeyWatch=k; return; }
     if(k!==_hqDayKeyWatch){ _hqDayKeyWatch=k; evAutoAbsentSweep(); if(typeof renderGrades==='function') renderGrades(); }
   }catch(e){}
 },60000);
@@ -14187,7 +14254,7 @@ function openStudentEval(sid){
           +'<span class="ev-act-t">إعادة التقييم</span><span class="ev-act-s">مسح تقييم اليوم</span></button>'
       +'</div></div>'
     +'</div>'+_startBox):'';
-  var body='<div class="prof-form-wrap ev-eval">'+_eval+'</div>';
+  var body='<div class="prof-form-wrap ev-eval">'+(_isT?evDayPill():'')+_eval+'</div>';
   openModal('\u062a\u0642\u064a\u064a\u0645: '+(s.name||''), body);
   if(typeof evApplyAbsence==='function') evApplyAbsence();
   if(_isT){ try{ _evtFree=evtAllDone(); evtGo(evtFirstOpen(),true); }catch(e){} }
@@ -14913,7 +14980,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 14.1';
+  window.HQ_BUILD='2026 - 14.2';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -15367,8 +15434,8 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 .bottom-nav .nav-btn::before{ display:none; }
 .bottom-nav .nav-btn.active{ color:#f7dd86; transform:none; }
 /* الجوهرة */
-.bottom-nav .nav-gem{ --ac:#f0d060; position:relative; width:44px; height:44px; border-radius:15px; flex:0 0 auto;
-  display:flex; align-items:center; justify-content:center; margin-bottom:5px;
+.bottom-nav .nav-gem{ --ac:#f0d060; position:relative; width:42px; height:42px; border-radius:14px; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center; margin-bottom:4px;
   background:linear-gradient(150deg,rgba(255,255,255,.11),rgba(255,255,255,.03)); border:1px solid rgba(240,208,96,.25);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 4px 12px rgba(0,0,0,.3);
   transition:transform .45s cubic-bezier(.34,1.56,.64,1), background .35s ease, border-color .35s ease, box-shadow .35s ease; }
@@ -15389,7 +15456,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 .bottom-nav .nav-btn:not(.active):active .nav-gem{ transform:scale(.88); }
 .bottom-nav .nav-btn:not(.active):hover .nav-gem{ transform:translateY(-3px); border-color:rgba(240,208,96,.5); }
 /* المفعّل: ترتفع الجوهرة فوق الشريط وتتذهّب، والأيقونة داكنة تطفو، ومدار ضوئي وهالة نابضة وشرارات */
-.bottom-nav .nav-btn.active .nav-gem{ --ac:#fff7dc; transform:translateY(-17px) scale(1.14);
+.bottom-nav .nav-btn.active .nav-gem{ --ac:#fff7dc; transform:translateY(-7px) scale(1.1);
   background:linear-gradient(145deg,#ffe99b 0%,#f2c74a 48%,#c9a227 100%); border-color:rgba(255,244,200,.95);
   box-shadow:0 0 0 4px #062a27, 0 12px 26px rgba(0,0,0,.5), 0 0 28px rgba(240,208,96,.6), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(120,85,10,.35);
   animation:navRise .6s cubic-bezier(.34,1.56,.64,1); }
@@ -15400,7 +15467,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 .bottom-nav .nav-btn.active .nav-spark.s2{ animation-delay:.9s; } .bottom-nav .nav-btn.active .nav-spark.s3{ animation-delay:1.7s; }
 .bottom-nav .nav-btn.active .nav-icon-wrap{ color:#0b3b36; filter:drop-shadow(0 1px 0 rgba(255,255,255,.45));
   animation:navPop .6s cubic-bezier(.34,1.56,.64,1), navFloat 2.4s ease-in-out .6s infinite; }
-.bottom-nav .nav-btn.active:active .nav-gem{ transform:translateY(-15px) scale(1.04); }
+.bottom-nav .nav-btn.active:active .nav-gem{ transform:translateY(-5px) scale(1.02); }
 /* العنوان: ذهب متلألئ للمفعّل */
 .bottom-nav .nav-label{ text-align:center; width:100%; font-size:.64rem; letter-spacing:.02em; font-weight:700; transition:color .3s ease, transform .3s ease; }
 .bottom-nav .nav-btn.active .nav-label{ font-weight:900; font-size:.68rem; color:#f7dd86;
@@ -15418,12 +15485,48 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 @keyframes navSpark{ 0%,55%,100%{ opacity:0; transform:scale(.4) translateY(0); } 70%{ opacity:1; transform:scale(1.1) translateY(-3px); } 85%{ opacity:.6; transform:scale(.8) translateY(-6px); } }
 @keyframes navFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-2.5px); } }
 @keyframes navPop{ 0%{ transform:scale(.5) rotate(-14deg); } 60%{ transform:scale(1.18) rotate(7deg); } 100%{ transform:scale(1) rotate(0); } }
-@keyframes navRise{ 0%{ transform:translateY(0) scale(.9); } 100%{ transform:translateY(-17px) scale(1.14); } }
+@keyframes navRise{ 0%{ transform:translateY(0) scale(.9); } 100%{ transform:translateY(-7px) scale(1.1); } }
 @keyframes navShine{ 0%,100%{ background-position:0% 50%; } 50%{ background-position:100% 50%; } }
 @media (prefers-reduced-motion: reduce){
   .bottom-nav::before, .bottom-nav .nav-btn, .bottom-nav .nav-gem, .bottom-nav .nav-orbit, .bottom-nav .nav-halo, .bottom-nav .nav-spark,
   .bottom-nav .nav-icon-wrap, .bottom-nav .nav-label{ transition:none; animation:none; }
 }
+
+/* ===== يوم التقييم: شريط أيام الأسبوع في صفحة «تقييم الطلاب» ===== */
+.ev-wrap .ev-week{ margin:0 0 12px; padding:10px 8px 8px; border-radius:16px; background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); border:1px solid rgba(240,208,96,.2); box-shadow:inset 0 1px 0 rgba(255,255,255,.06); }
+.ev-wrap .ev-week-hd{ display:flex; justify-content:space-between; align-items:center; margin:0 4px 9px; font-size:.8rem; font-weight:800; color:#f0d060; }
+.ev-wrap .ev-week-note{ font-size:.6rem; font-weight:600; color:rgba(255,255,255,.55); }
+.ev-wrap .ev-week-strip{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; direction:rtl; }
+.ev-wrap .ev-wd{ position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; padding:7px 0 9px; border-radius:12px; border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.04); color:rgba(255,255,255,.72); cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; font-family:inherit;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1), background .3s, border-color .3s, color .3s, box-shadow .3s; }
+.ev-wrap .ev-wd-n{ font-size:.56rem; font-weight:700; letter-spacing:-.01em; }
+.ev-wrap .ev-wd-d{ font-size:1.02rem; font-weight:900; line-height:1; }
+.ev-wrap .ev-wd-st{ position:absolute; bottom:3px; width:5px; height:5px; border-radius:50%; background:transparent; }
+.ev-wrap .ev-wd.st-full .ev-wd-st{ background:#5fe3a1; box-shadow:0 0 6px #5fe3a1; }
+.ev-wrap .ev-wd.st-part .ev-wd-st{ background:#fbbf24; box-shadow:0 0 6px #fbbf24; }
+.ev-wrap .ev-wd.st-susp .ev-wd-st{ background:#f87171; box-shadow:0 0 6px #f87171; }
+.ev-wrap .ev-wd.today{ border-color:rgba(95,227,161,.55); }
+.ev-wrap .ev-wd.today .ev-wd-n{ color:#7CffB0; }
+.ev-wrap .ev-wd.future{ opacity:.3; pointer-events:none; }
+.ev-wrap .ev-wd:not(.sel):active{ transform:scale(.9); }
+.ev-wrap .ev-wd.sel{ background:linear-gradient(145deg,#ffe99b,#f2c74a 55%,#c9a227); color:#0b3b36; border-color:rgba(255,244,200,.9); transform:translateY(-3px);
+  box-shadow:0 8px 18px rgba(0,0,0,.35), 0 0 16px rgba(240,208,96,.45), inset 0 1px 0 rgba(255,255,255,.6); animation:evWdPop .45s cubic-bezier(.34,1.56,.64,1); }
+.ev-wrap .ev-wd.sel .ev-wd-n{ color:#0b3b36; }
+.ev-wrap .ev-wd.sel.st-full .ev-wd-st{ background:#0b3b36; box-shadow:none; }
+.ev-wrap .ev-wd.sel.st-part .ev-wd-st{ background:#8a5a00; box-shadow:none; }
+@keyframes evWdPop{ 0%{ transform:translateY(0) scale(.85); } 100%{ transform:translateY(-3px) scale(1); } }
+.ev-wrap .ev-day-bar{ margin:0 0 10px; padding:9px 12px; border-radius:12px; background:rgba(240,208,96,.12); border:1px solid rgba(240,208,96,.45); color:#f7dd86;
+  font-size:.74rem; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:8px; animation:evPartialPulse 2.4s ease-in-out infinite; }
+.ev-wrap .ev-day-bar b{ font-weight:900; color:#fff2c0; }
+.ev-wrap .ev-day-bar button{ flex:0 0 auto; background:rgba(0,0,0,.28); border:1px solid rgba(240,208,96,.55); color:#f7dd86; border-radius:999px; padding:5px 11px; font-size:.66rem; font-weight:800; font-family:inherit; cursor:pointer; }
+.ev-stu.autoabs{ border-color:rgba(148,163,184,.4); background:rgba(148,163,184,.06); }
+.ev-stu.autoabs .ev-stu-chevron{ color:#94a3b8; }
+.ev-stu-partial.auto{ background:#64748b; color:#fff; }
+/* شارة اليوم في بطاقة تقييم الطالب */
+.ev-eval .ev-daypill{ margin:0 auto 10px; width:fit-content; max-width:100%; padding:5px 12px; border-radius:999px; font-size:.7rem; font-weight:800; color:#cfe6e2;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); text-align:center; }
+.ev-eval .ev-daypill.past{ color:#0b3b36; background:linear-gradient(135deg,#ffe99b,#e8c24e); border-color:rgba(255,244,200,.9); box-shadow:0 0 14px rgba(240,208,96,.35); }
 
 /* ── الجدول الشهري: يمنع انضغاط الأعمدة على الشاشات الصغيرة ── */
 @media (max-width:520px){
@@ -16446,9 +16549,9 @@ function recWeekDays(){
   for(var i=0;i<4;i++){
     var d=new Date(sun.getFullYear(),sun.getMonth(),sun.getDate()+i);
     var key=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
-    var future=(d.getTime()>now.getTime() && key!==evDateKey());
+    var future=(d.getTime()>now.getTime() && key!==evRealKey());
     var hd=''; try{ hd=arNum(tlJ2H(hqJdYMD(d.getFullYear(),d.getMonth()+1,d.getDate())).d); }catch(e){}
-    out.push({key:key, name:names[i], hd:hd, future:future, today:key===evDateKey()});
+    out.push({key:key, name:names[i], hd:hd, future:future, today:key===evRealKey()});
   }
   return out;
 }
@@ -16456,7 +16559,7 @@ async function showRecitationView(dk){
   var u=STATE.user; if(!u) return;
   var s=DB.students.find(function(st){ return st.id===u.sid || st.code===u.username; }); if(!s) return;
   var sid=s.id;
-  var wk=recWeekDays(), todayK=evDateKey();
+  var wk=recWeekDays(), todayK=evRealKey();
   if(!dk){
     var t=wk.find(function(d){ return d.today; });
     dk=t?t.key:wk[3].key;   /* خارج الأحد–الأربعاء (خميس/جمعة/سبت) تُعرض الأربعاء */
