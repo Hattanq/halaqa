@@ -12582,14 +12582,30 @@ function evDayAllowed(k){
   var now=new Date(), tj=hqJdYMD(now.getFullYear(),now.getMonth()+1,now.getDate());
   return j>=tj-now.getDay() && j<=tj;
 }
-function evDateKey(){
-  var k=(typeof STATE!=='undefined'&&STATE.role==='teacher')?(STATE.evDay||''):'';
-  return (k&&evDayAllowed(k))?k:evRealKey();
+/* أيام جلسات الحلقة (٠ = الأحد) من بيانات الحلقة؛ وإن لم تُحدَّد فالأحد ← الأربعاء */
+function evHalqaDows(){
+  var h=null; try{ h=(STATE.activeHid&&typeof hqHalqaById==='function')?hqHalqaById(STATE.activeHid):null; }catch(e){}
+  var out=[]; ((h&&h.days)||[]).forEach(function(n){ var i=EV_WD.indexOf(String(n||'').trim()); if(i>=0&&out.indexOf(i)<0) out.push(i); });
+  if(!out.length) out=[0,1,2,3];
+  return out.sort(function(a,b){ return a-b; });
 }
-/* أيام الأسبوع الحالي السبعة بمفاتيحها وأرقامها الهجرية */
+/* اليوم الافتراضي للتقييم: اليوم إن كان يوم جلسة، وإلا آخر يوم جلسة مضى من الأسبوع الحالي
+   (الخميس والجمعة والسبت تثبت على الأربعاء، ومع الأحد ينتقل إلى أحد الأسبوع الجديد) */
+function evDefaultKey(){
+  var now=new Date(), dow=now.getDay(), dows=evHalqaDows(), best=-1;
+  for(var i=0;i<dows.length;i++){ if(dows[i]<=dow&&dows[i]>best) best=dows[i]; }
+  if(best<0||best===dow) return evRealKey();
+  return evKeyOfDate(new Date(now.getFullYear(),now.getMonth(),now.getDate()-(dow-best)));
+}
+function evDateKey(){
+  if(typeof STATE==='undefined'||STATE.role!=='teacher') return evRealKey();
+  var k=STATE.evDay||'';
+  return (k&&evDayAllowed(k))?k:evDefaultKey();
+}
+/* أيام جلسات الأسبوع الحالي بمفاتيحها وأرقامها الهجرية */
 function evWeekDays(){
-  var now=new Date(), dow=now.getDay(), sun=new Date(now.getFullYear(),now.getMonth(),now.getDate()-dow), tk=evRealKey(), out=[];
-  for(var i=0;i<7;i++){
+  var now=new Date(), dow=now.getDay(), sun=new Date(now.getFullYear(),now.getMonth(),now.getDate()-dow), tk=evRealKey(), dows=evHalqaDows(), out=[];
+  for(var j=0;j<dows.length;j++){ var i=dows[j];
     var d=new Date(sun.getFullYear(),sun.getMonth(),sun.getDate()+i), k=evKeyOfDate(d), hj=null;
     try{ hj=tlJ2H(hqJdOfKey(k)); }catch(e){}
     out.push({key:k, name:EV_WD[i], hd:hj?hj.d:d.getDate(), future:i>dow, today:k===tk});
@@ -12602,10 +12618,10 @@ function evDayLabel(k,short){
   var t=''; try{ var h=tlJ2H(hqJdOfKey(k)); t=short?(arNum(h.d)+' '+TL_HM[h.m-1]):tlDateStr(h.d,h.m,h.y); }catch(e){ t=k; }
   return EV_WD[d.getDay()]+' '+t;
 }
-function evDayIsToday(){ return evDateKey()===evRealKey(); }
+function evDayIsToday(){ return evDateKey()===evRealKey(); }   /* اليوم الفعلي لا الافتراضي */
 function evDaySet(k){
   if(!evDayAllowed(k)){ showToast('يُقيَّم الأسبوع الحالي فقط، ولا يُقيَّم يوم لم يأتِ بعد','error'); return; }
-  STATE.evDay=(k===evRealKey())?null:k;
+  STATE.evDay=k;
   try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){}
   renderGrades();
 }
@@ -12623,10 +12639,8 @@ function evWeekStrip(){
       +(x.future?' disabled':' onclick="evDaySet(\''+x.key+'\')"')+' aria-label="'+x.name+'">'
       +'<span class="ev-wd-n">'+x.name+'</span><span class="ev-wd-d">'+arNum(x.hd)+'</span><i class="ev-wd-st"></i></button>';
   }
-  return '<div class="ev-week"><div class="ev-week-hd"><span>يوم التقييم</span><span class="ev-week-note">الأسبوع الحالي · متاح حتى نهاية السبت</span></div>'
-    +'<div class="ev-week-strip">'+h+'</div></div>'
-    +(evDayIsToday()?'':('<div class="ev-day-bar"><span>تقييم يوم <b>'+evDayLabel(cur,true)+'</b></span>'
-      +'<button type="button" onclick="evDaySet(evRealKey())">العودة إلى اليوم</button></div>'));
+  return '<div class="ev-week"><div class="ev-week-hd"><span>يوم التقييم</span></div>'
+    +'<div class="ev-week-strip" style="grid-template-columns:repeat('+Math.max(1,w.length)+',1fr)">'+h+'</div></div>';
 }
 /* شارة اليوم داخل بطاقة تقييم الطالب */
 function evDayPill(){
@@ -14254,7 +14268,7 @@ function openStudentEval(sid){
           +'<span class="ev-act-t">إعادة التقييم</span><span class="ev-act-s">مسح تقييم اليوم</span></button>'
       +'</div></div>'
     +'</div>'+_startBox):'';
-  var body='<div class="prof-form-wrap ev-eval">'+(_isT?evDayPill():'')+_eval+'</div>';
+  var body='<div class="prof-form-wrap ev-eval">'+_eval+'</div>';
   openModal('\u062a\u0642\u064a\u064a\u0645: '+(s.name||''), body);
   if(typeof evApplyAbsence==='function') evApplyAbsence();
   if(_isT){ try{ _evtFree=evtAllDone(); evtGo(evtFirstOpen(),true); }catch(e){} }
@@ -14980,7 +14994,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 14.2';
+  window.HQ_BUILD='2026 - 14.3';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -15434,40 +15448,40 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 .bottom-nav .nav-btn::before{ display:none; }
 .bottom-nav .nav-btn.active{ color:#f7dd86; transform:none; }
 /* الجوهرة */
-.bottom-nav .nav-gem{ --ac:#f0d060; position:relative; width:42px; height:42px; border-radius:14px; flex:0 0 auto;
+.bottom-nav .nav-gem{ --ac:#fff7dc; position:relative; width:38px; height:38px; border-radius:13px; flex:0 0 auto;
   display:flex; align-items:center; justify-content:center; margin-bottom:4px;
-  background:linear-gradient(150deg,rgba(255,255,255,.11),rgba(255,255,255,.03)); border:1px solid rgba(240,208,96,.25);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 4px 12px rgba(0,0,0,.3);
-  transition:transform .45s cubic-bezier(.34,1.56,.64,1), background .35s ease, border-color .35s ease, box-shadow .35s ease; }
-.bottom-nav .nav-orbit{ position:absolute; inset:-3px; border-radius:18px; padding:1.5px; pointer-events:none; opacity:.35;
+  background:linear-gradient(145deg,#ffe99b 0%,#f2c74a 48%,#c9a227 100%); border:1px solid rgba(255,244,200,.75);
+  box-shadow:0 4px 12px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(120,85,10,.3);
+  filter:saturate(.78) brightness(.84);
+  transition:transform .45s cubic-bezier(.34,1.56,.64,1), filter .35s ease, border-color .35s ease, box-shadow .35s ease; }
+.bottom-nav .nav-orbit{ position:absolute; inset:-3px; border-radius:16px; padding:1.5px; pointer-events:none; opacity:.3;
   background:conic-gradient(from 0deg, rgba(240,208,96,0) 0 62%, rgba(255,236,160,.95) 80%, rgba(240,208,96,0) 100%);
   -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
   animation:navOrbit 8s linear infinite; }
-.bottom-nav .nav-halo{ position:absolute; inset:-5px; border-radius:20px; pointer-events:none; opacity:0;
+.bottom-nav .nav-halo{ position:absolute; inset:-5px; border-radius:18px; pointer-events:none; opacity:0;
   border:1.5px solid rgba(255,236,160,.85); box-shadow:0 0 18px rgba(240,208,96,.55); }
 .bottom-nav .nav-spark{ position:absolute; width:4px; height:4px; border-radius:50%; background:#fff2b8; pointer-events:none; opacity:0;
   box-shadow:0 0 6px 1px rgba(255,236,160,.9); }
 .bottom-nav .nav-spark.s1{ top:-6px; right:6px; } .bottom-nav .nav-spark.s2{ bottom:-4px; left:3px; } .bottom-nav .nav-spark.s3{ top:14px; right:-7px; }
-.bottom-nav .nav-icon-wrap{ margin:0; width:26px; height:26px; transition:transform .4s cubic-bezier(.34,1.56,.64,1), filter .3s ease, color .35s ease; color:rgba(255,255,255,.72); }
-.bottom-nav .nav-icon-wrap svg, .bottom-nav .nav-btn.active .nav-icon-wrap svg{ width:24px; height:24px; display:block; overflow:visible; color:inherit; filter:none; }
+.bottom-nav .nav-icon-wrap{ margin:0; width:24px; height:24px; transition:transform .4s cubic-bezier(.34,1.56,.64,1), filter .3s ease, color .35s ease; color:#0b3b36; }
+.bottom-nav .nav-icon-wrap svg, .bottom-nav .nav-btn.active .nav-icon-wrap svg{ width:22px; height:22px; display:block; overflow:visible; color:inherit; filter:none; }
 .bottom-nav .nav-icon-wrap svg .i-ac{ fill:var(--ac); transition:fill .35s ease; }
 .bottom-nav .nav-icon-wrap svg .i-acs{ stroke:var(--ac); stroke-width:1.6; stroke-linecap:round; fill:none; transition:stroke .35s ease; }
 /* لمس تبويب غير مفعّل */
 .bottom-nav .nav-btn:not(.active):active .nav-gem{ transform:scale(.88); }
-.bottom-nav .nav-btn:not(.active):hover .nav-gem{ transform:translateY(-3px); border-color:rgba(240,208,96,.5); }
+.bottom-nav .nav-btn:not(.active):hover .nav-gem{ transform:translateY(-2px); filter:none; }
 /* المفعّل: ترتفع الجوهرة فوق الشريط وتتذهّب، والأيقونة داكنة تطفو، ومدار ضوئي وهالة نابضة وشرارات */
-.bottom-nav .nav-btn.active .nav-gem{ --ac:#fff7dc; transform:translateY(-7px) scale(1.1);
-  background:linear-gradient(145deg,#ffe99b 0%,#f2c74a 48%,#c9a227 100%); border-color:rgba(255,244,200,.95);
-  box-shadow:0 0 0 4px #062a27, 0 12px 26px rgba(0,0,0,.5), 0 0 28px rgba(240,208,96,.6), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(120,85,10,.35);
+.bottom-nav .nav-btn.active .nav-gem{ transform:translateY(-2px); filter:none; border-color:rgba(255,244,200,.95);
+  box-shadow:0 0 0 3px #062a27, 0 8px 18px rgba(0,0,0,.45), 0 0 24px rgba(240,208,96,.6), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(120,85,10,.35);
   animation:navRise .6s cubic-bezier(.34,1.56,.64,1); }
-.bottom-nav .nav-btn.active .nav-orbit{ opacity:1; inset:-7px; border-radius:21px; padding:2px; animation:navOrbit 2.4s linear infinite;
+.bottom-nav .nav-btn.active .nav-orbit{ opacity:1; inset:-6px; border-radius:19px; padding:2px; animation:navOrbit 2.4s linear infinite;
   background:conic-gradient(from 0deg, rgba(240,208,96,0) 0 50%, #fff6cc 72%, rgba(240,208,96,0) 100%); }
 .bottom-nav .nav-btn.active .nav-halo{ opacity:1; animation:navHalo 2.2s ease-out infinite; }
 .bottom-nav .nav-btn.active .nav-spark{ animation:navSpark 2.6s ease-in-out infinite; }
 .bottom-nav .nav-btn.active .nav-spark.s2{ animation-delay:.9s; } .bottom-nav .nav-btn.active .nav-spark.s3{ animation-delay:1.7s; }
 .bottom-nav .nav-btn.active .nav-icon-wrap{ color:#0b3b36; filter:drop-shadow(0 1px 0 rgba(255,255,255,.45));
   animation:navPop .6s cubic-bezier(.34,1.56,.64,1), navFloat 2.4s ease-in-out .6s infinite; }
-.bottom-nav .nav-btn.active:active .nav-gem{ transform:translateY(-5px) scale(1.02); }
+.bottom-nav .nav-btn.active:active .nav-gem{ transform:translateY(0) scale(.96); }
 /* العنوان: ذهب متلألئ للمفعّل */
 .bottom-nav .nav-label{ text-align:center; width:100%; font-size:.64rem; letter-spacing:.02em; font-weight:700; transition:color .3s ease, transform .3s ease; }
 .bottom-nav .nav-btn.active .nav-label{ font-weight:900; font-size:.68rem; color:#f7dd86;
@@ -15485,7 +15499,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
 @keyframes navSpark{ 0%,55%,100%{ opacity:0; transform:scale(.4) translateY(0); } 70%{ opacity:1; transform:scale(1.1) translateY(-3px); } 85%{ opacity:.6; transform:scale(.8) translateY(-6px); } }
 @keyframes navFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-2.5px); } }
 @keyframes navPop{ 0%{ transform:scale(.5) rotate(-14deg); } 60%{ transform:scale(1.18) rotate(7deg); } 100%{ transform:scale(1) rotate(0); } }
-@keyframes navRise{ 0%{ transform:translateY(0) scale(.9); } 100%{ transform:translateY(-7px) scale(1.1); } }
+@keyframes navRise{ 0%{ transform:translateY(0) scale(.88); } 100%{ transform:translateY(-2px) scale(1); } }
 @keyframes navShine{ 0%,100%{ background-position:0% 50%; } 50%{ background-position:100% 50%; } }
 @media (prefers-reduced-motion: reduce){
   .bottom-nav::before, .bottom-nav .nav-btn, .bottom-nav .nav-gem, .bottom-nav .nav-orbit, .bottom-nav .nav-halo, .bottom-nav .nav-spark,
