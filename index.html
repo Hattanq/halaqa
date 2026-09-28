@@ -13640,10 +13640,10 @@ function evRecCell(kind,curLinear,todayVal,sid){
   var isLesson=(kind==='lesson');
   var lbl=isLesson?'\u0627\u0644\u062f\u0631\u0633':'\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629';
   var _isT2=(typeof STATE!=='undefined'&&STATE.role==='teacher');
-  var viewBtn=isLesson?('<div class="ev-jp-rev">'
-    +'<button type="button" class="ev-jp-btn view" onclick="evLessonRecite(\''+sid+'\')">\u0639\u0631\u0636 \u0627\u0644\u062a\u0633\u0645\u064a\u0639</button>'
-    +(_isT2?('<button type="button" class="ev-jp-btn view" onclick="evOpenMisReport(\''+sid+'\')">تقرير الأخطاء</button>'):'')
-    +'</div>'):'';
+  var viewBtn='<div class="ev-jp-rev">'
+    +'<button type="button" class="ev-jp-btn view" onclick="evKindRecite(\''+sid+'\',\''+kind+'\')">\u0639\u0631\u0636 \u0627\u0644\u062a\u0633\u0645\u064a\u0639</button>'
+    +(_isT2?('<button type="button" class="ev-jp-btn view" onclick="evOpenMisReport(\''+sid+'\',\''+kind+'\')">تقرير الأخطاء</button>'):'')
+    +'</div>';
   return '<div class="ev-cell ev-cell-rec ev-jp ev-jp-wide'+(done?' done':'')+'" data-kind="'+kind+'" data-sid="'+sid+'">'
     +'<div class="ev-lbl">'+lbl+'</div>'
     +'<div class="ev-jp-sels">'
@@ -13672,10 +13672,13 @@ function evJpText(kind){
   return {n:n,txt:upText(kind,n)||'',juz:juz,idx:idx};
 }
 /* عرض التسميع: يفتح شاشة الآيات بالنص من خطط الأجزاء (للدرس) */
-function evLessonRecite(sid){
-  var info=evJpText('lesson');
+function evLessonRecite(sid){ evKindRecite(sid,'lesson'); }
+/* عرض التسميع للدرس أو المراجعة (إصدار 15.3): مقطع اليوم من خطة الطالب مع مواضع الأخطاء */
+function evKindRecite(sid,kind){
+  kind=(kind==='review')?'review':'lesson';
+  var info=evJpText(kind);
   if(!info.n){ if(typeof showToast==='function') showToast('\u0627\u062e\u062a\u064a\u0627\u0631 \u063a\u064a\u0631 \u0635\u0627\u0644\u062d','error'); return; }
-  evOpenMistakes(sid,'lesson',info.n);
+  evOpenMistakes(sid,kind,info.n);
 }
 /* المصير للدرس/المراجعة: «تم» = نقطة + انتقال، «لم يحفظ» = بقاء على الرقم بلا نقطة */
 /* تم التقييم بلا نقطة (لم ينجز): يخضّر المربعات دليلاً على التقييم، دون نقطة ودون تقدّم */
@@ -15194,7 +15197,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 15.2';
+  window.HQ_BUILD='2026 - 15.3';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -16427,8 +16430,8 @@ function evOpenMistakes(sid, kind, n){
   showPage('mistakes');
   misStart(kind, n);
 }
-function evOpenMisReport(sid){
-  MIS.sid=sid; MIS.view='rep';
+function evOpenMisReport(sid,kind){
+  MIS.sid=sid; MIS.view='rep'; MIS.repKind=(kind==='review'||kind==='lesson')?kind:'';   /* تقرير الدرس وحده أو المراجعة وحدها */
   _evtKeep=true;   /* شاشة فرعية من جلسة التقييم */
   closeModal();
   showPage('mistakes');
@@ -16924,15 +16927,16 @@ async function _recSessionHtml(ses){
 function misDeleteAll(sid){
   var body='<div style="direction:rtl;text-align:center;padding:8px 0">'+
     '<div style="font-size:2rem;margin-bottom:10px">\ud83d\uddd1\ufe0f</div>'+
-    '<div style="font-size:.9rem;color:#fff;margin-bottom:16px">حذف جميع الأخطاء المسجّلة لهذا الطالب؟</div>'+
+    '<div style="font-size:.9rem;color:#fff;margin-bottom:16px">حذف جميع الأخطاء المسجّلة لهذا الطالب'+((MIS.repKind==='review')?' في المراجعة':((MIS.repKind==='lesson')?' في الدرس':''))+'؟</div>'+
     '<div style="display:flex;gap:10px;justify-content:center">'+
       '<button id="mis-del-all-yes" style="padding:9px 24px;background:rgba(220,38,38,.2);border:1.5px solid rgba(220,38,38,.5);border-radius:10px;color:#f87171;font-weight:700;cursor:pointer;font-family:inherit;font-size:.85rem;">حذف الكل</button>'+
       '<button onclick="closeModal()" style="padding:9px 24px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;font-size:.85rem;">إلغاء</button>'+
     '</div></div>';
   openModal('تأكيد الحذف',body);
   setTimeout(function(){ var b=document.getElementById('mis-del-all-yes'); if(b) b.onclick=function(){
-    if(DB.mistakes&&DB.mistakes[sid]) DB.mistakes[sid]=[];
-    save(); closeModal(); misToast('تم حذف جميع الأخطاء','ok'); misViewReport();
+    var rk=(MIS.repKind==='review'||MIS.repKind==='lesson')?MIS.repKind:'';
+    if(DB.mistakes&&DB.mistakes[sid]) DB.mistakes[sid]=rk?DB.mistakes[sid].filter(function(x){ return (x.kind||'lesson')!==rk; }):[];   /* في التقرير المخصّص يُحذف نوعه وحده */
+    save(); closeModal(); misToast('تم حذف الأخطاء','ok'); misViewReport();
   }; },50);
 }
 function misDeleteSession(sid,mid){
@@ -16947,7 +16951,9 @@ function misViewReport(){
   const stus=isT?DB.students:DB.students.filter(s=>s.id===(STATE.user&&STATE.user.sid)||s.code===(STATE.user&&STATE.user.username));
   if(!MIS.sid && stus.length) MIS.sid=stus[0].id;
   const sOpts=stus.map(s=>'<option value="'+s.id+'"'+(s.id===MIS.sid?' selected':'')+'>'+s.name+'</option>').join('');
-  const list=((DB.mistakes||{})[MIS.sid])||[];
+  const rk=(MIS.repKind==='review'||MIS.repKind==='lesson')?MIS.repKind:'';
+  const list=(((DB.mistakes||{})[MIS.sid])||[]).filter(s=>!rk||(s.kind||'lesson')===rk);
+  const rkT=rk?(rk==='review'?' - المراجعة':' - الدرس'):'';
 
   /* تجميع الكلمات الأكثر خطأً */
   const agg={};
@@ -16987,9 +16993,9 @@ function misViewReport(){
   }).join('');
 
   w.innerHTML='<div class="mis-wrap">'+
-    '<div class="mis-bar"><button class="mis-back" onclick="misBack()">‹ التقييم</button><div class="mis-ttl">تقرير الأخطاء</div><span style="width:62px"></span></div>'+
-    (isT&&list.length?'<button class="mis-btn danger mis-btn-sm" onclick="misDeleteAll(\''+MIS.sid+'\')">حذف الأخطاء</button>':'')+
-    (list.length?'':'<div class="mis-card"><div class="mis-empty">لا توجد أخطاء مسجّلة لهذا الطالب بعد</div></div>')+
+    '<div class="mis-bar"><button class="mis-back" onclick="misBack()">‹ التقييم</button><div class="mis-ttl">تقرير الأخطاء'+rkT+'</div><span style="width:62px"></span></div>'+
+    (isT&&list.length?'<button class="mis-btn danger mis-btn-sm" onclick="misDeleteAll(\''+MIS.sid+'\')">حذف الأخطاء'+rkT+'</button>':'')+
+    (list.length?'':'<div class="mis-card"><div class="mis-empty">لا توجد أخطاء مسجّلة لهذا الطالب'+(rk?(' في '+(rk==='review'?'المراجعة':'الدرس')):'')+' بعد</div></div>')+
     (hist?'<div class="mis-card"><div class="mis-lbl" style="margin-bottom:10px">سجلّ الجلسات</div>'+
       '<table class="mis-tbl"><tr><th>عدد الأخطاء</th><th>المقطع</th><th>نوع التسميع</th><th>التاريخ</th>'+(isT?'<th></th>':'')+'</tr>'+hist+'</table></div>':'')+
   '</div>';
