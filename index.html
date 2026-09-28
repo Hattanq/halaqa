@@ -7368,7 +7368,7 @@ function hqPlanApprove(sid,p,tl){
     p.jd0=_ds.length?(_ds[Math.min(_off,_ds.length-1)]||0):0;   /* تاريخ أول يوم في الخطة */
     p.days=hqPlanBuildDays(p,N,0);
   }
-  p.mt=hqNow(); p.v2=1; p.v3=1; p.v4=1;   /* ختم الخطة نفسها — به تُدمج بين الأجهزة لا بختم الحلقة */
+  p.mt=hqNow(); p.v2=1; p.v3=1; p.v4=1; p.v5=1;   /* ختم الخطة نفسها — به تُدمج بين الأجهزة لا بختم الحلقة */
   hqPlanStore()[sid]=p;
   try{
     if(!DB.evals) DB.evals={};
@@ -7407,7 +7407,11 @@ function hqPlanRebuildP(p,rec,tl,keepMode){
   /* keepMode='progress': يُحفظ ما أنجزه الطالب فقط ويُعاد قسمة كل ما بعده (تصحيح حدود الآيات) */
   var keep=Math.min((keepMode==='progress')?pr:Math.max(el,pr),(p.days||[]).length);
   p.off=off; if(ds.length&&!p.jd0) p.jd0=ds[Math.min(off,ds.length-1)]||0;
-  p.nd=N; p.days=hqPlanBuildDays(p,N,keep); p.mt=hqNow(); p.v2=1; p.v3=1; p.v4=1;
+  p.nd=N; p.days=hqPlanBuildDays(p,N,keep);
+  /* المراجعة تُعاد لكل يوم لم يراجعه الطالب بعد (ولو مضى تاريخه وبقي درسه كما هو) — فلا تبقى مراجعة قديمة توازي الدرس */
+  var prR=0; try{ prR=parseInt(rec&&rec.progress&&rec.progress.review,10)||0; }catch(e){}
+  if(prR<keep){ try{ hqPlanFillReview(p,p.days,prR); }catch(e){} }
+  p.mt=hqNow(); p.v2=1; p.v3=1; p.v4=1; p.v5=1;
   return p;
 }
 /* ترحيل (إصدار 14.9): تعليقٌ سُجّل قبل 14.8 على تاريخ الجهاز في يوم لا جلسة فيه (الخميس/الجمعة/السبت)
@@ -7467,10 +7471,10 @@ function hqPlanMigrateV2(){
       var ev=h.evals||{};
       for(var k in h.hplans){
         var p=h.hplans[k]; if(!p||!p.type||p.type==='old'||!p.approved||!(p.days||[]).length) continue;
-        if(p.v4) continue;
-        /* v3: كل يوم لم ينجزه الطالب بعد يُعاد قطعه على حدود الآيات؛ v4 (إصدار 15.1): المراجعة اليومية خلف الدرس
-           ولا يوم بآية وحيدة — الأيام الماضية أو المُنجزة تبقى كما هي ويُعاد توزيع ما بعدها */
-        try{ hqPlanRebuildP(p,ev[k],null,p.v3?null:'progress'); n++; }catch(e){}
+        if(p.v5) continue;
+        /* v5 (إصدار 15.2): كل يوم لم يُنجزه الطالب بعد — ولو مضى تاريخه — يُعاد قطع درسه (لا آية وحيدة)
+           وتُعاد مراجعته بمنطق «خلف الدرس»؛ ما أنجزه الطالب يبقى كما هو */
+        try{ hqPlanRebuildP(p,ev[k],null,'progress'); n++; }catch(e){}
       }
     }
     if(n){ try{ save(); }catch(e){} }
@@ -8249,7 +8253,7 @@ function hdrTeacherRing(){
   var el=document.getElementById('hdr-tring'); if(!el) return;
   setTimeout(function(){ try{ hdrArrange(); }catch(e){} },0);
   var role=(typeof STATE!=='undefined')?STATE.role:'';
-  if(role!=='teacher'){ el.style.display='none'; return; }
+  if(true){ el.style.display='none'; el.innerHTML=''; return; }   /* حُذفت البطاقة من رأس المعلّم (إصدار 15.2) — الكود باقٍ للإعادة */
   var studs=DB.students||[], td=hqPlanTermDays(), n=0, sp=0, se=0;
   for(var i=0;i<studs.length;i++){
     var p=hqPlanActive(studs[i].id); if(!p) continue;
@@ -14274,6 +14278,12 @@ function evtAllDone(){
 }
 /* هل يُسمح بالانتقال يدويّاً إلى هذه التبويبة الآن؟ */
 function evtCanGo(k){ return true; }   /* التنقّل حرّ — والاعتماد وحده مشروط بإكمال البنود */
+/* لمسة واحدة على آيفون: touchend يُنفّذ فوراً ويُلغي click التالي، والفأرة تصل عبر click */
+var _evtTapAt=0;
+function evtTapEv(ev,k){
+  try{ if(ev&&ev.type==='touchend'){ ev.preventDefault(); _evtTapAt=Date.now(); } else if(Date.now()-_evtTapAt<700) return; }catch(e){}
+  evtTap(k);
+}
 function evtTap(k){
   if(evtCanGo(k)){ evtGo(k); return; }
   var msg={lesson:'سجّل الحضور أولاً', level:'قيّم الدرس والمراجعة أولاً', done:'قيّم مستوى الحفظ أولاً'}[k]
@@ -14286,7 +14296,7 @@ function evtTabsHtml(){
   for(var i=0;i<EVT_TABS.length;i++){
     var t=EVT_TABS[i];
     h+='<button type="button" class="evt-tab" data-t="'+t.k+'" '+
-       'onclick="evtTap(\''+t.k+'\')"><span class="evt-tick">✓</span>'+t.n+'</button>';
+       'onclick="evtTapEv(event,\''+t.k+'\')" ontouchend="evtTapEv(event,\''+t.k+'\')"><span class="evt-tick">✓</span>'+t.n+'</button>';
   }
   return h+'</div>';
 }
@@ -15184,7 +15194,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 15.1';
+  window.HQ_BUILD='2026 - 15.2';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -15904,7 +15914,7 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
   font-family:inherit;font-weight:800;font-size:11px;line-height:1.3;cursor:pointer;
   transition:background .22s ease,color .22s ease,border-color .22s ease,transform .12s ease;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.evt-tab:active{transform:scale(.96)}
+.evt-tab:active{filter:brightness(1.25)}   /* لا انكماش عند اللمس: كان يُخرج الإصبع من حدود المربع فتسقط النقرة على آيفون */
 /* المربع المفعّل: توهّج ذهبي نابض يدلّ المعلّم على موضعه */
 .evt-tab.cur{--evt-glow:247,215,116;background:rgba(247,215,116,.13);border-color:rgba(247,215,116,.7);color:#fff3c4;
   animation:evtGlow 1.7s ease-in-out infinite}
