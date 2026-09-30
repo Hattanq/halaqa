@@ -91,9 +91,15 @@
     }catch(e){}
     return n; };
 
-  /* ---------- منع تضمين التطبيق داخل إطار (Clickjacking) ---------- */
-  try{ if(window.top!==window.self){ window.top.location=window.self.location; } }catch(e){
-    try{ document.documentElement.style.display='none'; }catch(e2){} }
+  /* ---------- منع تضمين التطبيق داخل إطار (Clickjacking) — على موقع النشر فقط.
+     في معاينة الملف داخل تطبيق Claude تُعرض الصفحة داخل إطار محمي فكان هذا الفحص يخفيها كلها ---------- */
+  try{
+    var _prod=/\.netlify\.app$/i.test(String(location.hostname||''));
+    if(_prod && window.top!==window.self){
+      try{ window.top.location=window.self.location; }
+      catch(e){ try{ document.documentElement.style.display='none'; }catch(e2){} }
+    }
+  }catch(e){}
 
   /* ---------- تحديد محاولات الدخول ---------- */
   var LKEY='hq_lock';
@@ -3044,22 +3050,25 @@ function lsSave(k,v){
   catch(e){ hqStorageFull(e); }
 }
 function hqStorageFull(e){
-  try{ window.HQ_DIAG=window.HQ_DIAG||{}; window.HQ_DIAG.err='تعذّر الحفظ على الجهاز: تخزين المتصفّح ممتلئ'; }catch(_){}
+  /* تخزين محجوب (معاينة الملف داخل إطار محمي) لا ممتلئ: تنبيه هادئ بدل إنذار الامتلاء */
+  var blocked=false; try{ blocked=!!(e&&(e.name==='SecurityError'||/denied|insecure|sandbox/i.test(String(e)))); }catch(_){}
+  try{ window.HQ_DIAG=window.HQ_DIAG||{}; window.HQ_DIAG.err=blocked?'التخزين محجوب في هذه المعاينة':'تعذّر الحفظ على الجهاز: تخزين المتصفّح ممتلئ'; }catch(_){}
   if(HQ_LS_FULL) return;
   HQ_LS_FULL=true;
-  try{ console.error('localStorage full:', e); }catch(_){}
-  try{ hqStorageBanner(); }catch(_){}
-  try{ if(typeof showToast==='function') showToast('⚠️ تعذّر الحفظ على الجهاز — تخزين المتصفّح ممتلئ','error'); }catch(_){}
+  try{ console.error(blocked?'localStorage blocked:':'localStorage full:', e); }catch(_){}
+  try{ hqStorageBanner(blocked); }catch(_){}
+  if(!blocked){ try{ if(typeof showToast==='function') showToast('⚠️ تعذّر الحفظ على الجهاز — تخزين المتصفّح ممتلئ','error'); }catch(_){} }
 }
-function hqStorageBanner(){
+function hqStorageBanner(blocked){
   if(document.getElementById('hqLsBanner')) return;
   var d=document.createElement('div');
   d.id='hqLsBanner';
-  d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#7f1d1d;color:#fff;'+
+  d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:'+(blocked?'#1e3a5f':'#7f1d1d')+';color:#fff;'+
     'padding:10px 14px;font-weight:800;font-size:.85rem;text-align:center;line-height:1.7;'+
     'box-shadow:0 2px 10px rgba(0,0,0,.4)';
-  d.innerHTML='⚠️ تخزين المتصفّح ممتلئ — لم يُحفظ آخر إدخال على هذا الجهاز.'+
-    '<br>توقّف عن الإدخال وراجع الدعم قبل المتابعة.';
+  d.innerHTML=blocked?'معاينة فقط — التخزين محجوب هنا فلا يُحفظ شيء على هذا الجهاز.':
+    ('⚠️ تخزين المتصفّح ممتلئ — لم يُحفظ آخر إدخال على هذا الجهاز.'+
+    '<br>توقّف عن الإدخال وراجع الدعم قبل المتابعة.');
   document.body.appendChild(d);
 }
 /* حجم ما يشغله التطبيق في تخزين المتصفّح (بالبايت) */
@@ -4820,8 +4829,8 @@ function renderDash(){
       <div class="menu-card mc-4" onclick="hqPlanTypesHome()"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تحديد خطة الطالب</div></div>
       <div class="menu-card mc-5" onclick="showRankTable(null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطلاب</div></div>
       <div class="menu-card mc-3" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
-      <div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>
       <div class="menu-card mc-3" onclick="hqOfflineOpen()"><div class="mc-icon">${HQ_SVG_OFFLINE}</div><div class="mc-accent"></div><div class="mc-label">تحميل البيانات</div></div>
+      <div class="menu-card mc-7 mc-wide" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>
       <div class="menu-card mc-gold mc-wide" onclick="showTeacherReports()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="10" y="34" width="10" height="20" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="27" y="22" width="10" height="32" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="44" y="12" width="10" height="42" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><path d="M8 54h48" stroke="white" stroke-width="2.6" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تقارير الحلقة</div></div>
 </div>`;
     var mcStu=document.getElementById('mc-stu-count');
@@ -7736,7 +7745,7 @@ function hqPlanTable(sid,ro){
   for(var i=0;i<days.length;i++){
     var hl=((i+1)===pos.l), hr=((i+1)===pos.r);
     rows+='<tr'+((hl||hr)?' class="now"':'')+(hl?' id="hqp-here"':'')+'><td class="hqp-num">'+arNum(i+1)+'</td>'+
-      hqPlanCellHtml(hqSegText(p,days[i].l),hl,false)+hqPlanCellHtml(hqSegText(p,days[i].r,'review'),hr,true)+'</tr>';
+      hqPlanCellHtml(hqSegText(p,days[i].l),hl,false)+hqPlanCellHtml(hqSegText(p,hqPlanSegOf(sid,'review',i+1),'review'),hr,true)+'</tr>';
   }
   var h='<div style="padding:2px 0 10px;text-align:center;color:#9abdba;font-size:.8rem">'+
       hqPlanName(p)+' - '+arNum(hqPlanPages(p))+' صفحة - '+arNum(days.length)+' يوماً</div>'+hqPlanPosLine(pos)+
@@ -7921,7 +7930,7 @@ function hqPlanStageOpen(sid,k,ro){
     var d=days[i-1]; if(!d) continue;
     var hl=(i===pos.l), hr=(i===pos.r);
     rows+='<tr'+((hl||hr)?' class="now"':'')+(hl?' id="hqp-here"':'')+'><td class="hqp-num">'+arNum(i)+'</td>'+
-      hqPlanCellHtml(hqSegText(p,d.l),hl,false)+hqPlanCellHtml(hqSegText(p,d.r,'review'),hr,true)+'</tr>';
+      hqPlanCellHtml(hqSegText(p,d.l),hl,false)+hqPlanCellHtml(hqSegText(p,hqPlanSegOf(sid,'review',i),'review'),hr,true)+'</tr>';
   }
   if(!rows) rows='<tr><td colspan="3">—</td></tr>';
   var head='<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">المرحلة '+HQ_ORD10[k-1]+'</div></div>'+
@@ -7983,7 +7992,7 @@ function hqPlanPrint(sid){
     else if(n<Math.min(pos.l,pos.r)) st='✓';
     else if(n<pos.l) st='✓ الدرس';
     else if(n<pos.r) st='✓ المراجعة';
-    rows.push([HQ_ORD10[(k||1)-1]||'', hqSegText(p,d.l)||'—', hqSegText(p,d.r,'review')||'—', st]);
+    rows.push([HQ_ORD10[(k||1)-1]||'', hqSegText(p,d.l)||'—', hqSegText(p,hqPlanSegOf(sid,'review',n),'review')||'—', st]);
   }
   var td=hqPlanTermDays(), start='—';
   try{ if(p.jd0){ var hj=tlJ2H(p.jd0); start=tlDateStr(hj.d,hj.m,hj.y); } }catch(e){}
@@ -8154,8 +8163,69 @@ function hqPlanActive(sid){
 function hqPlanMax(sid){ var p=hqPlanActive(sid); return p?p.days.length:UNIFIED_MAXDAY; }
 function hqPlanSegOf(sid,kind,n){
   var p=hqPlanActive(sid); if(!p) return null;
-  var d=p.days[(parseInt(n,10)||0)-1]; if(!d) return null;
-  return (kind==='review')?d.r:d.l;
+  n=parseInt(n,10)||0;
+  var d=p.days[n-1]; if(!d) return null;
+  if(kind!=='review') return d.l;
+  /* المراجعة من يوم المراجعة الحالي فصاعداً تُحسب وفق ما حفظه الطالب فعلاً لا وفق الخطة المرسومة */
+  try{
+    var rec=(DB.evals||{})[sid];
+    if(rec&&rec.progress){
+      var pr=parseInt(rec.progress.review,10)||0;
+      if(n>=pr+1){ var m=hqPlanRevDyn(sid,p); if(m&&(n in m)) return m[n]; }
+    }
+  }catch(e){}
+  return d.r;
+}
+/* المراجعة الفعلية: إن تأخّر الدرس عن المراجعة (لم يُنجَز يوماً) صارت مراجعة الخطة المرسومة تشمل درسه
+   الحالي، فتُعاد حسبتها من يوم المراجعة الحالي: تقف قُبيل الدرس مباشرة، وتعود إلى أول مداها عند بلوغه */
+var _hqRevDyn={};
+function hqPlanRevDyn(sid,p){
+  var rec=(DB.evals||{})[sid]||{}, pg=rec.progress||{};
+  var pl=parseInt(pg.lesson,10)||0, pr=parseInt(pg.review,10)||0;
+  var days=p.days||[], N=days.length; if(!N) return null;
+  var from=Math.min(pr,N-1);                                  /* فهرس يوم المراجعة الحالي */
+  var prevR=(from>0&&days[from-1]&&days[from-1].r)?days[from-1].r[1]:0;
+  var key=[p.mt||p.ts||0,N,pl,pr,prevR,p.rPages||'',p.type||''].join('|');
+  var c=_hqRevDyn[sid]; if(c&&c.key===key) return c.map;
+  var rl=hqPlanRevLines(p), RL=rl.length, lines=hqPlanLines(p), i, j, map={};
+  if(!RL){ _hqRevDyn[sid]={key:key,map:map}; return map; }
+  var lidx={}; for(i=0;i<lines.length;i++){ var x=lines[i]; lidx[x.p+':'+x.ln]=i+1; }
+  var r2l=[0]; for(j=0;j<RL;j++){ var y=rl[j]; r2l.push(lidx[y.p+':'+y.ln]||0); }
+  var target=Math.max(2,Math.round(hqPlanRevPages(p)*HQ_PAGE_LINES)), tol=Math.max(2,Math.round(target*0.3));
+  function lessonEnd(n){ var e=0; for(var k=0;k<Math.min(n,N);k++){ var d=days[k]; if(d&&d.l&&d.l[1]>e) e=d.l[1]; } return e; }
+  var rPtr=prevR+1, wrapNext=false, memEnd=0;
+  function avail(k){ var li=r2l[k]; return !li || li<=memEnd; }
+  /* إن كانت مراجعة اليوم السابق قد بلغت الدرس (لا سطر متاحاً بعدها حينئذٍ) فاليوم تعود إلى أول مداها */
+  if(prevR>0){ memEnd=lessonEnd(Math.max(0,Math.min(pl,from-1))); if(prevR>=RL||!avail(prevR+1)) wrapNext=true; }
+  for(i=from;i<N;i++){
+    var day=days[i]; if(!day) continue;
+    if(!day.l){ map[i+1]=null; continue; }
+    memEnd=lessonEnd(pl+(i-from));                            /* المحفوظ فعلاً عند هذا اليوم: دروس الطالب لا دروس الخطة */
+    if(wrapNext||rPtr>RL||!avail(rPtr)) rPtr=1;
+    wrapNext=false;
+    if(!avail(rPtr)){ map[i+1]=null; continue; }
+    var runEnd=rPtr; while(runEnd<RL && avail(runEnd+1)) runEnd++;
+    var ra=rPtr, rb=ra+target-1;
+    if(rb>=runEnd){ rb=runEnd; wrapNext=true; }
+    else{
+      rb=hqNearBoundaryTol(rl,rb,ra,runEnd,tol);
+      rb=hqAyahSnap(rl,rb,ra,runEnd);
+      if(runEnd-rb<tol) rb=runEnd;
+      if(rb>=runEnd) wrapNext=true;
+    }
+    map[i+1]=[ra,rb]; rPtr=rb+1;
+  }
+  _hqRevDyn[sid]={key:key,map:map};
+  return map;
+}
+/* عند إنجاز مراجعة يوم: يُثبَّت ما رُوجع فعلاً في الخطة (تاريخ صحيح، واستمرار المؤشر بعده) */
+function hqPlanRevCommit(sid,n){
+  var p=hqPlanActive(sid); if(!p) return;
+  var d=p.days[n-1]; if(!d) return;
+  var seg=hqPlanSegOf(sid,'review',n), cur=d.r||null;
+  var same=(!seg&&!cur)||(!!seg&&!!cur&&seg[0]===cur[0]&&seg[1]===cur[1]);
+  if(same) return;
+  d.r=seg?[seg[0],seg[1]]:null; p.mt=hqNow();
 }
 function hqPlanDayText(sid,kind,n){
   var p=hqPlanActive(sid); if(!p) return '';
@@ -12294,18 +12364,28 @@ async function rsPrintBest(){
   showToast('جارٍ تجهيز التقرير…','info');
   try{
     var halqat=rpScope().slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''),'ar'); });
-    var nExp=(R.kind==='day')?1:dqExpDays(R.lo,R.hi);
     var rows=[], hero=null;
     for(var i=0;i<halqat.length;i++){
       var h=halqat[i];
       var best=await hqWithHalqaA(h, async function(){
-        var studs=hqStudentsOf(h).filter(function(s){ return !isDiscontinued(s); }), top=null, daysSeen={};
+        var studs=hqStudentsOf(h).filter(function(s){ return !isDiscontinued(s); });
+        /* أيام انعقاد الحلقة في المدى: كل يوم فيه تقييم لأي طالب وليس معلَّقاً — لا أيام الفصل كلها،
+           فالحلقة قد تبدأ متأخرة أو تُعلَّق أياماً */
+        var held={}, susp=evSuspStore();
+        function evOk(d){ d=d||{}; return !!(d.attend||d.lesson||d.review||d.tajweed); }
+        studs.forEach(function(s){ evEntryList(s.id).forEach(function(e){
+          if(!isFinite(e.jd)||e.jd<R.lo||e.jd>R.hi) return;
+          if(!evOk(e.d)||susp[e.k]) return;
+          held[e.k]=1;
+        }); });
+        var heldKeys=Object.keys(held);
         var stats=studs.map(function(s){
-          var o={s:s,at:0,les:0,rev:0,tj:0,tjn:0,n:0};
+          var o={s:s,at:0,les:0,rev:0,tj:0,tjn:0,n:0,days:0};
+          /* أيام الطالب: أيام الانعقاد التي كان ملتحقاً فيها (من يوم انضمامه) */
+          heldKeys.forEach(function(k){ if(evStuOnDay(s,k)) o.days++; });
           evEntryList(s.id).forEach(function(e){
-            if(!isFinite(e.jd)||e.jd<R.lo||e.jd>R.hi) return;
-            var d=e.d||{}; if(!(d.attend||d.lesson||d.review||d.tajweed)) return;
-            daysSeen[e.k]=1; o.n++;
+            if(!held[e.k]||!evOk(e.d)) return;
+            var d=e.d; o.n++;
             if(d.attend==='حاضر'||d.attend==='متأخر'||d.attend==='تسميع عن بعد') o.at++;
             if(rpDoneMark(d.lesson)) o.les++;
             if(rpDoneMark(d.review)) o.rev++;
@@ -12313,9 +12393,8 @@ async function rsPrintBest(){
           });
           return o;
         });
-        var days=nExp||Object.keys(daysSeen).length||1;
         stats.forEach(function(o){
-          o.days=days;
+          var days=o.days||1;
           o.score=(o.at/days)+(o.les/days)+(o.rev/days)+(o.tjn?(o.tj/o.tjn):0);   /* أربعة مكوّنات كلٌّ من ٠ إلى ١ */
           o.pct=Math.round(o.score/4*100);
           o.pts=(evCurrentScore(o.s.id).score||{}).total||0;
@@ -12327,12 +12406,12 @@ async function rsPrintBest(){
       if(!hero||best.score>hero.score) hero={h:h,o:best,score:best.score};
       rows.push([h.name||'—', hqTeacherNamesOf(h)||'—', best.s.name||'—', arNum(best.at)+' / '+arNum(best.days), arNum(best.les)+' / '+arNum(best.days), arNum(best.rev)+' / '+arNum(best.days), best.tjn?hqTajWord(best.tj,best.tjn):'—', arNum(best.pct)+'٪']);
     }
-    var meta=[['المدى',R.span],['نوع الإحصائية',ksKindName(R.kind)],['الحلقات',arNum(halqat.length)],['أيام المدى',arNum(nExp||0)]];
+    var meta=[['المدى',R.span],['نوع الإحصائية',ksKindName(R.kind)],['الحلقات',arNum(halqat.length)],['أساس الحساب','أيام انعقاد الحلقة']];
     var inner='<div class="pr-meta">'+meta.map(function(m){ return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>'; }).join('')+'</div>'+
       (hero?(rpSec('أفضل طالب على مستوى '+rpScopeTitle())+rpGrid([rpNumCard(hero.o.s.name||'—','الطالب','hero sm'), rpNumCard(hero.h.name||'—','الحلقة','hero sm'), rpNumCard(arNum(hero.o.pct)+'٪','نسبة التميّز','hero sm'), rpNumCard(hero.o.tjn?hqTajWord(hero.o.tj,hero.o.tjn):'—','مستوى الحفظ','hero sm')])):'')+
       rpSec('أفضل طالب من كل حلقة - '+R.span)+
       hqPrTableChunks(['#','الحلقة','المعلم','الطالب','الحضور','الدرس','المراجعة','مستوى الحفظ','النسبة'], rows, 14, 'fit')+
-      '<div class="pr-sec" style="font-size:9pt;color:#9fc0bc">النسبة = (أيام الحضور + الدروس المُنجزة + المراجعات المُنجزة) ÷ أيام المدى + متوسط مستوى الحفظ، على أربعة</div>';
+      '<div class="pr-sec" style="font-size:9pt;color:#9fc0bc">النسبة = (أيام الحضور + الدروس المُنجزة + المراجعات المُنجزة) ÷ أيام انعقاد الحلقة التي كان الطالب ملتحقاً فيها + متوسط مستوى الحفظ، على أربعة</div>';
     hqPrintDoc('أفضل طالب من كل حلقة - '+rpScopeTitle(), inner);
   }catch(e){ showToast('تعذّر تجهيز التقرير','error'); }
 }
@@ -13933,6 +14012,7 @@ function evMarkDone(sid, kind, num, silent, free){
     day[kind]=(free?'z:':'n:')+req;
     if(free){ day[kind+'F']=(parseInt(day[kind+'F'],10)||0)+1; rec.free[kind]=(parseInt(rec.free[kind],10)||0)+1; }
     else { day[kind+'N']=(parseInt(day[kind+'N'],10)||0)+1; }
+    if(kind==='review'){ try{ hqPlanRevCommit(sid,req); }catch(e){} }
     rec.days[key]=day; rec.progress[kind]=req;
     DB.evals[sid]=rec; save();
     if(!silent){ openStudentEval(sid); }
@@ -15359,7 +15439,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 15.7';
+  window.HQ_BUILD='2026 - 15.9';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
