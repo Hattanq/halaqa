@@ -15807,7 +15807,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 16.4';
+  window.HQ_BUILD='2026 - 16.5';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -16472,13 +16472,13 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 /* ==== عرض المصحف (إصدار 16.2): صفحة مصحف المدينة كاملة بخطوط المجمّع (طبعة ١٤٢١/١٤٢٧هـ) + مشغّل التلاوة ==== */
 .mis-page.mq{background:transparent;border:0;padding:0;box-shadow:none;border-radius:0;font-size:inherit;line-height:normal}
 .mq-page{background:#fbf8f0;border-radius:4px;padding:6px 9px 8px;margin:0 0 14px;box-shadow:0 8px 24px rgba(0,0,0,.35);direction:rtl;font-size:24px;overflow:hidden;position:relative}
-.mq-hd{display:flex;align-items:center;justify-content:space-between;gap:6px;font-family:'HafsSmart','Amiri',serif;font-size:.62em;color:#1f3a2e;padding:2px 22px 4px;min-height:1.1em}
+.mq-hd{display:flex;align-items:center;justify-content:space-between;gap:6px;font-family:'HafsSmart','Amiri',serif;font-size:.72em;font-weight:700;color:#1f3a2e;padding:8px 22px 0;min-height:1.1em}
 .mq-hd .mq-hd-s.qcf-b{font-size:1.15em}
 .mq-hd span{white-space:nowrap;line-height:1.6}
-.mq-sheet{position:relative;margin:0 19px;padding:22px 20px 20px;background:#fbf8f0}
+.mq-sheet{position:relative;margin:0 19px;padding:10px 20px 8px;background:#fbf8f0}
 .mq-body{position:relative;border:1.5px solid #1d5a40;outline:1px solid #b89b4a;outline-offset:3px;padding:4px 6px 6px;background:#fffdf8}
 .mq-page.qcf .mq-body{padding:5px 9px 7px}
-.mq-pn{text-align:center;font-family:'HafsSmart','Amiri',serif;font-size:.6em;color:#1f3a2e;padding:5px 0 0;line-height:1.4;letter-spacing:.04em}
+.mq-pn{text-align:center;font-family:'HafsSmart','Amiri',serif;font-size:1.55em;font-weight:700;color:#1f3a2e;padding:0 0 2px;line-height:1.2;letter-spacing:.04em}
 .mq-rub{position:absolute;top:0;width:20px;pointer-events:none;z-index:3}
 .mq-page.even .mq-rub{left:-13px} .mq-page.odd .mq-rub{right:-13px}
 .mq-rub span{display:block;writing-mode:vertical-rl;transform:rotate(180deg);font-family:'HafsSmart','Amiri',serif;font-size:.36em;color:#1d5a40;background:#e6eee6;border:1px solid #2e7d5b;border-radius:10px 10px 4px 4px;padding:6px 3px;line-height:1.1;white-space:nowrap}
@@ -16501,14 +16501,15 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .mq-page.qcf .mq-ln.mq-sur{height:auto;line-height:1;padding:.12em 0 .1em}
 .mq-sur-q{position:relative;display:block;width:100%;font-family:'QCF2BSML','HafsSmart',serif;line-height:1.08;height:1.08em;text-align:center;direction:rtl}
 .mq-sur-fr{display:block;color:#2e7d5b;white-space:nowrap;line-height:1.08}
-.mq-sur-nm{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;font-family:'HafsSmart','Amiri',serif;font-size:.5em;font-weight:400;line-height:1;color:#141a17;white-space:nowrap;letter-spacing:.01em}
+.mq-sur-nm{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;font-size:.74em;line-height:1;color:#141a17;white-space:nowrap}
 /* شارة الحزب (رسم المجمّع F4) في الهامش الخارجي كاملةً، وعبارتها داخلها */
-.mq-rub.qcf{width:28px;height:58px;left:auto;right:auto;text-align:center;overflow:visible}
-.mq-page.even .mq-rub.qcf{left:-28px} .mq-page.odd .mq-rub.qcf{right:-28px}
-.mq-rub.qcf .mq-rub-g{position:absolute;left:0;top:0;display:block;direction:ltr;text-align:left;font-family:'QCF2BSML',serif;font-size:46px;line-height:1;padding:14px 0 0;color:#2e7d5b;background:none;border:0;writing-mode:horizontal-tb;transform:none}
+.mq-rub.qcf{width:34px;height:72px;left:auto;right:auto;text-align:center;overflow:visible}
+.mq-page.even .mq-rub.qcf{left:-22px} .mq-page.odd .mq-rub.qcf{right:-22px}
+.mq-rub.qcf .mq-rub-g{position:absolute;left:0;top:0;display:block;direction:ltr;text-align:left;font-family:'QCF2BSML',serif;font-size:58px;line-height:1;padding:17.6px 0 0;color:#2e7d5b;background:none;border:0;writing-mode:horizontal-tb;transform:none}
 /* النصّ بخطّ ٨px مصغَّراً بالتحويل (المتصفّحات لا تنزل تحت ٦px) ليسع مربّع الشارة ٢٦×٢٠ */
-.mq-rub.qcf .mq-rub-t{position:absolute;left:-7px;right:-7px;top:32px;height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-family:'HafsSmart','Amiri',serif;font-size:8px;line-height:1.1;color:#141a17;background:none;border:0;padding:0;writing-mode:horizontal-tb;transform:scale(.6);transform-origin:center center}
-.mq-rub.qcf .mq-rub-t b{font-weight:400;white-space:nowrap}
+.mq-rub.qcf .mq-rub-t{position:absolute;left:-3px;right:-3px;top:47px;height:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-family:'HafsSmart','Amiri',serif;font-size:8px;font-weight:700;line-height:1.05;color:#141a17;background:none;border:0;padding:0;writing-mode:horizontal-tb;transform:scale(.9);transform-origin:center center}
+.mq-rub.qcf .mq-rub-t.tiny{transform:scale(.78)}
+.mq-rub.qcf .mq-rub-t b{font-weight:700;white-space:nowrap}
 .mq-rose{flex:none;width:1.15em;height:1.15em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%23e6eee6' stroke='%232e7d5b' stroke-width='1.5'/%3E%3Cg fill='%23eaa6ba' stroke='%23b0355a' stroke-width='.8'%3E%3Cellipse cx='20' cy='8' rx='4' ry='6'/%3E%3Cellipse cx='20' cy='32' rx='4' ry='6'/%3E%3Cellipse cx='8' cy='20' rx='6' ry='4'/%3E%3Cellipse cx='32' cy='20' rx='6' ry='4'/%3E%3Cellipse cx='11.5' cy='11.5' rx='4' ry='6' transform='rotate(-45 11.5 11.5)'/%3E%3Cellipse cx='28.5' cy='28.5' rx='4' ry='6' transform='rotate(-45 28.5 28.5)'/%3E%3Cellipse cx='28.5' cy='11.5' rx='4' ry='6' transform='rotate(45 28.5 11.5)'/%3E%3Cellipse cx='11.5' cy='28.5' rx='4' ry='6' transform='rotate(45 11.5 28.5)'/%3E%3C/g%3E%3Ccircle cx='20' cy='20' r='4.5' fill='%232e7d5b'/%3E%3Ccircle cx='20' cy='20' r='1.8' fill='%23f6f4ec'/%3E%3C/svg%3E") center/contain no-repeat;position:relative;z-index:1}
 .mq-page .qw{display:inline-block;padding:0;margin:0;border-radius:0;background:none;box-shadow:none;cursor:pointer;line-height:inherit}
 .mq-page .qw.qw-out{color:#b3b6ae;cursor:default}
@@ -17369,9 +17370,9 @@ function qcfSurahChar(n){
 }
 /* إطار اسم السورة: في خطّ المجمّع رسمُ الإطار نفسه (F2) واسمُ السورة بخطّه فوقه — وإلا شريط مرسوم */
 function mqBanner(s,qcf){
-  /* إطار المجمّع (F2) واسم السورة نصّاً رقيقاً موسَّطاً داخل خرطوشته */
+  /* إطار المجمّع (F2) واسم السورة برسم المجمّع (خطّ QCF2BSML) موسَّطاً داخل خرطوشته بقياس الحبر */
   if(qcf) return '<div class="mq-ln mq-sur qcf"><span class="mq-sur-q"><span class="mq-sur-fr">\u00f2</span>'+
-    '<span class="mq-sur-nm">سُورَةُ '+misSurahName(s)+'</span></span></div>';
+    '<span class="mq-sur-nm qcf-b">\u005c '+qcfSurahChar(s)+'</span></span></div>';
   return '<div class="mq-ln mq-sur"><div class="mq-sur-box"><i class="mq-rose"></i>'+
     '<span class="mq-sur-t">سُورَةُ '+misSurahName(s)+'</span><i class="mq-rose"></i></div></div>';
 }
@@ -17429,8 +17430,8 @@ function mqPageHtml(p,pv,opts){
   rubs.forEach(function(x){
     var lb=mqRubLabel(x.r), q=(x.r-1)%4, hz=Math.ceil(x.r/4);
     /* العبارة داخل مربّع الشارة (أسفل الرسم) في سطرين */
-    var t3=(q===0?['الحزب',mshAr(hz)]:(q===1?['ربع','الحزب',mshAr(hz)]:(q===2?['نصف','الحزب',mshAr(hz)]:['ثلاثة','أرباع','الحزب '+mshAr(hz)])));
-    html+=qcf?('<div class="mq-rub qcf" data-ln="'+x.ln+'" title="'+lb+'"><span class="mq-rub-g">\u00f4</span><span class="mq-rub-t">'+t3.map(function(w){ return '<b>'+w+'</b>'; }).join('')+'</span></div>')
+    var t3=(q===0?['الحزب',mshAr(hz)]:(q===1?['ربع','الحزب',mshAr(hz)]:(q===2?['نصف','الحزب',mshAr(hz)]:['ثلاثة','أرباع','الحزب',mshAr(hz)])));
+    html+=qcf?('<div class="mq-rub qcf" data-ln="'+x.ln+'" title="'+lb+'"><span class="mq-rub-g">\u00f4</span><span class="mq-rub-t'+(q===3?' tiny':'')+'">'+t3.map(function(w){ return '<b>'+w+'</b>'; }).join('')+'</span></div>')
              :('<div class="mq-rub" data-ln="'+x.ln+'"><span>'+lb+'</span></div>');
   });
   html+='</div><div class="mq-pn">'+mshAr(p)+'</div></div>';
