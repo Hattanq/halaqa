@@ -1680,6 +1680,8 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .hqp-tj:active{transform:scale(.97)}
 .hqp-tj.on{background:rgba(46,204,113,.18);border-color:rgba(46,204,113,.55);color:#a7f3d0}
 .ev-dd-lock .ev-dd-btn{cursor:default;opacity:.92}
+.ev-dd-plan .ev-dd-btn{cursor:pointer;opacity:1;border-color:rgba(201,162,39,.55)}
+.ev-dd-plan:active .ev-dd-btn{transform:scale(.98)}
 .menu-card.mc-soon{opacity:.6;filter:saturate(.6)}
 .mc-soon-tag{display:block;font-size:.55rem;font-weight:800;color:#f0c040;background:rgba(240,192,64,.14);border:1px solid rgba(240,192,64,.3);border-radius:6px;padding:1px 6px;margin-top:4px;width:fit-content}
 .hqacc{margin:8px 0;border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.03);transition:border-color .25s}
@@ -7079,6 +7081,23 @@ function hqPlanRangeApprove(){
     if(!rv||!ex){ showToast('حدّد مدى المراجعة','error'); return; }
     p.rDir=rv.dir; p.rUnit=rv.unit; p.rQty=rv.qty;
     rf=rv.from; rt=ex.end;
+    /* الدرس كما اعتُمد (الاتجاه والنوع والكميّة والبداية لم تتغيّر): تبقى أيامه ونهايته وتقدّم الطالب، ويُحدَّث قسم المراجعة وحده */
+    var oldP=hqPlanOf(c.sid);
+    if(hqFrSameLesson(oldP,fr)){
+      var all0=hqBuildLines(), ri0=hqLineIdxAt(all0,rf.s,rf.a), rj0=hqLineIdxAt(all0,rt.s,rt.a,true);
+      if(ri0<0||rj0<0){ showToast('تعذّر تحديد مدى المراجعة','error'); return; }
+      if(ri0===rj0){ showToast('حدّد مدى مراجعة أوسع','error'); return; }
+      oldP.rDir=rv.dir; oldP.rUnit=rv.unit; oldP.rQty=rv.qty; oldP.rFrom=rf; oldP.rTo=rt;
+      var _rp0=parseFloat((document.getElementById('hqr-rp')||{}).value); oldP.rPages=(isFinite(_rp0)&&_rp0>0)?_rp0:1;
+      var _prR=0; try{ _prR=parseInt(((DB.evals||{})[c.sid]||{}).progress.review,10)||0; }catch(e){}
+      try{ hqPlanFillReview(oldP,oldP.days,_prR); }catch(e){}
+      oldP.mt=hqNow(); oldP.v2=1; oldP.v3=1; oldP.v4=1; oldP.v5=1;
+      try{ save(); }catch(e){}
+      var s0=hqPlanStu(c.sid)||{name:''};
+      showToast(s0.name+' - حُدّثت المراجعة، والدرس على خطته المعتمَدة','success');
+      hqPlanRangeOpen(c.type,c.sid,c.juz);
+      return;
+    }
   }
   var base=hqPlanJuzLines(p);
   if(lf&&lt&&c.type!=='fr'){
@@ -7474,9 +7493,10 @@ function hqFrFields(k,fr){
     hqFrSelRow('النوع','hqr-'+k+'unit',HQ_FR_UNITS,fr.unit,'hqFrUnitChanged(\''+k+'\')')+
     hqFrSelRow('الكميّة','hqr-'+k+'qty',hqFrQtyOpts(k,fr.unit),fr.qty,'hqFrPreview(\''+k+'\')')+
     hqRangeRow('البداية','hqr-'+k+'f',fr.from,'hqFrPreview(\''+k+'\')')+
-    '<div class="hqr-row"><div class="hqr-lbl">النهاية</div><div class="hqr-pair">'+
+    /* المراجعة بلا خانة نهاية: مداها يتكرّر دورةً بعد دورة فلا معنى لنهايته */
+    (k==='r'?'':('<div class="hqr-row"><div class="hqr-lbl">النهاية</div><div class="hqr-pair">'+
       '<div class="hqr-ro" id="hqr-'+k+'e-s">—</div><div class="hqr-ro" id="hqr-'+k+'e-a">—</div></div></div>'+
-    '<div class="vs-hint hqr-fr-info" id="hqr-'+k+'info" style="margin:2px 4px 0"></div>';
+    '<div class="vs-hint hqr-fr-info" id="hqr-'+k+'info" style="margin:2px 4px 0"></div>'));
 }
 /* القيم الابتدائية للدرس: من خطة الطالب الحرّة إن وُجدت (القديمة بلا unit تُستنتج منها الاتجاه والكميّة) */
 function hqFrDefaults(old){
@@ -7538,11 +7558,34 @@ function hqFrUnitChanged(k){
   hqFrPreview(k);
 }
 /* المعاينة: نهاية الدرس تتبع الأيام الدراسية المتبقية، ونهاية المراجعة تتبع الكميّة نفسها */
+/* هل خانات الدرس في النموذج هي نفسها إعدادات خطة الطالب المعتمَدة؟ (عندها تبقى النهاية والأيام كما اعتُمدت) */
+function hqFrSameLesson(old,fr){
+  if(!old||!fr||!old.approved||!hqFrIsQty(old)||!(old.days||[]).length||!old.lFrom) return false;
+  return ((old.dir==='up')?'up':'down')===fr.dir && old.unit===fr.unit && hqFrQty(old)===fr.qty && old.lFrom.s===fr.from.s && old.lFrom.a===fr.from.a;
+}
+/* صفحات الدرس المعتمَد تقريباً (من أيامه) */
+function hqFrPlanPages(p){
+  try{
+    var lines=hqFrSeq(p), e=0;
+    for(var i=p.days.length-1;i>=0;i--){ if(p.days[i]&&p.days[i].l){ e=p.days[i].l[1]; break; } }
+    var pc=hqPageLineCounts(), pg=0; for(var k=0;k<e&&k<lines.length;k++) pg+=1/(pc[lines[k].p]||HQ_PAGE_LINES);
+    return Math.max(1,Math.round(pg));
+  }catch(e){ return 0; }
+}
 function hqFrPreview(k){
   if(!k){ hqFrPreview('l'); hqFrPreview('r'); return; }
   var es=document.getElementById('hqr-'+k+'e-s'), ea=document.getElementById('hqr-'+k+'e-a'), info=document.getElementById('hqr-'+k+'info');
   if(!es||!ea) return;
   var fr=hqFrRead(k), est=null;
+  /* خطة معتمَدة بالإعدادات نفسها: النهاية ثابتة كما اعتُمدت ولا تتبع الأيام المتبقية (غياب الطالب أو تأخّره شأنه هو) */
+  if(k==='l'&&fr&&_hqRangeCtx&&_hqRangeCtx.sid){
+    var oldP=hqPlanOf(_hqRangeCtx.sid);
+    if(hqFrSameLesson(oldP,fr)&&oldP.lTo){
+      es.textContent=arNum(oldP.lTo.s)+'. '+hqSurName(oldP.lTo.s); ea.textContent=arNum(oldP.lTo.a);
+      if(info) info.innerHTML='النهاية المعتمَدة ثابتة: <b>'+arNum(oldP.days.length)+'</b> يوماً - نحو <b>'+arNum(hqFrPlanPages(oldP))+'</b> صفحة. لا تتغيّر بغياب الطالب أو تأخّره؛ وتغيير الاتجاه أو النوع أو الكميّة أو البداية يبني خطة جديدة من اليوم';
+      return;
+    }
+  }
   try{ est=fr?((k==='r')?hqFrExtent(fr):hqFrEstimate(fr)):null; }catch(e){ est=null; }
   if(!est){ es.textContent='—'; ea.textContent='—'; if(info) info.textContent='تعذّر حساب النهاية'; return; }
   es.textContent=arNum(est.end.s)+'. '+hqSurName(est.end.s);
@@ -8235,6 +8278,7 @@ function hqPlanCircles(sid,ro){
     '<button type="button" class="tl-fetch" style="margin-top:8px" onclick="hqPlanPrint(\''+sid+'\')">طباعة الخطة PDF</button>';
   openModal(ro?(s.name||''):'عودة', head+hqStageGrid(orbs)+foot);
   if(!ro) hqBackTitle(hqPlanHome);
+  else if(typeof window._hqCirclesBack==='function') hqBackTitle(window._hqCirclesBack);   /* فُتحت من بطاقة التقييم */
 }
 
 /* ---------- جدول مرحلة واحدة ---------- */
@@ -13209,6 +13253,7 @@ function closeModal(){
   /* الخروج من بطاقة التقييم دون اعتماد يُبقي ما سُجّل، ويظهر الطالب في القائمة «غير مكتمل» حتى يُعاد إليه */
   if(!_evtKeep) _evtCur='';   /* الفتح التالي يبدأ من أول مربع ناقص، لا من آخر مربع فُتح */
   _evtKeep=false;
+  window._hqCirclesBack=null;   /* عودة دوائر الخطة إلى بطاقة التقييم تنتهي بإغلاق النافذة */
   var bg    = document.getElementById('modalBg');
   var sheet = document.getElementById('modalSheet');
   if(bg)    bg.classList.remove('open');
@@ -14097,9 +14142,9 @@ function evIdxOptions(kind,juz,sel){
 function evJuzLabel(j){ return '\u0627\u0644\u062c\u0632\u0621 '+arNum(j); }
 function evIdxLabel(kind,juz,idx){ var t=upText(kind,upToLinear(juz,idx))||''; return arNum(idx)+(t?(' - '+t):''); }
 /* قائمة منسدلة للجزء/الرقم: القيمة في data-val والمحاذاة يمين بالكامل */
-function evJPDD(id,kind,part,curVal,curLabel,opts,locked){
-  if(locked){   /* الدرس والمراجعة: عرض فقط — التقدّم يكون بزر «أنجز» */
-    return '<div class="ev-dd ev-jpdd ev-jpdd-'+part+' ev-dd-lock" id="'+id+'" data-kind="'+kind+'" data-part="'+part+'" data-val="'+curVal+'">'
+function evJPDD(id,kind,part,curVal,curLabel,opts,locked,click){
+  if(locked){   /* الدرس والمراجعة: عرض فقط — التقدّم يكون بزر «أنجز»؛ والضغط (لمن له خطة) يفتح خطة الطالب ومساره */
+    return '<div class="ev-dd ev-jpdd ev-jpdd-'+part+' ev-dd-lock'+(click?' ev-dd-plan':'')+'" id="'+id+'" data-kind="'+kind+'" data-part="'+part+'" data-val="'+curVal+'"'+(click?(' onclick="'+click+'" title="خطة الطالب ومساره"'):'')+'>'
       +'<div class="ev-dd-btn"><span class="ev-dd-cur">'+curLabel+'</span></div></div>';
   }
   return '<div class="ev-dd ev-jpdd ev-jpdd-'+part+'" id="'+id+'" data-kind="'+kind+'" data-part="'+part+'" data-val="'+curVal+'">'
@@ -14204,9 +14249,9 @@ function evRecCell(kind,curLinear,todayVal,sid){
   return '<div class="ev-cell ev-cell-rec ev-jp ev-jp-wide'+(done?' done':'')+'" data-kind="'+kind+'" data-sid="'+sid+'">'
     +'<div class="ev-lbl">'+lbl+'</div>'
     +'<div class="ev-jp-sels">'
-      +(_pl?evJPDD('ev-'+kind+'-juz',kind,'juz',hqStageOfDay(_pl,curLinear),hqStageName(sid,curLinear)||'الخطة','',true)
+      +(_pl?evJPDD('ev-'+kind+'-juz',kind,'juz',hqStageOfDay(_pl,curLinear),hqStageName(sid,curLinear)||'الخطة','',true,"evOpenPlan('"+sid+"')")
            :evJPDD('ev-'+kind+'-juz',kind,'juz',p.juz,evJuzLabel(p.juz),'',true))
-      +(_pl?evJPDD('ev-'+kind+'-idx',kind,'idx',curLinear,arNum(curLinear)+' - '+hqPlanDayText(sid,kind,curLinear),'',true)
+      +(_pl?evJPDD('ev-'+kind+'-idx',kind,'idx',curLinear,arNum(curLinear)+' - '+hqPlanDayText(sid,kind,curLinear),'',true,"evOpenPlan('"+sid+"')")
            :evJPDD('ev-'+kind+'-idx',kind,'idx',p.idx,evIdxLabel(kind,p.juz,p.idx),'',true))
     +'</div>'
     +viewBtn
@@ -14227,6 +14272,13 @@ function evJpText(kind){
   }
   var juz=parseInt(js.getAttribute('data-val'),10)||0, idx=parseInt(is.getAttribute('data-val'),10)||1, n=upToLinear(juz,idx);
   return {n:n,txt:upText(kind,n)||'',juz:juz,idx:idx};
+}
+/* الضغط على مربّع المرحلة أو اليوم في بطاقة التقييم: خطة الطالب ومساره (الدوائر العشر)، والعودة إلى بطاقة التقييم نفسها */
+function evOpenPlan(sid){
+  if(typeof hqPlanActive!=='function'||!hqPlanActive(sid)){ if(typeof showToast==='function') showToast('لا توجد خطة معتمَدة لهذا الطالب','info'); return; }
+  _evtKeep=true;
+  window._hqCirclesBack=function(){ window._hqCirclesBack=null; _evtKeep=true; openStudentEval(sid); };
+  hqPlanCircles(sid,1);
 }
 /* عرض التسميع: يفتح شاشة الآيات بالنص من خطط الأجزاء (للدرس) */
 function evLessonRecite(sid){ evKindRecite(sid,'lesson'); }
@@ -15755,7 +15807,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 16.2';
+  window.HQ_BUILD='2026 - 16.4';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -16423,17 +16475,10 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .mq-hd{display:flex;align-items:center;justify-content:space-between;gap:6px;font-family:'HafsSmart','Amiri',serif;font-size:.62em;color:#1f3a2e;padding:2px 22px 4px;min-height:1.1em}
 .mq-hd .mq-hd-s.qcf-b{font-size:1.15em}
 .mq-hd span{white-space:nowrap;line-height:1.6}
-.mq-sheet{position:relative;margin:0 16px;padding:24px 22px 22px;background:#fbf8f0}
-.mq-fr{position:absolute;pointer-events:none}
-.mq-fr-t,.mq-fr-b{left:0;right:0;height:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='14' viewBox='0 0 26 14'%3E%3Crect width='26' height='14' fill='%23e6eee6'/%3E%3Cpath d='M0 7 C6 1 10 1 13 7 C16 13 20 13 26 7' fill='none' stroke='%232e7d5b' stroke-width='2.4'/%3E%3Cpath d='M0 7 C6 13 10 13 13 7 C16 1 20 1 26 7' fill='none' stroke='%238fcbb0' stroke-width='2.4'/%3E%3Ccircle cx='13' cy='7' r='2.9' fill='%23eaa6ba'/%3E%3Ccircle cx='13' cy='7' r='1' fill='%23b0355a'/%3E%3Ccircle cx='0' cy='7' r='1.6' fill='%232e7d5b'/%3E%3Ccircle cx='26' cy='7' r='1.6' fill='%232e7d5b'/%3E%3C/svg%3E") repeat-x center/26px 14px}
-.mq-fr-t{top:0} .mq-fr-b{bottom:0}
-.mq-fr-l,.mq-fr-r{top:0;bottom:0;width:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='26' viewBox='0 0 14 26'%3E%3Crect width='14' height='26' fill='%23e6eee6'/%3E%3Cpath d='M7 0 C1 6 1 10 7 13 C13 16 13 20 7 26' fill='none' stroke='%232e7d5b' stroke-width='2.4'/%3E%3Cpath d='M7 0 C13 6 13 10 7 13 C1 16 1 20 7 26' fill='none' stroke='%238fcbb0' stroke-width='2.4'/%3E%3Ccircle cx='7' cy='13' r='2.9' fill='%23eaa6ba'/%3E%3Ccircle cx='7' cy='13' r='1' fill='%23b0355a'/%3E%3Ccircle cx='7' cy='0' r='1.6' fill='%232e7d5b'/%3E%3Ccircle cx='7' cy='26' r='1.6' fill='%232e7d5b'/%3E%3C/svg%3E") repeat-y center/14px 26px}
-.mq-fr-l{left:0} .mq-fr-r{right:0}
-.mq-cn{position:absolute;width:20px;height:20px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%23e6eee6' stroke='%232e7d5b' stroke-width='1.5'/%3E%3Cg fill='%23eaa6ba' stroke='%23b0355a' stroke-width='.8'%3E%3Cellipse cx='20' cy='8' rx='4' ry='6'/%3E%3Cellipse cx='20' cy='32' rx='4' ry='6'/%3E%3Cellipse cx='8' cy='20' rx='6' ry='4'/%3E%3Cellipse cx='32' cy='20' rx='6' ry='4'/%3E%3Cellipse cx='11.5' cy='11.5' rx='4' ry='6' transform='rotate(-45 11.5 11.5)'/%3E%3Cellipse cx='28.5' cy='28.5' rx='4' ry='6' transform='rotate(-45 28.5 28.5)'/%3E%3Cellipse cx='28.5' cy='11.5' rx='4' ry='6' transform='rotate(45 28.5 11.5)'/%3E%3Cellipse cx='11.5' cy='28.5' rx='4' ry='6' transform='rotate(45 11.5 28.5)'/%3E%3C/g%3E%3Ccircle cx='20' cy='20' r='4.5' fill='%232e7d5b'/%3E%3Ccircle cx='20' cy='20' r='1.8' fill='%23f6f4ec'/%3E%3C/svg%3E") center/contain no-repeat;pointer-events:none;z-index:2}
-.mq-cn-tl{top:-3px;left:-3px} .mq-cn-tr{top:-3px;right:-3px} .mq-cn-bl{bottom:-3px;left:-3px} .mq-cn-br{bottom:-3px;right:-3px}
+.mq-sheet{position:relative;margin:0 19px;padding:22px 20px 20px;background:#fbf8f0}
 .mq-body{position:relative;border:1.5px solid #1d5a40;outline:1px solid #b89b4a;outline-offset:3px;padding:4px 6px 6px;background:#fffdf8}
 .mq-page.qcf .mq-body{padding:5px 9px 7px}
-.mq-pn{text-align:center;font-family:'HafsSmart','Amiri',serif;font-size:.62em;color:#1f3a2e;padding:6px 0 0;line-height:1.4}
+.mq-pn{text-align:center;font-family:'HafsSmart','Amiri',serif;font-size:.6em;color:#1f3a2e;padding:5px 0 0;line-height:1.4;letter-spacing:.04em}
 .mq-rub{position:absolute;top:0;width:20px;pointer-events:none;z-index:3}
 .mq-page.even .mq-rub{left:-13px} .mq-page.odd .mq-rub{right:-13px}
 .mq-rub span{display:block;writing-mode:vertical-rl;transform:rotate(180deg);font-family:'HafsSmart','Amiri',serif;font-size:.36em;color:#1d5a40;background:#e6eee6;border:1px solid #2e7d5b;border-radius:10px 10px 4px 4px;padding:6px 3px;line-height:1.1;white-space:nowrap}
@@ -16456,11 +16501,13 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .mq-page.qcf .mq-ln.mq-sur{height:auto;line-height:1;padding:.12em 0 .1em}
 .mq-sur-q{position:relative;display:block;width:100%;font-family:'QCF2BSML','HafsSmart',serif;line-height:1.08;height:1.08em;text-align:center;direction:rtl}
 .mq-sur-fr{display:block;color:#2e7d5b;white-space:nowrap;line-height:1.08}
-.mq-sur-nm{position:absolute;left:0;right:0;top:.17em;font-size:.74em;line-height:1.08;color:#141a17;white-space:nowrap}
-.mq-rub.qcf{width:22px;height:auto;left:auto;right:auto;text-align:center}
-.mq-page.even .mq-rub.qcf{left:-24px} .mq-page.odd .mq-rub.qcf{right:-24px}
-.mq-rub.qcf .mq-rub-g{display:block;font-family:'QCF2BSML',serif;font-size:36px;line-height:1.25;color:#2e7d5b;background:none;border:0;padding:0;writing-mode:horizontal-tb;transform:none}
-.mq-rub.qcf .mq-rub-t{position:absolute;left:0;right:0;top:12px;display:flex;flex-direction:column;align-items:center;gap:0;font-family:'HafsSmart','Amiri',serif;font-size:6.2px;line-height:1.15;color:#141a17;background:none;border:0;padding:0;writing-mode:horizontal-tb;transform:none}
+.mq-sur-nm{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;font-family:'HafsSmart','Amiri',serif;font-size:.5em;font-weight:400;line-height:1;color:#141a17;white-space:nowrap;letter-spacing:.01em}
+/* شارة الحزب (رسم المجمّع F4) في الهامش الخارجي كاملةً، وعبارتها داخلها */
+.mq-rub.qcf{width:28px;height:58px;left:auto;right:auto;text-align:center;overflow:visible}
+.mq-page.even .mq-rub.qcf{left:-28px} .mq-page.odd .mq-rub.qcf{right:-28px}
+.mq-rub.qcf .mq-rub-g{position:absolute;left:0;top:0;display:block;direction:ltr;text-align:left;font-family:'QCF2BSML',serif;font-size:46px;line-height:1;padding:14px 0 0;color:#2e7d5b;background:none;border:0;writing-mode:horizontal-tb;transform:none}
+/* النصّ بخطّ ٨px مصغَّراً بالتحويل (المتصفّحات لا تنزل تحت ٦px) ليسع مربّع الشارة ٢٦×٢٠ */
+.mq-rub.qcf .mq-rub-t{position:absolute;left:-7px;right:-7px;top:32px;height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-family:'HafsSmart','Amiri',serif;font-size:8px;line-height:1.1;color:#141a17;background:none;border:0;padding:0;writing-mode:horizontal-tb;transform:scale(.6);transform-origin:center center}
 .mq-rub.qcf .mq-rub-t b{font-weight:400;white-space:nowrap}
 .mq-rose{flex:none;width:1.15em;height:1.15em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%23e6eee6' stroke='%232e7d5b' stroke-width='1.5'/%3E%3Cg fill='%23eaa6ba' stroke='%23b0355a' stroke-width='.8'%3E%3Cellipse cx='20' cy='8' rx='4' ry='6'/%3E%3Cellipse cx='20' cy='32' rx='4' ry='6'/%3E%3Cellipse cx='8' cy='20' rx='6' ry='4'/%3E%3Cellipse cx='32' cy='20' rx='6' ry='4'/%3E%3Cellipse cx='11.5' cy='11.5' rx='4' ry='6' transform='rotate(-45 11.5 11.5)'/%3E%3Cellipse cx='28.5' cy='28.5' rx='4' ry='6' transform='rotate(-45 28.5 28.5)'/%3E%3Cellipse cx='28.5' cy='11.5' rx='4' ry='6' transform='rotate(45 28.5 11.5)'/%3E%3Cellipse cx='11.5' cy='28.5' rx='4' ry='6' transform='rotate(45 11.5 28.5)'/%3E%3C/g%3E%3Ccircle cx='20' cy='20' r='4.5' fill='%232e7d5b'/%3E%3Ccircle cx='20' cy='20' r='1.8' fill='%23f6f4ec'/%3E%3C/svg%3E") center/contain no-repeat;position:relative;z-index:1}
 .mq-page .qw{display:inline-block;padding:0;margin:0;border-radius:0;background:none;box-shadow:none;cursor:pointer;line-height:inherit}
@@ -16480,12 +16527,17 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .mq-page .qw.qw-after{opacity:.35;filter:none}
 .mq-page .mis-stopflag{font-size:.5em;color:#0369a1;align-self:center;margin:0 .1em;font-family:'Cairo',sans-serif}
 .mq-page .mis-hnd{z-index:40}
+/* ---- إطار الصفحة: خطّان رفيعان بلا زخرفة (المعتمَد) ---- */
+.mq-page .mq-body{border:1.2px solid #1d5a40;outline:1px solid #b89b4a;outline-offset:3px}
 /* التنقّل بين الصفحات */
 .mq-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-6px 0 12px;direction:rtl}
 .mq-nav button{font-family:inherit;font-size:12px;font-weight:800;color:#dfeae9;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:8px 12px;cursor:pointer}
 .mq-nav button.back{color:#f0d060;border-color:rgba(201,162,39,.4)}
 .mq-nav button:active{transform:scale(.96)}
-.mq-nav .mq-nav-info{flex:1;text-align:center;font-size:11.5px;color:#9abdba}
+.mq-nav .mq-nav-info{flex:1;text-align:center;font-size:12.5px;color:#cfe4e2;font-weight:700}
+.mq-nav .mq-arrow{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;color:#f0d060;border:1px solid rgba(201,162,39,.45);background:rgba(255,255,255,.07);flex:none}
+.mq-nav .mq-arrow.ph{visibility:hidden;display:inline-block}
+.mq-nav .mq-nav-back{display:block;font-size:11px;font-weight:400;color:#f0d060;text-decoration:underline;cursor:pointer;margin-top:3px}
 /* مشغّل التلاوة */
 .qa-bar{direction:rtl;background:rgba(255,255,255,.05);border:1px solid rgba(201,162,39,.28);border-radius:14px;padding:9px 10px;margin:0 0 12px}
 .qa-row{display:flex;align-items:center;gap:7px;margin-bottom:7px}
@@ -17292,17 +17344,16 @@ function mqNext(pv,c){
   return {s:c.s,a:c.a,i:c.i+1};
 }
 /* أسماء الأجزاء كما تُكتب في رأس صفحة المصحف */
+/* طراز إطار الصفحة المعتمَد: خطّان رفيعان بلا زخرفة */
+window.HQ_MQ_FRAME='plain';
 var HQ_JUZ_NAMES=['الأول','الثاني','الثالث','الرابع','الخامس','السادس','السابع','الثامن','التاسع','العاشر','الحادي عشر','الثاني عشر','الثالث عشر','الرابع عشر','الخامس عشر','السادس عشر','السابع عشر','الثامن عشر','التاسع عشر','العشرون','الحادي والعشرون','الثاني والعشرون','الثالث والعشرون','الرابع والعشرون','الخامس والعشرون','السادس والعشرون','السابع والعشرون','الثامن والعشرون','التاسع والعشرون','الثلاثون'];
 /* شارة الحزب في الهامش: ربع/نصف/ثلاثة أرباع/الحزب */
 function mqRubLabel(r){
   var hz=Math.ceil(r/4), q=(r-1)%4;
   return (q===0?'الحزب':(q===1?'ربع الحزب':(q===2?'نصف الحزب':'ثلاثة أرباع الحزب')))+' '+mshAr(hz);
 }
-/* إطار الصفحة المزخرف (ضفيرة خضراء وورود ورديّة بألوان طبعة المجمّع) — أربعة أشرطة وأربع ورود في الأركان */
-function mqFrameHtml(){
-  return '<i class="mq-fr mq-fr-t"></i><i class="mq-fr mq-fr-b"></i><i class="mq-fr mq-fr-l"></i><i class="mq-fr mq-fr-r"></i>'+
-         '<i class="mq-cn mq-cn-tl"></i><i class="mq-cn mq-cn-tr"></i><i class="mq-cn mq-cn-bl"></i><i class="mq-cn mq-cn-br"></i>';
-}
+/* إطار الصفحة: خطّان رفيعان فقط (النموذج ١ المعتمَد) — لا عناصر زخرفية */
+function mqFrameHtml(){ return ''; }
 /* حرف اسم السورة في خطّ QCF2BSML (الأسماء مرسومة بخطّ المصحف): الفاتحة 5B، ٢–٣٥ من 5E، ٣٦–٤٧ من A1، ٤٨–٥٦ من AE، ٥٧–٥٩ من B8، ٦١–١١٤ من BC،
    والأحقاف (٤٦) والممتحنة (٦٠) متبادلتان في الخطّ: الأحقاف BB والممتحنة AB. وحرف «سُورَةُ» 5C، وإطار العنوان المزخرف F2، وشارة الحزب F4 */
 function qcfSurahChar(n){
@@ -17318,8 +17369,9 @@ function qcfSurahChar(n){
 }
 /* إطار اسم السورة: في خطّ المجمّع رسمُ الإطار نفسه (F2) واسمُ السورة بخطّه فوقه — وإلا شريط مرسوم */
 function mqBanner(s,qcf){
+  /* إطار المجمّع (F2) واسم السورة نصّاً رقيقاً موسَّطاً داخل خرطوشته */
   if(qcf) return '<div class="mq-ln mq-sur qcf"><span class="mq-sur-q"><span class="mq-sur-fr">\u00f2</span>'+
-    '<span class="mq-sur-nm">\u005c '+qcfSurahChar(s)+'</span></span></div>';
+    '<span class="mq-sur-nm">سُورَةُ '+misSurahName(s)+'</span></span></div>';
   return '<div class="mq-ln mq-sur"><div class="mq-sur-box"><i class="mq-rose"></i>'+
     '<span class="mq-sur-t">سُورَةُ '+misSurahName(s)+'</span><i class="mq-rose"></i></div></div>';
 }
@@ -17333,9 +17385,9 @@ function mqPageHtml(p,pv,opts){
   var rub=mqRubOf(first.s,first.sa), jz=Math.ceil(rub/8), th=((rub-1)%8)+1;
   var even=(p%2===0);
   /* رأس الصفحة كما في الطبعة: الجزء بالكلمات واسم السورة — الصفحة اليسرى (الزوجية) الجزء يميناً والسورة يساراً، واليمنى بالعكس */
-  var hdSur=qcf?('<span class="mq-hd-s qcf-b">\u005c '+qcfSurahChar(first.s)+'</span>'):('<span class="mq-hd-s">سُورَةُ '+misSurahName(first.s)+'</span>');
+  var hdSur='<span class="mq-hd-s">سُورَةُ '+misSurahName(first.s)+'</span>';
   var hdJuz='<span class="mq-hd-j">الجزء '+(HQ_JUZ_NAMES[jz-1]||mshAr(jz))+'</span>';
-  var html='<div class="mq-page'+(qcf?' qcf':'')+(even?' even':' odd')+'" data-p="'+p+'" style="'+(qcf?('--qcf:QCF2P'+p):'')+'">'+
+  var html='<div class="mq-page'+(qcf?' qcf':'')+(even?' even':' odd')+'" data-p="'+p+'" data-frame="'+(window.HQ_MQ_FRAME||'plain')+'" style="'+(qcf?('--qcf:QCF2P'+p):'')+'">'+
     '<div class="mq-hd">'+(even?(hdJuz+hdSur):(hdSur+hdJuz))+'</div>'+
     '<div class="mq-sheet">'+mqFrameHtml()+'<div class="mq-body">';
   /* المؤشّر عند أول سطر نصّي: بعد نهاية آخر سطر في الصفحة السابقة (أو أول السورة) */
@@ -17376,11 +17428,12 @@ function mqPageHtml(p,pv,opts){
   /* شارات الأحزاب في الهامش الخارجي عند سطر بدايتها */
   rubs.forEach(function(x){
     var lb=mqRubLabel(x.r), q=(x.r-1)%4, hz=Math.ceil(x.r/4);
-    var t3=(q===0?['','الحزب']:(q===1?['ربع','الحزب']:(q===2?['نصف','الحزب']:['ثلاثة أرباع','الحزب'])));
-    html+=qcf?('<div class="mq-rub qcf" data-ln="'+x.ln+'" title="'+lb+'"><span class="mq-rub-g">\u00f4</span><span class="mq-rub-t"><b>'+t3[0]+'</b><b>'+t3[1]+'</b><b>'+mshAr(hz)+'</b></span></div>')
+    /* العبارة داخل مربّع الشارة (أسفل الرسم) في سطرين */
+    var t3=(q===0?['الحزب',mshAr(hz)]:(q===1?['ربع','الحزب',mshAr(hz)]:(q===2?['نصف','الحزب',mshAr(hz)]:['ثلاثة','أرباع','الحزب '+mshAr(hz)])));
+    html+=qcf?('<div class="mq-rub qcf" data-ln="'+x.ln+'" title="'+lb+'"><span class="mq-rub-g">\u00f4</span><span class="mq-rub-t">'+t3.map(function(w){ return '<b>'+w+'</b>'; }).join('')+'</span></div>')
              :('<div class="mq-rub" data-ln="'+x.ln+'"><span>'+lb+'</span></div>');
   });
-  html+='</div><div class="mq-pn'+(qcf?' qcf-b':'')+'">'+mshAr(p)+'</div></div>';
+  html+='</div><div class="mq-pn">'+mshAr(p)+'</div></div>';
   return html;
 }
 /* هل تبدأ الآية رُبعاً؟ (تعيد رقم الرُّبع أو ٠) */
@@ -17428,14 +17481,36 @@ function mqFit(root){
     }
     /* إطار اسم السورة (حرف F2 عرضه ٨ em): حجمه بحيث يملأ عرض السطر */
     var sq=pg.querySelectorAll('.mq-sur-q');
-    for(k=0;k<sq.length;k++){ var lw=sq[k].parentNode.clientWidth||w0; sq[k].style.fontSize=(lw/8.05)+'px'; }
+    for(k=0;k<sq.length;k++){ var lw=sq[k].parentNode.clientWidth||w0; sq[k].style.fontSize=(lw/8.05)+'px'; mqCenterName(sq[k]); }
     /* شارات الأحزاب محاذاةً لسطرها */
     var rbs=pg.querySelectorAll('.mq-rub');
     for(k=0;k<rbs.length;k++){
       var lnEl=pg.querySelector('.mq-ln[data-ln="'+rbs[k].getAttribute('data-ln')+'"]');
-      if(lnEl) rbs[k].style.top=(lnEl.offsetTop+lnEl.offsetHeight*0.05)+'px';
+      if(!lnEl) continue;
+      if(rbs[k].classList.contains('qcf')) rbs[k].style.top=(body.offsetTop+body.clientTop+lnEl.offsetTop+lnEl.offsetHeight/2-rbs[k].offsetHeight/2)+'px';
+      else rbs[k].style.top=(body.offsetTop+body.clientTop+lnEl.offsetTop+lnEl.offsetHeight*0.05)+'px';
     }
   }
+}
+/* توسيط اسم السورة داخل خرطوشة إطار المجمّع: يُقاس حبرُ الإطار وحبرُ الاسم بخطّيهما الفعليَّين (تختلف مقاييس الخطوط بين الأجهزة) */
+var _mqCv=null;
+function mqCenterName(sq){
+  try{
+    var nm=sq.querySelector('.mq-sur-nm'), fr=sq.querySelector('.mq-sur-fr'); if(!nm||!fr) return;
+    if(!_mqCv) _mqCv=document.createElement('canvas');
+    var ctx=_mqCv.getContext('2d'); if(!ctx) return;
+    var fsF=parseFloat(getComputedStyle(sq).fontSize)||0, H=sq.clientHeight||fsF*1.08; if(!fsF) return;
+    ctx.font=fsF+'px QCF2BSML'; var mF=ctx.measureText('\u00f2');
+    if(mF.fontBoundingBoxAscent===undefined||mF.actualBoundingBoxAscent===undefined) return;
+    var baseF=(H-(mF.fontBoundingBoxAscent+mF.fontBoundingBoxDescent))/2+mF.fontBoundingBoxAscent;
+    var cF=baseF-(mF.actualBoundingBoxAscent-mF.actualBoundingBoxDescent)/2;      /* مركز حبر الإطار من أعلى السطر */
+    var cs=getComputedStyle(nm), fsN=parseFloat(cs.fontSize)||0; if(!fsN) return;
+    ctx.font=cs.fontWeight+' '+fsN+'px '+cs.fontFamily; var mN=ctx.measureText(nm.textContent||'');
+    var lh=parseFloat(cs.lineHeight); if(!isFinite(lh)) lh=fsN;
+    var top=(H-lh)/2, baseN=top+(lh-(mN.fontBoundingBoxAscent+mN.fontBoundingBoxDescent))/2+mN.fontBoundingBoxAscent;
+    var cN=baseN-(mN.actualBoundingBoxAscent-mN.actualBoundingBoxDescent)/2;      /* مركز حبر الاسم */
+    nm.style.paddingTop='0'; nm.style.transform='translateY('+(cF-cN).toFixed(2)+'px)';
+  }catch(e){}
 }
 function mqFitSoon(root){
   var run=function(){ try{ mqFit(root); }catch(e){} };
@@ -17603,10 +17678,14 @@ function misViewRead(){
   qaList('mis',mqPageAyahs(MIS.pages),MIS.segs);
   /* شريط التنقّل: الصفحة السابقة/التالية (والسحب يميناً ويساراً)، والعودة لصفحات الدرس */
   const _pg=MIS.pages||[], _lp=MIS.lessonPages||_pg, _onLesson=(JSON.stringify(_pg)===JSON.stringify(_lp));
+  /* سهمان كالكتاب العربي: الأيمن يرجع صفحةً (٥٧٤ ← ٥٧٣) والأيسر يتقدّم صفحةً (٥٧٤ ← ٥٧٥)، وبينهما رقم الصفحة */
+  const _pMin=Math.min.apply(null,_pg), _pMax=Math.max.apply(null,_pg);
+  const _svgR='<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const _svgL='<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const nav='<div class="mq-nav">'+
-    '<button type="button" onclick="mqGoPage(1)">الصفحة التالية ‹</button>'+
-    '<div class="mq-nav-info">'+(_onLesson?('صفحة '+_pg.map(mshAr).join(' و')+' — اسحب الصفحة يميناً أو يساراً'):('صفحة '+_pg.map(mshAr).join(' و')))+'</div>'+
-    (_onLesson?'<button type="button" onclick="mqGoPage(-1)">› الصفحة السابقة</button>':'<button type="button" class="back" onclick="mqBackToLesson()">صفحات الدرس</button>')+
+    (_pMin>1?'<button type="button" class="mq-arrow" onclick="mqGoPage(-1)" aria-label="الصفحة السابقة">'+_svgR+'</button>':'<span class="mq-arrow ph"></span>')+
+    '<div class="mq-nav-info">صفحة '+_pg.map(mshAr).join(' و')+(_onLesson?'':'<a class="mq-nav-back" onclick="mqBackToLesson()">العودة إلى صفحة الدرس</a>')+'</div>'+
+    (_pMax<604?'<button type="button" class="mq-arrow" onclick="mqGoPage(1)" aria-label="الصفحة التالية">'+_svgL+'</button>':'<span class="mq-arrow ph"></span>')+
   '</div>';
 
   w.innerHTML='<div class="mis-wrap">'+
