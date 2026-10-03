@@ -2104,8 +2104,11 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .ev-jp-btn:active{transform:scale(.97)}
 .ev-jp-btn.recite{border-color:rgba(201,162,39,.5);background:rgba(201,162,39,.12);color:#f0d060}
 .ev-jp-btn.view{padding:6px;font-size:.66rem;font-weight:700;margin-top:1px}
-.ev-jp-rev{display:flex;gap:5px}
+.ev-jp-rev{display:flex;gap:5px;align-items:stretch}
 .ev-jp-rev .ev-jp-btn{flex:1}
+/* زرّ التراجع ↺ بين «أنجز» و«لم ينجز» */
+.ev-jp-undo{flex:none;width:40px;border-radius:10px;border:1px solid rgba(247,215,116,.4);background:rgba(0,0,0,.28);color:#f0d060;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.ev-jp-undo:active{transform:scale(.95)}
 /* ===== ترتيب بطاقة التقييم: الدرس/المراجعة بعرض كامل ثم صفوف ثلاثية ===== */
 .ev-eval{display:flex;flex-direction:column;gap:9px;margin-top:4px;direction:rtl}
 .ev-eval .ev-cell,.ev-row3 .ev-cell,.ev-row3 .ev-act-box{animation:hqPopIn .42s cubic-bezier(.22,.9,.3,1) both}
@@ -3277,18 +3280,26 @@ function hqmDayFields(older,newer){
   return o;
 }
 /* أيام طالب واحد: اتحاد المفاتيح، ثم إسقاط ما حُذف صراحةً ولم يُكتب بعد الحذف */
+/* شاهد مسح حقل واحد من يوم (تراجع عن «أنجز/لم ينجز»): يُسقط الحقل من النسخة المكتوبة قبل المسح أو معه، وتبقى الكتابة التالية له */
+function hqmDayStrip(d,sid,k,mt,tomb){
+  if(!d||typeof d!=='object'||!tomb) return d;
+  var out=null;
+  for(var f in d){ var t=hqTombTs(tomb,'f', sid+'|'+k+'|'+f); if(t && mt<=t){ if(!out){ out={}; for(var g in d) out[g]=d[g]; } delete out[f]; } }
+  return out||d;
+}
 function hqmDays(ra,rb,tomb,sid){
   var A=(ra&&ra.days)||{}, B=(rb&&rb.days)||{};
   var ma=(ra&&ra.mt)||0, mb=(rb&&rb.mt)||0;
   var box={}, k;
   /* شاهد مسح اليوم يُطبَّق على كل نسخة على حدة: النسخة الأقدم من المسح تسقط ولا تُعيد حقولها،
      والنسخة المكتوبة بعده تبقى (كان يُطبَّق على أحدث الختمين فتعود حقول التقييم الملغى من نسخة قديمة) */
-  for(k in A){ var t1=hqTombTs(tomb,'d', sid+'|'+k); if(t1 && ma<=t1) continue; box[k]={d:A[k], m:ma}; }
+  for(k in A){ var t1=hqTombTs(tomb,'d', sid+'|'+k); if(t1 && ma<=t1) continue; box[k]={d:hqmDayStrip(A[k],sid,k,ma,tomb), m:ma}; }
   for(k in B){
     var t2=hqTombTs(tomb,'d', sid+'|'+k); if(t2 && mb<=t2) continue;
-    if(!(k in box)){ box[k]={d:B[k], m:mb}; continue; }
+    var Bk=hqmDayStrip(B[k],sid,k,mb,tomb);
+    if(!(k in box)){ box[k]={d:Bk, m:mb}; continue; }
     var bNewer=(mb>=box[k].m);
-    box[k]={ d: bNewer ? hqmDayFields(box[k].d, B[k]) : hqmDayFields(B[k], box[k].d),
+    box[k]={ d: bNewer ? hqmDayFields(box[k].d, Bk) : hqmDayFields(Bk, box[k].d),
              m: Math.max(box[k].m, mb) };
   }
   var days={};
@@ -12620,6 +12631,14 @@ function showAllHalqatStats(scope,ttl){
     card('rp-c3','','تقرير الحضور اليومي','','rpTogglePeriod()')+
     card('rp-c4','','تقرير معلمي '+sc,'','rpPrintTeachers()')+
     card('rp-c5','','تقرير طلاب '+sc,'','rpToggleStudents()')+
+    card('rp-c6','','تقرير اختبارات '+sc,'','rpToggleExams()')+
+  '</div>'+
+  '<div class="rp-pop" id="rp-pop-ex">'+
+    '<div class="rp-pop-t">تقرير الاختبارات — اختر نوعه ثم اطبع</div>'+
+    ksFld('نوع التقرير','rx-kind','<option value="">— اختر التقرير —</option>'+
+      '<option value="q1">الطلاب المؤهلين للاختبار الأول</option><option value="r1">نتائج الاختبار الأول</option><option value="b1">أفضل درجات الاختبار الأول</option>'+
+      '<option value="q2">الطلاب المؤهلين للاختبار الثاني</option><option value="r2">نتائج الاختبار الثاني</option><option value="b2">أفضل درجات الاختبار الثاني</option>','')+
+    '<button class="tl-fetch" onclick="rxPrint()">طباعة التقرير PDF</button>'+
   '</div>'+
   '<div class="rp-pop" id="rp-pop-stu">'+
     '<div class="rp-pop-t">تقرير الطلاب — اختر نوعه ثم اطبع</div>'+
@@ -12654,9 +12673,10 @@ function rpScopeTeachers(){
 /* نافذة مختصرة تحت بطاقة تقرير الحضور */
 function rpTogglePeriod(){ rpTogglePop('rp-pop','rp-c3'); }
 function rpToggleStudents(){ rpTogglePop('rp-pop-stu','rp-c5'); }
+function rpToggleExams(){ rpTogglePop('rp-pop-ex','rp-c6'); }
 /* نافذة واحدة مفتوحة في كل مرة */
 function rpTogglePop(id,cardId){
-  var all=[['rp-pop','rp-c3'],['rp-pop-stu','rp-c5']];
+  var all=[['rp-pop','rp-c3'],['rp-pop-stu','rp-c5'],['rp-pop-ex','rp-c6']];
   all.forEach(function(x){ var p=document.getElementById(x[0]), c=document.getElementById(x[1]); if(!p) return;
     var open=(x[0]===id)?!p.classList.contains('open'):false;
     p.classList.toggle('open',open); if(c) c.classList.toggle('on',open);
@@ -12932,6 +12952,88 @@ async function rsPrint(){
         H.map(function(x){ var nd=(x.p.days||[]).length||1, ex=Math.min(nd,hqPlanElapsedFor(x.p,td)), d=x.prog-ex;
           var st=(ex>0&&d<=-1)?'متأخر عن الخطة':((ex>0&&d>=1)?'متقدّم على الخطة':'على الخطة');
           return [nm(x), hn(x), arNum(x.lp), st, arNum(x.prog), arNum(Math.max(0,nd-x.prog))]; }), 14);
+    }
+    hqPrintDoc(title, inner);
+  }catch(e){ showToast('تعذّر تجهيز التقرير','error'); }
+}
+/* ===== تقرير اختبارات الجمعية (الشؤون التعليمية / المشرف) =====
+   المؤهّل للاختبار الأول: أتمّ عشرين صفحة في الدرس منذ بداية الفصل حتى لحظة الطباعة.
+   المؤهّل للاختبار الثاني: اختُبر الاختبار الأول ثم أتمّ عشرين صفحة في الدرس بعد يوم ذلك الاختبار. */
+var RX_PAGES=20;
+/* أيام الدرس المُنجَزة (n:) بعد يوم بعينه (أو كلها إن لم يُعرف اليوم): أول رقم درس وآخره */
+function rxLessonsAfter(sid,dkey){
+  var rec=(DB.evals||{})[sid]; if(!rec||!rec.days) return {first:0,last:0};
+  var jd0=0; try{ jd0=dkey?hqJdOfKey(dkey):0; }catch(e){ jd0=0; } if(!isFinite(jd0)) jd0=0;
+  var ks=[]; for(var k in rec.days){ var jd=NaN; try{ jd=hqJdOfKey(k); }catch(e){} if(isFinite(jd)&&jd>jd0) ks.push({k:k,jd:jd}); }
+  ks.sort(function(a,b){ return a.jd-b.jd; });
+  var first=0,last=0;
+  ks.forEach(function(x){ var v=String((rec.days[x.k]||{}).lesson||''); if(v.indexOf('n:')===0){ var n=parseInt(v.slice(2),10)||0; if(n){ if(!first) first=n; last=n; } } });
+  return {first:first,last:last};
+}
+async function rxCollect(){
+  var halqat=rpScope(), out=[];
+  for(var i=0;i<halqat.length;i++){
+    var h=halqat[i];
+    var part=await hqWithHalqaA(h, async function(){
+      var studs=hqStudentsOf(h).filter(function(s){ return !isDiscontinued(s); }), arr=[];
+      for(var j=0;j<studs.length;j++){
+        var s=studs[j], td=hsTermDays(s.id), fl=hsFirstLast(td,'lesson'), lp=0, l1=null, l2=null;
+        try{ lp=await hsPages('lesson',fl.first,fl.last,s.id); }catch(e){}
+        try{ l1=await hsEdge('lesson',fl.first,'start',s.id); l2=await hsEdge('lesson',fl.last,'end',s.id); }catch(e){}
+        var e1=exGet(s.id,1,1), e2=exGet(s.id,1,2), s1=exSum(e1), s2=exSum(e2), a1=null;
+        if(s1!=null){
+          var af=rxLessonsAfter(s.id,(e1&&e1._d)||''); a1={pages:0,l1:null,l2:null,first:af.first,last:af.last};
+          if(af.first){
+            try{ a1.pages=(await hsPages('lesson',af.first,af.last,s.id))||0; }catch(e){}
+            try{ a1.l1=await hsEdge('lesson',af.first,'start',s.id); a1.l2=await hsEdge('lesson',af.last,'end',s.id); }catch(e){}
+          }
+        }
+        arr.push({s:s, h:h, lp:lp||0, l1:l1, l2:l2, e1:e1, e2:e2, s1:s1, s2:s2, a1:a1});
+      }
+      return arr;
+    });
+    out=out.concat(part);
+  }
+  return out;
+}
+function rxCrit(e){ if(!e) return ['—','—','—']; return EX_CRIT.map(function(c){ var v=parseFloat(e[c.k]); return isNaN(v)?'—':evFmt(v); }); }
+function rxDate(e){ return (e&&e._d)?rsKeyHijri(e._d):'—'; }
+function rxStatus(sum){ return (sum==null)?'لم يُختبر بعد':('اختُبر - '+evFmt(sum)+' / '+EX_MAX); }
+async function rxPrint(){
+  var k=(document.getElementById('rx-kind')||{}).value||'';
+  if(!k){ showToast('اختر نوع التقرير','error'); return; }
+  showToast('جارٍ تجهيز التقرير…','info');
+  try{
+    var sc=rpScopeTitle(), L=await rxCollect(), inner='', title='';
+    function nm(x){ return x.s.name||'—'; } function hn(x){ return x.h.name||'—'; }
+    function byName(a,b){ return String(hn(a)).localeCompare(String(hn(b)),'ar')||String(nm(a)).localeCompare(String(nm(b)),'ar'); }
+    var ex=(k.charAt(1)==='2')?2:1, exN=(ex===2)?'الثاني':'الأول';
+    var cols=['#','الطالب','الحلقة','الحفظ (٥)','التجويد (٣)','الأداء (٢)','المجموع (١٠)','تاريخ الاختبار'];
+    function scoreRows(list,key){ return list.map(function(x){ var e=x[key==='s1'?'e1':'e2'], c=rxCrit(e); return [nm(x), hn(x), c[0], c[1], c[2], evFmt(x[key]), rxDate(e)]; }); }
+    if(k==='q1'){
+      var Q=L.filter(function(x){ return x.lp>=RX_PAGES; }).sort(byName);
+      title='الطلاب المؤهلون للاختبار الأول - '+sc;
+      inner=rpSec('أتمّوا '+arNum(RX_PAGES)+' صفحة فأكثر في الدرس منذ بداية الفصل · '+arNum(Q.length)+' طالباً')+
+        (Q.length?hqPrTableChunks(['#','الطالب','الحلقة','بداية الدرس','الدرس الأخير','صفحات الدرس','الاختبار الأول'],
+          Q.map(function(x){ return [nm(x), hn(x), rsEdgeTxt(x.l1), rsEdgeTxt(x.l2), arNum(x.lp), rxStatus(x.s1)]; }), 14, 'fit'):rpSec('لا يوجد طالب مؤهّل بعد'));
+    } else if(k==='q2'){
+      var Q2=L.filter(function(x){ return x.s1!=null && x.a1 && x.a1.pages>=RX_PAGES; }).sort(byName);
+      title='الطلاب المؤهلون للاختبار الثاني - '+sc;
+      inner=rpSec('اختُبروا الاختبار الأول ثم أتمّوا '+arNum(RX_PAGES)+' صفحة فأكثر في الدرس بعده · '+arNum(Q2.length)+' طالباً')+
+        (Q2.length?hqPrTableChunks(['#','الطالب','الحلقة','تاريخ الاختبار الأول','بداية الدرس بعده','الدرس الأخير','صفحات الدرس بعده','الاختبار الثاني'],
+          Q2.map(function(x){ return [nm(x), hn(x), rxDate(x.e1), rsEdgeTxt(x.a1.l1), rsEdgeTxt(x.a1.l2), arNum(x.a1.pages), rxStatus(x.s2)]; }), 14, 'fit'):rpSec('لا يوجد طالب مؤهّل بعد'));
+    } else if(k==='r1'||k==='r2'){
+      var key=(ex===2)?'s2':'s1', R=L.filter(function(x){ return x[key]!=null; }).sort(byName);
+      var sum=0, mx=null; R.forEach(function(x){ sum+=x[key]; if(mx==null||x[key]>mx) mx=x[key]; });
+      title='نتائج الاختبار '+exN+' - '+sc;
+      inner=rpSec('ملخّص الاختبار '+exN)+
+        rpGrid([rpNumCard(arNum(R.length),'طلاب اختُبروا','hero'), rpNumCard(arNum(L.length),'الطلاب المنتظمون'), rpNumCard(R.length?evFmt(sum/R.length):'—','متوسط الدرجة'), rpNumCard(mx==null?'—':evFmt(mx),'أعلى درجة')])+
+        (R.length?(rpSec('درجات الطلاب وتفاصيلها')+hqPrTableChunks(cols, scoreRows(R,key), 14, 'fit')):rpSec('لم تُسجَّل درجات لهذا الاختبار بعد'));
+    } else if(k==='b1'||k==='b2'){
+      var key2=(ex===2)?'s2':'s1', B=L.filter(function(x){ return x[key2]!=null; }).sort(function(a,b){ return (b[key2]-a[key2])||byName(a,b); }).slice(0,30);
+      title='أفضل درجات الاختبار '+exN+' - '+sc;
+      inner=rpSec('أفضل '+arNum(Math.min(30,B.length))+' طالباً في الاختبار '+exN)+
+        (B.length?hqPrTableChunks(cols, scoreRows(B,key2), 14, 'fit'):rpSec('لم تُسجَّل درجات لهذا الاختبار بعد'));
     }
     hqPrintDoc(title, inner);
   }catch(e){ showToast('تعذّر تجهيز التقرير','error'); }
@@ -14257,6 +14359,8 @@ function evRecCell(kind,curLinear,todayVal,sid){
     +viewBtn
     +'<div class="ev-jp-rev">'
       +'<button type="button" class="ev-jp-btn ok" onclick="evOutcome(\''+sid+'\',\''+kind+'\',true)">\u0623\u0646\u062c\u0632</button>'
+      +'<button type="button" class="ev-jp-undo" title="التراجع عن آخر حكم" aria-label="تراجع" onclick="evUndo(\''+sid+'\',\''+kind+'\')">'
+        +'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.7L20 8.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 3v5.6h-5.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 15.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 21v-5.6h5.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
       +'<button type="button" class="ev-jp-btn no" onclick="evOutcome(\''+sid+'\',\''+kind+'\',false)">\u0644\u0645 \u064a\u0646\u062c\u0650\u0632</button>'
     +'</div>'
     +'</div>';
@@ -14358,6 +14462,32 @@ function evOutcome(sid,kind,done){
   }
 }
 
+/* ↺ التراجع عن آخر «أنجز» أو «لم ينجز» للدرس أو المراجعة في يوم التقييم: يُعاد التقدّم والنقطة خطوةً واحدة ويُمسح الحكم
+   فيعود البند «لم يُقيَّم» ليُقيَّم من جديد؛ المسح يحمل شاهد حقل (f:) كي لا يعيده الدمج من جهاز آخر */
+function evUndo(sid,kind){
+  try{
+    var w=(kind==='lesson')?'الدرس':'المراجعة';
+    var rec=DB.evals&&DB.evals[sid], key=evDateKey(), day=rec&&rec.days&&rec.days[key];
+    var val=day?String(day[kind]||''):'';
+    if(!val){ if(typeof showToast==='function') showToast('لا يوجد تقييم لـ'+w+' للتراجع عنه','info'); return; }
+    if(val.indexOf('n:')===0||val.indexOf('z:')===0){
+      var free=(val.indexOf('z:')===0);
+      if(!rec.progress) rec.progress={lesson:0,review:0};
+      if(!rec.free) rec.free={lesson:0,review:0};
+      var np=(parseInt(rec.progress[kind],10)||0)-1; rec.progress[kind]=np>0?np:0;
+      if(free){ day[kind+'F']=Math.max(0,(parseInt(day[kind+'F'],10)||0)-1); rec.free[kind]=Math.max(0,(parseInt(rec.free[kind],10)||0)-1); }
+      else day[kind+'N']=Math.max(0,(parseInt(day[kind+'N'],10)||0)-1);
+      var nN=parseInt(day[kind+'N'],10)||0, nF=parseInt(day[kind+'F'],10)||0;
+      if(nN+nF>0){ day[kind]=(nN>0?'n:':'z:')+rec.progress[kind]; }   /* أُنجز أكثر من مرة في اليوم: يبقى الحكم السابق */
+      else { delete day[kind]; delete day[kind+'N']; delete day[kind+'F']; try{ var _t=hqNow(); hqTombAdd('f', sid+'|'+key+'|'+kind, _t); hqTombAdd('f', sid+'|'+key+'|'+kind+'N', _t); hqTombAdd('f', sid+'|'+key+'|'+kind+'F', _t); }catch(e){} }
+    } else {
+      delete day[kind]; try{ hqTombAdd('f', sid+'|'+key+'|'+kind, hqNow()); }catch(e){}
+    }
+    rec.days[key]=day; DB.evals[sid]=rec; save();
+    if(typeof showToast==='function') showToast('↺ تراجعت عن تقييم '+w+' - قيّمه من جديد','info');
+    openStudentEval(sid);
+  }catch(e){ if(typeof showToast==='function') showToast('حدث خطأ، حاول مجدداً','error'); }
+}
 /* \u2705 \u062a\u0645 \u0627\u0644\u062d\u0641\u0638 \u2190 \u0631\u0641\u0639 \u0627\u0644\u0637\u0627\u0644\u0628 \u0625\u0644\u0649 \u0627\u0644\u0631\u0642\u0645 \u0627\u0644\u062a\u0627\u0644\u064a */
 function evMarkDone(sid, kind, num, silent, free){
   try{
@@ -15807,7 +15937,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 16.5';
+  window.HQ_BUILD='2026 - 16.6';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
