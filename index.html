@@ -2992,6 +2992,8 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
   </div>
 </div>
 
+<!-- fflate 0.8.2 (MIT) — ضغط gzip متزامن للتخزين المحلي وحمولة المزامنة (إصدار 17.1) -->
+<script>!function(f){typeof module!='undefined'&&typeof exports=='object'?module.exports=f():typeof define!='undefined'&&define.amd?define(f):(typeof self!='undefined'?self:this).fflate=f()}(function(){var _e={};"use strict";var t=(typeof module!='undefined'&&typeof exports=='object'?function(_f){"use strict";var e,t=";var __w=require('worker_threads');__w.parentPort.on('message',function(m){onmessage({data:m})}),postMessage=function(m,t){__w.parentPort.postMessage(m,t)},close=process.exit;self=global";try{e=require("worker_threads").Worker}catch(e){}exports.default=e?function(r,n,o,a,s){var u=!1,i=new e(r+t,{eval:!0}).on("error",(function(e){return s(e,null)})).on("message",(function(e){return s(null,e)})).on("exit",(function(e){e&&!u&&s(Error("exited with code "+e),null)}));return i.postMessage(o,a),i.terminate=function(){return u=!0,e.prototype.terminate.call(i)},i}:function(e,t,r,n,o){setImmediate((function(){return o(Error("async operations unsupported - update to Node 12+ (or Node 10-11 with the --experimental-worker CLI flag)"),null)}));var a=function(){};return{terminate:a,postMessage:a}};return _f}:function(_f){"use strict";var e={};_f.default=function(r,t,s,a,n){var o=new Worker(e[t]||(e[t]=URL.createObjectURL(new Blob([r+';addEventListener("error",function(e){e=e.error;postMessage({$e$:[e.message,e.code,e.stack]})})'],{type:"text/javascript"}))));return o.onmessage=function(e){var r=e.data,t=r.$e$;if(t){var s=Error(t[0]);s.code=t[1],s.stack=t[2],n(s,null)}else n(null,r)},o.postMessage(s,a),o};return _f})({}),n=Uint8Array,r=Uint16Array,e=Int32Array,i=new n([0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0,0,0]),o=new n([0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,0,0]),s=new n([16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15]),a=function(t,n){for(var i=new r(31),o=0;o<31;++o)i[o]=n+=1<<t[o-1];var s=new e(i[30]);for(o=1;o<30;++o)for(var a=i[o];a<i[o+1];++a)s[a]=a-i[o]<<5|o;return{b:i,r:s}},u=a(i,2),h=u.b,f=u.r;h[28]=258,f[258]=28;for(var l=a(o,0),c=l.b,p=l.r,v=new r(32768),d=0;d<32768;++d){var g=(43690&d)>>1|(21845&d)<<1;v[d]=((65280&(g=(61680&(g=(52428&g)>>2|(13107&g)<<2))>>4|(3855&g)<<4))>>8|(255&g)<<8)>>1}var y=function(t,n,e){for(var i=t.length,o=0,s=new r(n);o<i;++o)t[o]&&++s[t[o]-1];var a,u=new r(n);for(o=1;o<n;++o)u[o]=u[o-1]+s[o-1]<<1;if(e){a=new r(1<<n);var h=15-n;for(o=0;o<i;++o)if(t[o])for(var f=o<<4|t[o],l=n-t[o],c=u[t[o]-1]++<<l,p=c|(1<<l)-1;c<=p;++c)a[v[c]>>h]=f}else for(a=new r(i),o=0;o<i;++o)t[o]&&(a[o]=v[u[t[o]-1]++]>>15-t[o]);return a},m=new n(288);for(d=0;d<144;++d)m[d]=8;for(d=144;d<256;++d)m[d]=9;for(d=256;d<280;++d)m[d]=7;for(d=280;d<288;++d)m[d]=8;var b=new n(32);for(d=0;d<32;++d)b[d]=5;var w=y(m,9,0),x=y(m,9,1),z=y(b,5,0),k=y(b,5,1),M=function(t){for(var n=t[0],r=1;r<t.length;++r)t[r]>n&&(n=t[r]);return n},S=function(t,n,r){var e=n/8|0;return(t[e]|t[e+1]<<8)>>(7&n)&r},A=function(t,n){var r=n/8|0;return(t[r]|t[r+1]<<8|t[r+2]<<16)>>(7&n)},T=function(t){return(t+7)/8|0},D=function(t,r,e){return(null==r||r<0)&&(r=0),(null==e||e>t.length)&&(e=t.length),new n(t.subarray(r,e))};_e.FlateErrorCode={UnexpectedEOF:0,InvalidBlockType:1,InvalidLengthLiteral:2,InvalidDistance:3,StreamFinished:4,NoStreamHandler:5,InvalidHeader:6,NoCallback:7,InvalidUTF8:8,ExtraFieldTooLong:9,InvalidDate:10,FilenameTooLong:11,StreamFinishing:12,InvalidZipData:13,UnknownCompressionMethod:14};var C=["unexpected EOF","invalid block type","invalid length/literal","invalid distance","stream finished","no stream handler",,"no callback","invalid UTF-8 data","extra field too long","date not in range 1980-2099","filename too long","stream finishing","invalid zip data"],I=function(t,n,r){var e=Error(n||C[t]);if(e.code=t,Error.captureStackTrace&&Error.captureStackTrace(e,I),!r)throw e;return e},U=function(t,r,e,a){var u=t.length,f=a?a.length:0;if(!u||r.f&&!r.l)return e||new n(0);var l=!e,p=l||2!=r.i,v=r.i;l&&(e=new n(3*u));var d=function(t){var r=e.length;if(t>r){var i=new n(Math.max(2*r,t));i.set(e),e=i}},g=r.f||0,m=r.p||0,b=r.b||0,w=r.l,z=r.d,C=r.m,U=r.n,F=8*u;do{if(!w){g=S(t,m,1);var E=S(t,m+1,3);if(m+=3,!E){var Z=t[(J=T(m)+4)-4]|t[J-3]<<8,q=J+Z;if(q>u){v&&I(0);break}p&&d(b+Z),e.set(t.subarray(J,q),b),r.b=b+=Z,r.p=m=8*q,r.f=g;continue}if(1==E)w=x,z=k,C=9,U=5;else if(2==E){var O=S(t,m,31)+257,G=S(t,m+10,15)+4,L=O+S(t,m+5,31)+1;m+=14;for(var H=new n(L),j=new n(19),N=0;N<G;++N)j[s[N]]=S(t,m+3*N,7);m+=3*G;var P=M(j),B=(1<<P)-1,Y=y(j,P,1);for(N=0;N<L;){var J,K=Y[S(t,m,B)];if(m+=15&K,(J=K>>4)<16)H[N++]=J;else{var Q=0,R=0;for(16==J?(R=3+S(t,m,3),m+=2,Q=H[N-1]):17==J?(R=3+S(t,m,7),m+=3):18==J&&(R=11+S(t,m,127),m+=7);R--;)H[N++]=Q}}var V=H.subarray(0,O),W=H.subarray(O);C=M(V),U=M(W),w=y(V,C,1),z=y(W,U,1)}else I(1);if(m>F){v&&I(0);break}}p&&d(b+131072);for(var X=(1<<C)-1,$=(1<<U)-1,_=m;;_=m){var tt=(Q=w[A(t,m)&X])>>4;if((m+=15&Q)>F){v&&I(0);break}if(Q||I(2),tt<256)e[b++]=tt;else{if(256==tt){_=m,w=null;break}var nt=tt-254;tt>264&&(nt=S(t,m,(1<<(it=i[N=tt-257]))-1)+h[N],m+=it);var rt=z[A(t,m)&$],et=rt>>4;if(rt||I(3),m+=15&rt,W=c[et],et>3){var it=o[et];W+=A(t,m)&(1<<it)-1,m+=it}if(m>F){v&&I(0);break}p&&d(b+131072);var ot=b+nt;if(b<W){var st=f-W,at=Math.min(W,ot);for(st+b<0&&I(3);b<at;++b)e[b]=a[st+b]}for(;b<ot;++b)e[b]=e[b-W]}}r.l=w,r.p=_,r.b=b,r.f=g,w&&(g=1,r.m=C,r.d=z,r.n=U)}while(!g);return b!=e.length&&l?D(e,0,b):e.subarray(0,b)},F=function(t,n,r){var e=n/8|0;t[e]|=r<<=7&n,t[e+1]|=r>>8},E=function(t,n,r){var e=n/8|0;t[e]|=r<<=7&n,t[e+1]|=r>>8,t[e+2]|=r>>16},Z=function(t,e){for(var i=[],o=0;o<t.length;++o)t[o]&&i.push({s:o,f:t[o]});var s=i.length,a=i.slice();if(!s)return{t:N,l:0};if(1==s){var u=new n(i[0].s+1);return u[i[0].s]=1,{t:u,l:1}}i.sort((function(t,n){return t.f-n.f})),i.push({s:-1,f:25001});var h=i[0],f=i[1],l=0,c=1,p=2;for(i[0]={s:-1,f:h.f+f.f,l:h,r:f};c!=s-1;)h=i[i[l].f<i[p].f?l++:p++],f=i[l!=c&&i[l].f<i[p].f?l++:p++],i[c++]={s:-1,f:h.f+f.f,l:h,r:f};var v=a[0].s;for(o=1;o<s;++o)a[o].s>v&&(v=a[o].s);var d=new r(v+1),g=q(i[c-1],d,0);if(g>e){o=0;var y=0,m=g-e,b=1<<m;for(a.sort((function(t,n){return d[n.s]-d[t.s]||t.f-n.f}));o<s;++o){var w=a[o].s;if(!(d[w]>e))break;y+=b-(1<<g-d[w]),d[w]=e}for(y>>=m;y>0;){var x=a[o].s;d[x]<e?y-=1<<e-d[x]++-1:++o}for(;o>=0&&y;--o){var z=a[o].s;d[z]==e&&(--d[z],++y)}g=e}return{t:new n(d),l:g}},q=function(t,n,r){return-1==t.s?Math.max(q(t.l,n,r+1),q(t.r,n,r+1)):n[t.s]=r},O=function(t){for(var n=t.length;n&&!t[--n];);for(var e=new r(++n),i=0,o=t[0],s=1,a=function(t){e[i++]=t},u=1;u<=n;++u)if(t[u]==o&&u!=n)++s;else{if(!o&&s>2){for(;s>138;s-=138)a(32754);s>2&&(a(s>10?s-11<<5|28690:s-3<<5|12305),s=0)}else if(s>3){for(a(o),--s;s>6;s-=6)a(8304);s>2&&(a(s-3<<5|8208),s=0)}for(;s--;)a(o);s=1,o=t[u]}return{c:e.subarray(0,i),n:n}},G=function(t,n){for(var r=0,e=0;e<n.length;++e)r+=t[e]*n[e];return r},L=function(t,n,r){var e=r.length,i=T(n+2);t[i]=255&e,t[i+1]=e>>8,t[i+2]=255^t[i],t[i+3]=255^t[i+1];for(var o=0;o<e;++o)t[i+o+4]=r[o];return 8*(i+4+e)},H=function(t,n,e,a,u,h,f,l,c,p,v){F(n,v++,e),++u[256];for(var d=Z(u,15),g=d.t,x=d.l,k=Z(h,15),M=k.t,S=k.l,A=O(g),T=A.c,D=A.n,C=O(M),I=C.c,U=C.n,q=new r(19),H=0;H<T.length;++H)++q[31&T[H]];for(H=0;H<I.length;++H)++q[31&I[H]];for(var j=Z(q,7),N=j.t,P=j.l,B=19;B>4&&!N[s[B-1]];--B);var Y,J,K,Q,R=p+5<<3,V=G(u,m)+G(h,b)+f,W=G(u,g)+G(h,M)+f+14+3*B+G(q,N)+2*q[16]+3*q[17]+7*q[18];if(c>=0&&R<=V&&R<=W)return L(n,v,t.subarray(c,c+p));if(F(n,v,1+(W<V)),v+=2,W<V){Y=y(g,x,0),J=g,K=y(M,S,0),Q=M;var X=y(N,P,0);for(F(n,v,D-257),F(n,v+5,U-1),F(n,v+10,B-4),v+=14,H=0;H<B;++H)F(n,v+3*H,N[s[H]]);v+=3*B;for(var $=[T,I],_=0;_<2;++_){var tt=$[_];for(H=0;H<tt.length;++H)F(n,v,X[rt=31&tt[H]]),v+=N[rt],rt>15&&(F(n,v,tt[H]>>5&127),v+=tt[H]>>12)}}else Y=w,J=m,K=z,Q=b;for(H=0;H<l;++H){var nt=a[H];if(nt>255){var rt;E(n,v,Y[257+(rt=nt>>18&31)]),v+=J[rt+257],rt>7&&(F(n,v,nt>>23&31),v+=i[rt]);var et=31&nt;E(n,v,K[et]),v+=Q[et],et>3&&(E(n,v,nt>>5&8191),v+=o[et])}else E(n,v,Y[nt]),v+=J[nt]}return E(n,v,Y[256]),v+J[256]},j=new e([65540,131080,131088,131104,262176,1048704,1048832,2114560,2117632]),N=new n(0),P=function(t,s,a,u,h,l){var c=l.z||t.length,v=new n(u+c+5*(1+Math.ceil(c/7e3))+h),d=v.subarray(u,v.length-h),g=l.l,y=7&(l.r||0);if(s){y&&(d[0]=l.r>>3);for(var m=j[s-1],b=m>>13,w=8191&m,x=(1<<a)-1,z=l.p||new r(32768),k=l.h||new r(x+1),M=Math.ceil(a/3),S=2*M,A=function(n){return(t[n]^t[n+1]<<M^t[n+2]<<S)&x},C=new e(25e3),I=new r(288),U=new r(32),F=0,E=0,Z=l.i||0,q=0,O=l.w||0,G=0;Z+2<c;++Z){var N=A(Z),P=32767&Z,B=k[N];if(z[P]=B,k[N]=P,O<=Z){var Y=c-Z;if((F>7e3||q>24576)&&(Y>423||!g)){y=H(t,d,0,C,I,U,E,q,G,Z-G,y),q=F=E=0,G=Z;for(var J=0;J<286;++J)I[J]=0;for(J=0;J<30;++J)U[J]=0}var K=2,Q=0,R=w,V=P-B&32767;if(Y>2&&N==A(Z-V))for(var W=Math.min(b,Y)-1,X=Math.min(32767,Z),$=Math.min(258,Y);V<=X&&--R&&P!=B;){if(t[Z+K]==t[Z+K-V]){for(var _=0;_<$&&t[Z+_]==t[Z+_-V];++_);if(_>K){if(K=_,Q=V,_>W)break;var tt=Math.min(V,_-2),nt=0;for(J=0;J<tt;++J){var rt=Z-V+J&32767,et=rt-z[rt]&32767;et>nt&&(nt=et,B=rt)}}}V+=(P=B)-(B=z[P])&32767}if(Q){C[q++]=268435456|f[K]<<18|p[Q];var it=31&f[K],ot=31&p[Q];E+=i[it]+o[ot],++I[257+it],++U[ot],O=Z+K,++F}else C[q++]=t[Z],++I[t[Z]]}}for(Z=Math.max(Z,O);Z<c;++Z)C[q++]=t[Z],++I[t[Z]];y=H(t,d,g,C,I,U,E,q,G,Z-G,y),g||(l.r=7&y|d[y/8|0]<<3,y-=7,l.h=k,l.p=z,l.i=Z,l.w=O)}else{for(Z=l.w||0;Z<c+g;Z+=65535){var st=Z+65535;st>=c&&(d[y/8|0]=g,st=c),y=L(d,y+1,t.subarray(Z,st))}l.i=c}return D(v,0,u+T(y)+h)},B=function(){for(var t=new Int32Array(256),n=0;n<256;++n){for(var r=n,e=9;--e;)r=(1&r&&-306674912)^r>>>1;t[n]=r}return t}(),Y=function(){var t=-1;return{p:function(n){for(var r=t,e=0;e<n.length;++e)r=B[255&r^n[e]]^r>>>8;t=r},d:function(){return~t}}},J=function(){var t=1,n=0;return{p:function(r){for(var e=t,i=n,o=0|r.length,s=0;s!=o;){for(var a=Math.min(s+2655,o);s<a;++s)i+=e+=r[s];e=(65535&e)+15*(e>>16),i=(65535&i)+15*(i>>16)}t=e,n=i},d:function(){return(255&(t%=65521))<<24|(65280&t)<<8|(255&(n%=65521))<<8|n>>8}}},K=function(t,r,e,i,o){if(!o&&(o={l:1},r.dictionary)){var s=r.dictionary.subarray(-32768),a=new n(s.length+t.length);a.set(s),a.set(t,s.length),t=a,o.w=s.length}return P(t,null==r.level?6:r.level,null==r.mem?o.l?Math.ceil(1.5*Math.max(8,Math.min(13,Math.log(t.length)))):20:12+r.mem,e,i,o)},Q=function(t,n){var r={};for(var e in t)r[e]=t[e];for(var e in n)r[e]=n[e];return r},R=function(t,n,r){for(var e=t(),i=""+t,o=i.slice(i.indexOf("[")+1,i.lastIndexOf("]")).replace(/\s+/g,"").split(","),s=0;s<e.length;++s){var a=e[s],u=o[s];if("function"==typeof a){n+=";"+u+"=";var h=""+a;if(a.prototype)if(-1!=h.indexOf("[native code]")){var f=h.indexOf(" ",8)+1;n+=h.slice(f,h.indexOf("(",f))}else for(var l in n+=h,a.prototype)n+=";"+u+".prototype."+l+"="+a.prototype[l];else n+=h}else r[u]=a}return n},V=[],W=function(t){var n=[];for(var r in t)t[r].buffer&&n.push((t[r]=new t[r].constructor(t[r])).buffer);return n},X=function(n,r,e,i){if(!V[e]){for(var o="",s={},a=n.length-1,u=0;u<a;++u)o=R(n[u],o,s);V[e]={c:R(n[a],o,s),e:s}}var h=Q({},V[e].e);return(0,t.default)(V[e].c+";onmessage=function(e){for(var k in e.data)self[k]=e.data[k];onmessage="+r+"}",e,h,W(h),i)},$=function(){return[n,r,e,i,o,s,h,c,x,k,v,C,y,M,S,A,T,D,I,U,Tt,it,ot]},_=function(){return[n,r,e,i,o,s,f,p,w,m,z,b,v,j,N,y,F,E,Z,q,O,G,L,H,T,D,P,K,kt,it]},tt=function(){return[pt,gt,ct,Y,B]},nt=function(){return[vt,dt]},rt=function(){return[yt,ct,J]},et=function(){return[mt]},it=function(t){return postMessage(t,[t.buffer])},ot=function(t){return t&&{out:t.size&&new n(t.size),dictionary:t.dictionary}},st=function(t,n,r,e,i,o){var s=X(r,e,i,(function(t,n){s.terminate(),o(t,n)}));return s.postMessage([t,n],n.consume?[t.buffer]:[]),function(){s.terminate()}},at=function(t){return t.ondata=function(t,n){return postMessage([t,n],[t.buffer])},function(n){n.data.length?(t.push(n.data[0],n.data[1]),postMessage([n.data[0].length])):t.flush()}},ut=function(t,n,r,e,i,o,s){var a,u=X(t,e,i,(function(t,r){t?(u.terminate(),n.ondata.call(n,t)):Array.isArray(r)?1==r.length?(n.queuedSize-=r[0],n.ondrain&&n.ondrain(r[0])):(r[1]&&u.terminate(),n.ondata.call(n,t,r[0],r[1])):s(r)}));u.postMessage(r),n.queuedSize=0,n.push=function(t,r){n.ondata||I(5),a&&n.ondata(I(4,0,1),null,!!r),n.queuedSize+=t.length,u.postMessage([t,a=r],[t.buffer])},n.terminate=function(){u.terminate()},o&&(n.flush=function(){u.postMessage([])})},ht=function(t,n){return t[n]|t[n+1]<<8},ft=function(t,n){return(t[n]|t[n+1]<<8|t[n+2]<<16|t[n+3]<<24)>>>0},lt=function(t,n){return ft(t,n)+4294967296*ft(t,n+4)},ct=function(t,n,r){for(;r;++n)t[n]=r,r>>>=8},pt=function(t,n){var r=n.filename;if(t[0]=31,t[1]=139,t[2]=8,t[8]=n.level<2?4:9==n.level?2:0,t[9]=3,0!=n.mtime&&ct(t,4,Math.floor(new Date(n.mtime||Date.now())/1e3)),r){t[3]=8;for(var e=0;e<=r.length;++e)t[e+10]=r.charCodeAt(e)}},vt=function(t){31==t[0]&&139==t[1]&&8==t[2]||I(6,"invalid gzip data");var n=t[3],r=10;4&n&&(r+=2+(t[10]|t[11]<<8));for(var e=(n>>3&1)+(n>>4&1);e>0;e-=!t[r++]);return r+(2&n)},dt=function(t){var n=t.length;return(t[n-4]|t[n-3]<<8|t[n-2]<<16|t[n-1]<<24)>>>0},gt=function(t){return 10+(t.filename?t.filename.length+1:0)},yt=function(t,n){var r=n.level,e=0==r?0:r<6?1:9==r?3:2;if(t[0]=120,t[1]=e<<6|(n.dictionary&&32),t[1]|=31-(t[0]<<8|t[1])%31,n.dictionary){var i=J();i.p(n.dictionary),ct(t,2,i.d())}},mt=function(t,n){return(8!=(15&t[0])||t[0]>>4>7||(t[0]<<8|t[1])%31)&&I(6,"invalid zlib data"),(t[1]>>5&1)==+!n&&I(6,"invalid zlib data: "+(32&t[1]?"need":"unexpected")+" dictionary"),2+(t[1]>>3&4)};function bt(t,n){return"function"==typeof t&&(n=t,t={}),this.ondata=n,t}var wt=function(){function t(t,r){if("function"==typeof t&&(r=t,t={}),this.ondata=r,this.o=t||{},this.s={l:0,i:32768,w:32768,z:32768},this.b=new n(98304),this.o.dictionary){var e=this.o.dictionary.subarray(-32768);this.b.set(e,32768-e.length),this.s.i=32768-e.length}}return t.prototype.p=function(t,n){this.ondata(K(t,this.o,0,0,this.s),n)},t.prototype.push=function(t,r){this.ondata||I(5),this.s.l&&I(4);var e=t.length+this.s.z;if(e>this.b.length){if(e>2*this.b.length-32768){var i=new n(-32768&e);i.set(this.b.subarray(0,this.s.z)),this.b=i}var o=this.b.length-this.s.z;this.b.set(t.subarray(0,o),this.s.z),this.s.z=this.b.length,this.p(this.b,!1),this.b.set(this.b.subarray(-32768)),this.b.set(t.subarray(o),32768),this.s.z=t.length-o+32768,this.s.i=32766,this.s.w=32768}else this.b.set(t,this.s.z),this.s.z+=t.length;this.s.l=1&r,(this.s.z>this.s.w+8191||r)&&(this.p(this.b,r||!1),this.s.w=this.s.i,this.s.i-=2)},t.prototype.flush=function(){this.ondata||I(5),this.s.l&&I(4),this.p(this.b,!1),this.s.w=this.s.i,this.s.i-=2},t}();_e.Deflate=wt;var xt=function(){return function(t,n){ut([_,function(){return[at,wt]}],this,bt.call(this,t,n),(function(t){var n=new wt(t.data);onmessage=at(n)}),6,1)}}();function zt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[_],(function(t){return it(kt(t.data[0],t.data[1]))}),0,r)}function kt(t,n){return K(t,n||{},0,0)}_e.AsyncDeflate=xt,_e.deflate=zt,_e.deflateSync=kt;var Mt=function(){function t(t,r){"function"==typeof t&&(r=t,t={}),this.ondata=r;var e=t&&t.dictionary&&t.dictionary.subarray(-32768);this.s={i:0,b:e?e.length:0},this.o=new n(32768),this.p=new n(0),e&&this.o.set(e)}return t.prototype.e=function(t){if(this.ondata||I(5),this.d&&I(4),this.p.length){if(t.length){var r=new n(this.p.length+t.length);r.set(this.p),r.set(t,this.p.length),this.p=r}}else this.p=t},t.prototype.c=function(t){this.s.i=+(this.d=t||!1);var n=this.s.b,r=U(this.p,this.s,this.o);this.ondata(D(r,n,this.s.b),this.d),this.o=D(r,this.s.b-32768),this.s.b=this.o.length,this.p=D(this.p,this.s.p/8|0),this.s.p&=7},t.prototype.push=function(t,n){this.e(t),this.c(n)},t}();_e.Inflate=Mt;var St=function(){return function(t,n){ut([$,function(){return[at,Mt]}],this,bt.call(this,t,n),(function(t){var n=new Mt(t.data);onmessage=at(n)}),7,0)}}();function At(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[$],(function(t){return it(Tt(t.data[0],ot(t.data[1])))}),1,r)}function Tt(t,n){return U(t,{i:2},n&&n.out,n&&n.dictionary)}_e.AsyncInflate=St,_e.inflate=At,_e.inflateSync=Tt;var Dt=function(){function t(t,n){this.c=Y(),this.l=0,this.v=1,wt.call(this,t,n)}return t.prototype.push=function(t,n){this.c.p(t),this.l+=t.length,wt.prototype.push.call(this,t,n)},t.prototype.p=function(t,n){var r=K(t,this.o,this.v&&gt(this.o),n&&8,this.s);this.v&&(pt(r,this.o),this.v=0),n&&(ct(r,r.length-8,this.c.d()),ct(r,r.length-4,this.l)),this.ondata(r,n)},t.prototype.flush=function(){wt.prototype.flush.call(this)},t}();_e.Gzip=Dt,_e.Compress=Dt;var Ct=function(){return function(t,n){ut([_,tt,function(){return[at,wt,Dt]}],this,bt.call(this,t,n),(function(t){var n=new Dt(t.data);onmessage=at(n)}),8,1)}}();function It(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[_,tt,function(){return[Ut]}],(function(t){return it(Ut(t.data[0],t.data[1]))}),2,r)}function Ut(t,n){n||(n={});var r=Y(),e=t.length;r.p(t);var i=K(t,n,gt(n),8),o=i.length;return pt(i,n),ct(i,o-8,r.d()),ct(i,o-4,e),i}_e.AsyncGzip=Ct,_e.AsyncCompress=Ct,_e.gzip=It,_e.compress=It,_e.gzipSync=Ut,_e.compressSync=Ut;var Ft=function(){function t(t,n){this.v=1,this.r=0,Mt.call(this,t,n)}return t.prototype.push=function(t,r){if(Mt.prototype.e.call(this,t),this.r+=t.length,this.v){var e=this.p.subarray(this.v-1),i=e.length>3?vt(e):4;if(i>e.length){if(!r)return}else this.v>1&&this.onmember&&this.onmember(this.r-e.length);this.p=e.subarray(i),this.v=0}Mt.prototype.c.call(this,r),!this.s.f||this.s.l||r||(this.v=T(this.s.p)+9,this.s={i:0},this.o=new n(0),this.push(new n(0),r))},t}();_e.Gunzip=Ft;var Et=function(){return function(t,n){var r=this;ut([$,nt,function(){return[at,Mt,Ft]}],this,bt.call(this,t,n),(function(t){var n=new Ft(t.data);n.onmember=function(t){return postMessage(t)},onmessage=at(n)}),9,0,(function(t){return r.onmember&&r.onmember(t)}))}}();function Zt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[$,nt,function(){return[qt]}],(function(t){return it(qt(t.data[0],t.data[1]))}),3,r)}function qt(t,r){var e=vt(t);return e+8>t.length&&I(6,"invalid gzip data"),U(t.subarray(e,-8),{i:2},r&&r.out||new n(dt(t)),r&&r.dictionary)}_e.AsyncGunzip=Et,_e.gunzip=Zt,_e.gunzipSync=qt;var Ot=function(){function t(t,n){this.c=J(),this.v=1,wt.call(this,t,n)}return t.prototype.push=function(t,n){this.c.p(t),wt.prototype.push.call(this,t,n)},t.prototype.p=function(t,n){var r=K(t,this.o,this.v&&(this.o.dictionary?6:2),n&&4,this.s);this.v&&(yt(r,this.o),this.v=0),n&&ct(r,r.length-4,this.c.d()),this.ondata(r,n)},t.prototype.flush=function(){wt.prototype.flush.call(this)},t}();_e.Zlib=Ot;var Gt=function(){return function(t,n){ut([_,rt,function(){return[at,wt,Ot]}],this,bt.call(this,t,n),(function(t){var n=new Ot(t.data);onmessage=at(n)}),10,1)}}();function Lt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[_,rt,function(){return[Ht]}],(function(t){return it(Ht(t.data[0],t.data[1]))}),4,r)}function Ht(t,n){n||(n={});var r=J();r.p(t);var e=K(t,n,n.dictionary?6:2,4);return yt(e,n),ct(e,e.length-4,r.d()),e}_e.AsyncZlib=Gt,_e.zlib=Lt,_e.zlibSync=Ht;var jt=function(){function t(t,n){Mt.call(this,t,n),this.v=t&&t.dictionary?2:1}return t.prototype.push=function(t,n){if(Mt.prototype.e.call(this,t),this.v){if(this.p.length<6&&!n)return;this.p=this.p.subarray(mt(this.p,this.v-1)),this.v=0}n&&(this.p.length<4&&I(6,"invalid zlib data"),this.p=this.p.subarray(0,-4)),Mt.prototype.c.call(this,n)},t}();_e.Unzlib=jt;var Nt=function(){return function(t,n){ut([$,et,function(){return[at,Mt,jt]}],this,bt.call(this,t,n),(function(t){var n=new jt(t.data);onmessage=at(n)}),11,0)}}();function Pt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[$,et,function(){return[Bt]}],(function(t){return it(Bt(t.data[0],ot(t.data[1])))}),5,r)}function Bt(t,n){return U(t.subarray(mt(t,n&&n.dictionary),-4),{i:2},n&&n.out,n&&n.dictionary)}_e.AsyncUnzlib=Nt,_e.unzlib=Pt,_e.unzlibSync=Bt;var Yt=function(){function t(t,n){this.o=bt.call(this,t,n)||{},this.G=Ft,this.I=Mt,this.Z=jt}return t.prototype.i=function(){var t=this;this.s.ondata=function(n,r){t.ondata(n,r)}},t.prototype.push=function(t,r){if(this.ondata||I(5),this.s)this.s.push(t,r);else{if(this.p&&this.p.length){var e=new n(this.p.length+t.length);e.set(this.p),e.set(t,this.p.length)}else this.p=t;this.p.length>2&&(this.s=31==this.p[0]&&139==this.p[1]&&8==this.p[2]?new this.G(this.o):8!=(15&this.p[0])||this.p[0]>>4>7||(this.p[0]<<8|this.p[1])%31?new this.I(this.o):new this.Z(this.o),this.i(),this.s.push(this.p,r),this.p=null)}},t}();_e.Decompress=Yt;var Jt=function(){function t(t,n){Yt.call(this,t,n),this.queuedSize=0,this.G=Et,this.I=St,this.Z=Nt}return t.prototype.i=function(){var t=this;this.s.ondata=function(n,r,e){t.ondata(n,r,e)},this.s.ondrain=function(n){t.queuedSize-=n,t.ondrain&&t.ondrain(n)}},t.prototype.push=function(t,n){this.queuedSize+=t.length,Yt.prototype.push.call(this,t,n)},t}();function Kt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),31==t[0]&&139==t[1]&&8==t[2]?Zt(t,n,r):8!=(15&t[0])||t[0]>>4>7||(t[0]<<8|t[1])%31?At(t,n,r):Pt(t,n,r)}function Qt(t,n){return 31==t[0]&&139==t[1]&&8==t[2]?qt(t,n):8!=(15&t[0])||t[0]>>4>7||(t[0]<<8|t[1])%31?Tt(t,n):Bt(t,n)}_e.AsyncDecompress=Jt,_e.decompress=Kt,_e.decompressSync=Qt;var Rt=function(t,r,e,i){for(var o in t){var s=t[o],a=r+o,u=i;Array.isArray(s)&&(u=Q(i,s[1]),s=s[0]),s instanceof n?e[a]=[s,u]:(e[a+="/"]=[new n(0),u],Rt(s,a,e,i))}},Vt="undefined"!=typeof TextEncoder&&new TextEncoder,Wt="undefined"!=typeof TextDecoder&&new TextDecoder,Xt=0;try{Wt.decode(N,{stream:!0}),Xt=1}catch(t){}var $t=function(t){for(var n="",r=0;;){var e=t[r++],i=(e>127)+(e>223)+(e>239);if(r+i>t.length)return{s:n,r:D(t,r-1)};i?3==i?(e=((15&e)<<18|(63&t[r++])<<12|(63&t[r++])<<6|63&t[r++])-65536,n+=String.fromCharCode(55296|e>>10,56320|1023&e)):n+=String.fromCharCode(1&i?(31&e)<<6|63&t[r++]:(15&e)<<12|(63&t[r++])<<6|63&t[r++]):n+=String.fromCharCode(e)}},_t=function(){function t(t){this.ondata=t,Xt?this.t=new TextDecoder:this.p=N}return t.prototype.push=function(t,r){if(this.ondata||I(5),r=!!r,this.t)return this.ondata(this.t.decode(t,{stream:!0}),r),void(r&&(this.t.decode().length&&I(8),this.t=null));this.p||I(4);var e=new n(this.p.length+t.length);e.set(this.p),e.set(t,this.p.length);var i=$t(e),o=i.s,s=i.r;r?(s.length&&I(8),this.p=null):this.p=s,this.ondata(o,r)},t}();_e.DecodeUTF8=_t;var tn=function(){function t(t){this.ondata=t}return t.prototype.push=function(t,n){this.ondata||I(5),this.d&&I(4),this.ondata(nn(t),this.d=n||!1)},t}();function nn(t,r){if(r){for(var e=new n(t.length),i=0;i<t.length;++i)e[i]=t.charCodeAt(i);return e}if(Vt)return Vt.encode(t);var o=t.length,s=new n(t.length+(t.length>>1)),a=0,u=function(t){s[a++]=t};for(i=0;i<o;++i){if(a+5>s.length){var h=new n(a+8+(o-i<<1));h.set(s),s=h}var f=t.charCodeAt(i);f<128||r?u(f):f<2048?(u(192|f>>6),u(128|63&f)):f>55295&&f<57344?(u(240|(f=65536+(1047552&f)|1023&t.charCodeAt(++i))>>18),u(128|f>>12&63),u(128|f>>6&63),u(128|63&f)):(u(224|f>>12),u(128|f>>6&63),u(128|63&f))}return D(s,0,a)}function rn(t,n){if(n){for(var r="",e=0;e<t.length;e+=16384)r+=String.fromCharCode.apply(null,t.subarray(e,e+16384));return r}if(Wt)return Wt.decode(t);var i=$t(t),o=i.s;return(r=i.r).length&&I(8),o}_e.EncodeUTF8=tn,_e.strToU8=nn,_e.strFromU8=rn;var en=function(t){return 1==t?3:t<6?2:9==t?1:0},on=function(t,n){return n+30+ht(t,n+26)+ht(t,n+28)},sn=function(t,n,r){var e=ht(t,n+28),i=rn(t.subarray(n+46,n+46+e),!(2048&ht(t,n+8))),o=n+46+e,s=ft(t,n+20),a=r&&4294967295==s?an(t,o):[s,ft(t,n+24),ft(t,n+42)],u=a[0],h=a[1],f=a[2];return[ht(t,n+10),u,h,i,o+ht(t,n+30)+ht(t,n+32),f]},an=function(t,n){for(;1!=ht(t,n);n+=4+ht(t,n+2));return[lt(t,n+12),lt(t,n+4),lt(t,n+20)]},un=function(t){var n=0;if(t)for(var r in t){var e=t[r].length;e>65535&&I(9),n+=e+4}return n},hn=function(t,n,r,e,i,o,s,a){var u=e.length,h=r.extra,f=a&&a.length,l=un(h);ct(t,n,null!=s?33639248:67324752),n+=4,null!=s&&(t[n++]=20,t[n++]=r.os),t[n]=20,n+=2,t[n++]=r.flag<<1|(o<0&&8),t[n++]=i&&8,t[n++]=255&r.compression,t[n++]=r.compression>>8;var c=new Date(null==r.mtime?Date.now():r.mtime),p=c.getFullYear()-1980;if((p<0||p>119)&&I(10),ct(t,n,p<<25|c.getMonth()+1<<21|c.getDate()<<16|c.getHours()<<11|c.getMinutes()<<5|c.getSeconds()>>1),n+=4,-1!=o&&(ct(t,n,r.crc),ct(t,n+4,o<0?-o-2:o),ct(t,n+8,r.size)),ct(t,n+12,u),ct(t,n+14,l),n+=16,null!=s&&(ct(t,n,f),ct(t,n+6,r.attrs),ct(t,n+10,s),n+=14),t.set(e,n),n+=u,l)for(var v in h){var d=h[v],g=d.length;ct(t,n,+v),ct(t,n+2,g),t.set(d,n+4),n+=4+g}return f&&(t.set(a,n),n+=f),n},fn=function(t,n,r,e,i){ct(t,n,101010256),ct(t,n+8,r),ct(t,n+10,r),ct(t,n+12,e),ct(t,n+16,i)},ln=function(){function t(t){this.filename=t,this.c=Y(),this.size=0,this.compression=0}return t.prototype.process=function(t,n){this.ondata(null,t,n)},t.prototype.push=function(t,n){this.ondata||I(5),this.c.p(t),this.size+=t.length,n&&(this.crc=this.c.d()),this.process(t,n||!1)},t}();_e.ZipPassThrough=ln;var cn=function(){function t(t,n){var r=this;n||(n={}),ln.call(this,t),this.d=new wt(n,(function(t,n){r.ondata(null,t,n)})),this.compression=8,this.flag=en(n.level)}return t.prototype.process=function(t,n){try{this.d.push(t,n)}catch(t){this.ondata(t,null,n)}},t.prototype.push=function(t,n){ln.prototype.push.call(this,t,n)},t}();_e.ZipDeflate=cn;var pn=function(){function t(t,n){var r=this;n||(n={}),ln.call(this,t),this.d=new xt(n,(function(t,n,e){r.ondata(t,n,e)})),this.compression=8,this.flag=en(n.level),this.terminate=this.d.terminate}return t.prototype.process=function(t,n){this.d.push(t,n)},t.prototype.push=function(t,n){ln.prototype.push.call(this,t,n)},t}();_e.AsyncZipDeflate=pn;var vn=function(){function t(t){this.ondata=t,this.u=[],this.d=1}return t.prototype.add=function(t){var r=this;if(this.ondata||I(5),2&this.d)this.ondata(I(4+8*(1&this.d),0,1),null,!1);else{var e=nn(t.filename),i=e.length,o=t.comment,s=o&&nn(o),a=i!=t.filename.length||s&&o.length!=s.length,u=i+un(t.extra)+30;i>65535&&this.ondata(I(11,0,1),null,!1);var h=new n(u);hn(h,0,t,e,a,-1);var f=[h],l=function(){for(var t=0,n=f;t<n.length;t++)r.ondata(null,n[t],!1);f=[]},c=this.d;this.d=0;var p=this.u.length,v=Q(t,{f:e,u:a,o:s,t:function(){t.terminate&&t.terminate()},r:function(){if(l(),c){var t=r.u[p+1];t?t.r():r.d=1}c=1}}),d=0;t.ondata=function(e,i,o){if(e)r.ondata(e,i,o),r.terminate();else if(d+=i.length,f.push(i),o){var s=new n(16);ct(s,0,134695760),ct(s,4,t.crc),ct(s,8,d),ct(s,12,t.size),f.push(s),v.c=d,v.b=u+d+16,v.crc=t.crc,v.size=t.size,c&&v.r(),c=1}else c&&l()},this.u.push(v)}},t.prototype.end=function(){var t=this;2&this.d?this.ondata(I(4+8*(1&this.d),0,1),null,!0):(this.d?this.e():this.u.push({r:function(){1&t.d&&(t.u.splice(-1,1),t.e())},t:function(){}}),this.d=3)},t.prototype.e=function(){for(var t=0,r=0,e=0,i=0,o=this.u;i<o.length;i++)e+=46+(h=o[i]).f.length+un(h.extra)+(h.o?h.o.length:0);for(var s=new n(e+22),a=0,u=this.u;a<u.length;a++){var h;hn(s,t,h=u[a],h.f,h.u,-h.c-2,r,h.o),t+=46+h.f.length+un(h.extra)+(h.o?h.o.length:0),r+=h.b}fn(s,t,this.u.length,e,r),this.ondata(null,s,!0),this.d=2},t.prototype.terminate=function(){for(var t=0,n=this.u;t<n.length;t++)n[t].t();this.d=2},t}();function dn(t,r,e){e||(e=r,r={}),"function"!=typeof e&&I(7);var i={};Rt(t,"",i,r);var o=Object.keys(i),s=o.length,a=0,u=0,h=s,f=Array(s),l=[],c=function(){for(var t=0;t<l.length;++t)l[t]()},p=function(t,n){xn((function(){e(t,n)}))};xn((function(){p=e}));var v=function(){var t=new n(u+22),r=a,e=u-a;u=0;for(var i=0;i<h;++i){var o=f[i];try{var s=o.c.length;hn(t,u,o,o.f,o.u,s);var l=30+o.f.length+un(o.extra),c=u+l;t.set(o.c,c),hn(t,a,o,o.f,o.u,s,u,o.m),a+=16+l+(o.m?o.m.length:0),u=c+s}catch(t){return p(t,null)}}fn(t,a,f.length,e,r),p(null,t)};s||v();for(var d=function(t){var n=o[t],r=i[n],e=r[0],h=r[1],d=Y(),g=e.length;d.p(e);var y=nn(n),m=y.length,b=h.comment,w=b&&nn(b),x=w&&w.length,z=un(h.extra),k=0==h.level?0:8,M=function(r,e){if(r)c(),p(r,null);else{var i=e.length;f[t]=Q(h,{size:g,crc:d.d(),c:e,f:y,m:w,u:m!=n.length||w&&b.length!=x,compression:k}),a+=30+m+z+i,u+=76+2*(m+z)+(x||0)+i,--s||v()}};if(m>65535&&M(I(11,0,1),null),k)if(g<16e4)try{M(null,kt(e,h))}catch(t){M(t,null)}else l.push(zt(e,h,M));else M(null,e)},g=0;g<h;++g)d(g);return c}function gn(t,r){r||(r={});var e={},i=[];Rt(t,"",e,r);var o=0,s=0;for(var a in e){var u=e[a],h=u[0],f=u[1],l=0==f.level?0:8,c=(M=nn(a)).length,p=f.comment,v=p&&nn(p),d=v&&v.length,g=un(f.extra);c>65535&&I(11);var y=l?kt(h,f):h,m=y.length,b=Y();b.p(h),i.push(Q(f,{size:h.length,crc:b.d(),c:y,f:M,m:v,u:c!=a.length||v&&p.length!=d,o:o,compression:l})),o+=30+c+g+m,s+=76+2*(c+g)+(d||0)+m}for(var w=new n(s+22),x=o,z=s-o,k=0;k<i.length;++k){var M;hn(w,(M=i[k]).o,M,M.f,M.u,M.c.length);var S=30+M.f.length+un(M.extra);w.set(M.c,M.o+S),hn(w,o,M,M.f,M.u,M.c.length,M.o,M.m),o+=16+S+(M.m?M.m.length:0)}return fn(w,o,i.length,z,x),w}_e.Zip=vn,_e.zip=dn,_e.zipSync=gn;var yn=function(){function t(){}return t.prototype.push=function(t,n){this.ondata(null,t,n)},t.compression=0,t}();_e.UnzipPassThrough=yn;var mn=function(){function t(){var t=this;this.i=new Mt((function(n,r){t.ondata(null,n,r)}))}return t.prototype.push=function(t,n){try{this.i.push(t,n)}catch(t){this.ondata(t,null,n)}},t.compression=8,t}();_e.UnzipInflate=mn;var bn=function(){function t(t,n){var r=this;n<32e4?this.i=new Mt((function(t,n){r.ondata(null,t,n)})):(this.i=new St((function(t,n,e){r.ondata(t,n,e)})),this.terminate=this.i.terminate)}return t.prototype.push=function(t,n){this.i.terminate&&(t=D(t,0)),this.i.push(t,n)},t.compression=8,t}();_e.AsyncUnzipInflate=bn;var wn=function(){function t(t){this.onfile=t,this.k=[],this.o={0:yn},this.p=N}return t.prototype.push=function(t,r){var e=this;if(this.onfile||I(5),this.p||I(4),this.c>0){var i=Math.min(this.c,t.length),o=t.subarray(0,i);if(this.c-=i,this.d?this.d.push(o,!this.c):this.k[0].push(o),(t=t.subarray(i)).length)return this.push(t,r)}else{var s=0,a=0,u=void 0,h=void 0;this.p.length?t.length?((h=new n(this.p.length+t.length)).set(this.p),h.set(t,this.p.length)):h=this.p:h=t;for(var f=h.length,l=this.c,c=l&&this.d,p=function(){var t,n=ft(h,a);if(67324752==n){s=1,u=a,v.d=null,v.c=0;var r=ht(h,a+6),i=ht(h,a+8),o=2048&r,c=8&r,p=ht(h,a+26),d=ht(h,a+28);if(f>a+30+p+d){var g=[];v.k.unshift(g),s=2;var y,m=ft(h,a+18),b=ft(h,a+22),w=rn(h.subarray(a+30,a+=30+p),!o);4294967295==m?(t=c?[-2]:an(h,a),m=t[0],b=t[1]):c&&(m=-1),a+=d,v.c=m;var x={name:w,compression:i,start:function(){if(x.ondata||I(5),m){var t=e.o[i];t||x.ondata(I(14,"unknown compression type "+i,1),null,!1),(y=m<0?new t(w):new t(w,m,b)).ondata=function(t,n,r){x.ondata(t,n,r)};for(var n=0,r=g;n<r.length;n++)y.push(r[n],!1);e.k[0]==g&&e.c?e.d=y:y.push(N,!0)}else x.ondata(null,N,!0)},terminate:function(){y&&y.terminate&&y.terminate()}};m>=0&&(x.size=m,x.originalSize=b),v.onfile(x)}return"break"}if(l){if(134695760==n)return u=a+=12+(-2==l&&8),s=3,v.c=0,"break";if(33639248==n)return u=a-=4,s=3,v.c=0,"break"}},v=this;a<f-4&&"break"!==p();++a);if(this.p=N,l<0){var d=h.subarray(0,s?u-12-(-2==l&&8)-(134695760==ft(h,u-16)&&4):a);c?c.push(d,!!s):this.k[+(2==s)].push(d)}if(2&s)return this.push(h.subarray(a),r);this.p=h.subarray(a)}r&&(this.c&&I(13),this.p=null)},t.prototype.register=function(t){this.o[t.compression]=t},t}();_e.Unzip=wn;var xn="function"==typeof queueMicrotask?queueMicrotask:"function"==typeof setTimeout?setTimeout:function(t){t()};function zn(t,r,e){e||(e=r,r={}),"function"!=typeof e&&I(7);var i=[],o=function(){for(var t=0;t<i.length;++t)i[t]()},s={},a=function(t,n){xn((function(){e(t,n)}))};xn((function(){a=e}));for(var u=t.length-22;101010256!=ft(t,u);--u)if(!u||t.length-u>65558)return a(I(13,0,1),null),o;var h=ht(t,u+8);if(h){var f=h,l=ft(t,u+16),c=4294967295==l||65535==f;if(c){var p=ft(t,u-12);(c=101075792==ft(t,p))&&(f=h=ft(t,p+32),l=ft(t,p+48))}for(var v=r&&r.filter,d=function(r){var e=sn(t,l,c),u=e[0],f=e[1],p=e[2],d=e[3],g=e[4],y=on(t,e[5]);l=g;var m=function(t,n){t?(o(),a(t,null)):(n&&(s[d]=n),--h||a(null,s))};if(!v||v({name:d,size:f,originalSize:p,compression:u}))if(u)if(8==u){var b=t.subarray(y,y+f);if(p<524288||f>.8*p)try{m(null,Tt(b,{out:new n(p)}))}catch(t){m(t,null)}else i.push(At(b,{size:p},m))}else m(I(14,"unknown compression type "+u,1),null);else m(null,D(t,y,y+f));else m(null,null)},g=0;g<f;++g)d()}else a(null,{});return o}function kn(t,r){for(var e={},i=t.length-22;101010256!=ft(t,i);--i)(!i||t.length-i>65558)&&I(13);var o=ht(t,i+8);if(!o)return{};var s=ft(t,i+16),a=4294967295==s||65535==o;if(a){var u=ft(t,i-12);(a=101075792==ft(t,u))&&(o=ft(t,u+32),s=ft(t,u+48))}for(var h=r&&r.filter,f=0;f<o;++f){var l=sn(t,s,a),c=l[0],p=l[1],v=l[2],d=l[3],g=l[4],y=on(t,l[5]);s=g,h&&!h({name:d,size:p,originalSize:v,compression:c})||(c?8==c?e[d]=Tt(t.subarray(y,y+p),{out:new n(v)}):I(14,"unknown compression type "+c):e[d]=D(t,y,y+p))}return e}_e.unzip=zn,_e.unzipSync=kn;return _e});</script>
 <script>
 
 /* polyfill */
@@ -3061,11 +3063,24 @@ window.HQ_DAY_SHIFT=(function(){ try{ return parseInt(localStorage.getItem('hq_d
   F.parse=R.parse; F.UTC=R.UTC;
   try{ window.Date=F; }catch(e){}
 })();
-function lsGet(k,def){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch{return def;} }
+/* ===== (17.1) ضغط ما يكبر من المفاتيح: كانت كتلة الحلقات ٣ م.ب نصّاً فتقترب من حدّ تخزين المتصفّح (٥ م.ب)
+   وتُنقل كاملةً في كل مزامنة؛ الآن تُخزَّن وتُرفع مضغوطة gzip (نحو عُشر الحجم) بسابقة «gz:» وتُفكّ شفافياً ===== */
+var HQ_GZ_MIN=20000;   /* النصوص الأقصر تبقى كما هي */
+function hqGzOk(){ return !!(window.fflate&&fflate.gzipSync&&fflate.gunzipSync); }
+function hqB64(u8){ var s='', CH=0x8000; for(var i=0;i<u8.length;i+=CH) s+=String.fromCharCode.apply(null,u8.subarray(i,i+CH)); return btoa(s); }
+function hqUnB64(b){ var s=atob(b), u=new Uint8Array(s.length); for(var i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
+function hqGzPack(str){ return 'gz:'+hqB64(fflate.gzipSync(fflate.strToU8(str),{level:6})); }
+function hqGzUnpack(str){ return fflate.strFromU8(fflate.gunzipSync(hqUnB64(str.slice(3)))); }
+function hqIsGz(str){ return typeof str==='string'&&str.indexOf('gz:')===0; }
+/* نصّ مخزَّن أو وارد ← نصّ JSON (يفكّ المضغوط ويُعيد غيره كما هو) */
+function hqUnpackStr(v){ if(hqIsGz(v)){ try{ return hqGzUnpack(v); }catch(e){ return ''; } } return v; }
+function lsGet(k,def){ try{var v=localStorage.getItem(k); if(!v) return def; if(hqIsGz(v)) v=hqGzUnpack(v); return JSON.parse(v);}catch(e){return def;} }
 var HQ_LS_FULL=false;
 /* كان الفشل يُبتلع صامتاً: يمتلئ تخزين المتصفّح فيظنّ المعلّم أن تقييمه حُفظ وهو لم يُحفظ */
 function lsSave(k,v){
-  try{ localStorage.setItem(k,JSON.stringify(v)); }
+  var str=JSON.stringify(v);
+  try{ if(str&&str.length>HQ_GZ_MIN&&hqGzOk()){ try{ str=hqGzPack(str); }catch(e2){} } }catch(e3){}
+  try{ localStorage.setItem(k,str); }
   catch(e){ hqStorageFull(e); }
 }
 function hqStorageFull(e){
@@ -3769,7 +3784,9 @@ function _cloudDoPush(){
     cloudSetStatus('pushing');
     window.cloudDataTx(function(cur){
       var rem=null;
-      try{ rem=(cur&&cur.data)?JSON.parse(cur.data):null; }catch(e){ rem=null; }
+      try{ rem=(cur&&cur.data)?JSON.parse(hqUnpackStr(cur.data)):null; }catch(e){ rem=null; }
+      /* كتلة موجودة لم نستطع قراءتها (تالفة أو بصيغة أحدث): لا نكتب فوقها أبداً */
+      if(cur&&cur.data&&!rem){ _hqPushBlocked=true; return; }
       if(rem && rem.seed!==HQ_SEED_ID) rem=null;
       var m=hqMergeBlob(rem);
       _hqPushNoop=false;
@@ -3785,13 +3802,13 @@ function _cloudDoPush(){
       var ts=Date.now();
       var rev=Math.max(cloudRev(), (rem&&parseInt(rem.rev,10))||0)+1;
       cloudSetRev(rev); _cloudLastTs=ts; pending=m;
-      return { data: JSON.stringify({
+      return { data: cloudPackData(JSON.stringify({
           seed:HQ_SEED_ID, rev:rev, ts:ts, v:(window.HQ_BUILD||''),
           shift:(window.HQ_DAY_SHIFT||0),
           wipe:Math.max(parseInt(lsGet('hq_wipe',0),10)||0, parseInt(rem&&rem.wipe,10)||0),
           halqat:m.halqat, users:m.users, supervisors:m.supervisors,
           teachers:m.teachers, visits:m.visits, tmsgs:m.tmsgs,
-          timeline:m.timeline, tomb:m.tomb }),
+          timeline:m.timeline, tomb:m.tomb })),
         ts:ts, cid:cloudGetCID() };
     }, function(ok,err){
       try{
@@ -3822,15 +3839,30 @@ function _cloudDoPush(){
   try{
     var ts2=Date.now(); _cloudLastTs=ts2;
     cloudBumpRev();
-    var p=window.cloudDataPush({data:cloudBlob(), ts:ts2, cid:cloudGetCID()});
+    var p=window.cloudDataPush({data:cloudPackData(cloudBlob()), ts:ts2, cid:cloudGetCID()});
     if(p&&p.then){ p.then(function(){ _cloudErrShown=false; cloudSetStatus('synced'); }).catch(function(e){ cloudReportErr(e); }); }
   }catch(e){ cloudReportErr(e); }
 }
 function cloudPush(){ if(!_cloudReconciled) return; _cloudDoPush(); }   /* لا نرفع قبل أول مصالحة مع السحابة */
 function cloudPushDebounced(){ if(!window.cloudDataPush||!_cloudReconciled) return; if(_cloudTimer) clearTimeout(_cloudTimer); _cloudTimer=setTimeout(cloudPush,700); }
+/* هل كل حسابات العمل (معلّمون/مشرفون/إدارة) التي ظهرت خلال الأيام السبعة الماضية على نسخة تفهم الضغط؟
+   قبل ذلك تُرفع الكتلة نصّاً كما كانت، فلا يعجز جهازٌ بنسخة قديمة عن قراءتها */
+var HQ_GZ_MIN_VER=17.1;
+function hqGzSafe(){
+  try{
+    if(!hqGzOk()) return false;
+    var us=DB.users||{}, now=Date.now(), ok=true;
+    for(var k in us){ var u=us[k]; if(!u||typeof u!=='object') continue;
+      var r=u.role||''; if(r!=='teacher'&&r!=='supervisor'&&r!=='admin') continue;
+      var seen=parseInt(u.lastSeen,10)||0; if(!seen||now-seen>7*86400000) continue;
+      if(hqVerNum(u.app)<HQ_GZ_MIN_VER){ ok=false; break; } }
+    return ok;
+  }catch(e){ return false; }
+}
+function cloudPackData(str){ try{ if(hqGzSafe()&&str&&str.length>HQ_GZ_MIN) return hqGzPack(str); }catch(e){} return str; }
 function cloudApply(val){
   if(!val||!val.data) return false;
-  var obj; try{ obj=JSON.parse(val.data); }catch(e){ return false; }
+  var obj; try{ obj=JSON.parse(hqUnpackStr(val.data)); }catch(e){ return false; }
   /* مسح شامل صادر من جهاز آخر */
   try{
     var _w=parseInt(obj.wipe,10)||0, _lw=parseInt(lsGet('hq_wipe',0),10)||0;
@@ -3995,7 +4027,7 @@ function hqDiagRead(){
   window.cloudDataGet(function(val,err){
     if(err){ box.innerHTML='<div class="vs-hint" style="color:#fca5a5">فشلت القراءة: '+hqEsc(String((err&&(err.code||err.message))||err))+'</div>'; return; }
     if(!val||!val.data){ box.innerHTML='<div class="vs-hint" style="color:#fbbf24">السحابة فارغة تماماً</div>'; return; }
-    var o=null; try{ o=JSON.parse(val.data); }catch(e){}
+    var o=null; try{ o=JSON.parse(hqUnpackStr(val.data)); }catch(e){}
     if(!o){ box.innerHTML='<div class="vs-hint" style="color:#fca5a5">تعذّر قراءة محتوى السحابة</div>'; return; }
     var c=hqDiagCounts(o);
     box.innerHTML='<div class="hq-diag-box"><div class="hq-diag-t">في السحابة</div>'
@@ -4033,11 +4065,13 @@ function cloudViewSig(){
         return h.id+'~'+(h.name||'')+'~'+((h.students||[]).length)+'~'+(h.teacherId||'')+'~'+(h.supervisorId||'')+'~'+(h.sector||'');
       }).join(','));
       p.push((DB.teachers||[]).length+'/'+(DB.supervisors||[]).length+'/'+(DB.visits||[]).length);
+      p.push(JSON.stringify(DB.tmsgs||{}).length);
     } else if(r==='supervisor'){
       var my=[]; try{ my=supMyHalqat(u.supId)||[]; }catch(e){}
       p.push(my.map(function(h){ return h.id+'~'+(h.name||'')+'~'+((h.students||[]).length)+'~'+(h.teacherId||''); }).join(','));
       p.push((DB.visits||[]).filter(function(v){ return v.supId===u.supId; }).length);
       p.push((DB.teachers||[]).length);
+      p.push(JSON.stringify(DB.tmsgs||{}).length);
     } else if(r==='teacher'){
       p.push(ah?JSON.stringify({
         s:(ah.students||[]).map(function(x){ return x.id+'~'+(x.name||''); }),
@@ -4058,6 +4092,8 @@ function cloudViewSig(){
 }
 function cloudRerender(){
   try{
+    /* (17.1) خدمة المراسلات المفتوحة تُحدَّث في مكانها فور وصول رسالة */
+    try{ if(document.getElementById('mh-root')&&typeof mhRender==='function') mhRender(true); }catch(e0){}
     if(cloudModalOpen()){ _cloudPending=true; return; }   /* بطاقة التقييم وكل النوافذ: تُؤجَّل حتى الإغلاق */
     if(typeof STATE!=='undefined' && STATE.user){
       var _ah=(DB.halqat||[]).find(function(x){return x.id===STATE.activeHid;});
@@ -4107,7 +4143,11 @@ function cloudWake(){
   });
 }
 try{
-  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') cloudWake(); });
+  /* (17.1) مغادرة التطبيق إلى الخلفية (أو قفل الشاشة) وعندنا ما لم يُرفع: يبدأ الرفع فوراً قبل أن يجمّد النظام الصفحة —
+     كان الرفع ينتظر مهلة التأخير ثم يموت مع الخلفية فلا يصل تقييم المعلّم إلا عند عودته */
+  var _hqFlush=function(){ try{ if(_cloudDirty&&_cloudReconciled){ if(_cloudTimer){ clearTimeout(_cloudTimer); _cloudTimer=null; } _cloudDoPush(); } }catch(e){} };
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') cloudWake(); else _hqFlush(); });
+  window.addEventListener('pagehide',_hqFlush);
   window.addEventListener('pageshow',function(){ cloudWake(); });
   window.addEventListener('online',function(){ cloudWake(); });
   window.addEventListener('focus',function(){ cloudWake(); });
@@ -4116,7 +4156,7 @@ try{
 function cloudFirstReconcile(val){
   _cloudReconciled=true;
   if(val && val.data){
-    var remote=null; try{ remote=JSON.parse(val.data); }catch(e){}
+    var remote=null; try{ remote=JSON.parse(hqUnpackStr(val.data)); }catch(e){}
     if(remote && remote.seed===HQ_SEED_ID){
       /* لا مفاضلة بعد اليوم: نجمع الطرفين ثم نرفع النتيجة المدمَجة */
       if(cloudApply(val)){
@@ -4130,6 +4170,7 @@ function cloudFirstReconcile(val){
   try{ if(typeof hqPlanMigrateV2==='function') hqPlanMigrateV2(); }catch(e){}
   try{ if(typeof hqSuspMigrate==='function') hqSuspMigrate(); }catch(e){}
   try{ if(typeof evAutoAbsentSweep==='function') evAutoAbsentSweep(); }catch(e){}
+  try{ if(STATE&&STATE.role==='teacher'&&typeof hqSnapshotAll==='function') hqSnapshotAll(); }catch(e){}
   _cloudDoPush();
 }
 var _cloudConnected=null;
@@ -4917,6 +4958,7 @@ function renderDash(){
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="16" y="28" width="32" height="24" rx="5" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M23 28v-6a9 9 0 0118 0v6" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="38" r="3.5" fill="white"/><line x1="32" y1="41" x2="32" y2="46" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
       '<div class="menu-card mc-3 mc-test" onclick="hqTestTool()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="34" r="20" stroke="white" stroke-width="3"/><path d="M32 22v12l8 5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 10l-7 6M44 10l7 6" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">أدوات التجربة (مؤقّتة)</div></div>'+
       '<div class="menu-card mc-6" onclick="hqSyncDiag()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 12a20 20 0 1 0 20 20" stroke="white" stroke-width="3.2" stroke-linecap="round"/><path d="M52 12v12H40" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="32" r="4" fill="white"/></svg></div><div class="mc-accent"></div><div class="mc-label">تشخيص المزامنة</div></div>'+
+      mhCardHtml(false)+
       '<div class="menu-card mc-1" onclick="hqBackupOpen()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 10v26M22 28l10 10 10-10" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 40v8a6 6 0 006 6h28a6 6 0 006-6v-8" stroke="white" stroke-width="3.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">النسخ الاحتياطي</div></div>'+
       '<div class="menu-card mc-gold" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">تقارير الجمعية</div></div>'+
     '</div>';
@@ -4941,6 +4983,7 @@ function renderDash(){
       '<div class="menu-card mc-3" onclick="supExamPick()"><div class="mc-icon">'+svgExam2+'</div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>'+
       '<div class="menu-card mc-7" onclick="tlShow()"><div class="mc-icon">'+HQ_SVG_TL+'</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>'+
       '<div class="menu-card mc-6" onclick="showChangeCredentials()"><div class="mc-icon">'+svgKey2+'</div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'+
+      mhCardHtml(true)+
       '<div class="menu-card mc-gold mc-wide" onclick="supStats()"><div class="mc-icon">'+svgStatH2+'</div><div class="mc-accent"></div><div class="mc-label">إحصائيات وتقارير الحلقة</div></div>'+
     '</div>';
     return;
@@ -4956,14 +4999,14 @@ function renderDash(){
     const msgStuSVG=`<svg viewBox="0 0 64 64" fill="none"><rect x="8" y="14" width="48" height="34" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M8 20l24 16 24-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="48" cy="46" r="10" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/><path d="M44 46h8M48 42v8" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>`;
     const msgParSVG=msgStuSVG; const _msgParSVGOld=`<svg viewBox="0 0 64 64" fill="none"><rect x="6" y="14" width="46" height="32" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M6 20l23 15 23-15" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="50" cy="46" r="11" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/><path d="M50 41v5.5l3.5 3.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     wrap.innerHTML=`<div class="menu-grid">
-      <div class="menu-card mc-3" onclick="showTodayRecitation()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M10 14h44v36H10z" rx="4" stroke="white" stroke-width="3" fill="rgba(255,255,255,.08)"/><path d="M32 14v36" stroke="white" stroke-width="2.4"/><path d="M16 24h10M16 31h10M16 38h8M38 24h10M38 31h10M38 38h8" stroke="white" stroke-width="2.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تسميع اليوم</div></div>
-      <div class="menu-card mc-2" onclick="showPage('grades')"><div class="mc-icon"><img src="${cSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تقييم الطلاب</div></div>
+      <div class="menu-card mc-2 mc-wide" onclick="showPage('grades')"><div class="mc-icon"><img src="${cSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تقييم الطلاب</div></div>
       <div class="menu-card mc-1" onclick="showAddStudent()"><div class="mc-icon">${addSVG}</div><div class="mc-accent"></div><div class="mc-label">إضافة طالب</div></div>
       <div class="menu-card mc-4" onclick="showStudentsData()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="20" cy="20" r="9" stroke="white" stroke-width="2.5"/><circle cx="44" cy="20" r="9" stroke="white" stroke-width="2.5"/><path d="M4 50c0-9 7-16 16-16s16 7 16 16" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M36 50c0-9 7-16 16-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label" id="mc-stu-count">بيانات الطلاب</div></div>
       <div class="menu-card mc-4" onclick="hqPlanTypesHome()"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تحديد خطة الطالب</div></div>
       <div class="menu-card mc-5" onclick="showRankTable(null)"><div class="mc-icon"><img src="${tSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">ترتيب الطلاب</div></div>
       <div class="menu-card mc-3" onclick="exOpen()"><div class="mc-icon"><img src="${src5}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">اختبارات الجمعية</div></div>
       <div class="menu-card mc-3" onclick="hqOfflineOpen()"><div class="mc-icon">${HQ_SVG_OFFLINE}</div><div class="mc-accent"></div><div class="mc-label">تحميل البيانات</div></div>
+      ${mhCardHtml(true)}
       <div class="menu-card mc-7 mc-wide" onclick="tlShow()"><div class="mc-icon">${HQ_SVG_TL}</div><div class="mc-accent"></div><div class="mc-label">الخط الزمني</div></div>
       <div class="menu-card mc-gold mc-wide" onclick="showTeacherReports()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><rect x="10" y="34" width="10" height="20" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="27" y="22" width="10" height="32" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><rect x="44" y="12" width="10" height="42" rx="2" stroke="white" stroke-width="2.6" fill="rgba(255,255,255,.1)"/><path d="M8 54h48" stroke="white" stroke-width="2.6" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">تقارير الحلقة</div></div>
 </div>`;
@@ -4996,8 +5039,8 @@ function renderDash(){
         function dot(ch,who){ var u=_id?msgUnread(_id,ch,who):0; return u>0?'<div class="msg-dot">'+u+'</div>':''; }
         function msgCard(cls,badge,ch,who,label){ return '<div class="menu-card '+cls+'" onclick="showMsgInbox(\''+ch+'\')">'+dot(ch,who)+'<div class="mc-icon">'+msgSVG+'</div><div class="mc-accent"></div><div class="mc-label">'+label+'</div></div>'; }
         function credCard(badge){ return '<div class="menu-card mc-7" onclick="showChangeCredentials()"><div class="mc-icon">'+lockSVG+'</div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'; }
-        /* بطاقات الرسائل والتسميع عن بُعد حُذفت من حسابَي الطالب وولي الأمر (إصدار 15.4) — الدوال باقية للإعادة */
-        return credCard(8);
+        /* (17.1) عادت الرسائل بطاقةً واحدة «خدمة المراسلات» */
+        return mhCardHtml(false)+credCard(8);
       })()}
     </div>`;
   }
@@ -5359,6 +5402,7 @@ function msgInboxSend(){
 // ---------- التحديث عند وصول رسائل جديدة ----------
 window.msgOnChange = function(){
   try{
+    if(document.getElementById('mh-root')&&typeof mhRender==='function'){ mhRender(true); return; }
     if(STATE.page==='dashboard') renderDash();
     var tb=document.getElementById('msgThreadBox'); if(tb) msgRenderTeacherThread();
     var ib=document.getElementById('msgInboxThread'); if(ib) msgRenderInboxThread();
@@ -7921,6 +7965,7 @@ function hqPlanApprove(sid,p,tl){
     p.days=hqPlanBuildDays(p,N,0); p.nd=p.days.length;
   }
   p.mt=hqNow(); p.v2=1; p.v3=1; p.v4=1; p.v5=1;   /* ختم الخطة نفسها — به تُدمج بين الأجهزة لا بختم الحلقة */
+  try{ hqSnapshotDays(sid); }catch(e){}   /* (17.1) أيام الخطة السابقة تحتفظ بنصوصها قبل أن تحلّ الجديدة */
   hqPlanStore()[sid]=p;
   try{
     if(!DB.evals) DB.evals={};
@@ -7989,6 +8034,7 @@ function hqPlanDayEnd(sid,n,pos){
   var N=Math.max(hqPlanDaysCap(p,total), n);
   p.nd=N; p.days=hqPlanBuildDays(p,N,n); p.nd=p.days.length;
   p.mt=hqNow(); p.v2=1; p.v3=1; p.v4=1; p.v5=1;
+  try{ hqRefreshDayT(sid,'lesson',n); }catch(e){}
   try{ save(); }catch(e){}
   return {ok:true, end:hqLinePos(lines,e-1,true)};
 }
@@ -8008,6 +8054,7 @@ function hqPlanRevDayEnd(sid,n,pos){
   if(n<=pr){ d.r=[ra,e]; if(cur.fs) d.rf=cur.fs; if(te) d.rt=te; else delete d.rt; }
   try{ delete _hqRevDyn[sid]; }catch(e3){}
   p.mt=hqNow();
+  try{ hqRefreshDayT(sid,'review',n); }catch(e5){}
   try{ save(); }catch(e4){}
   return {ok:true};
 }
@@ -8501,8 +8548,10 @@ function trTodayTargets(sid){
           absent:evIsAbsentVal(d.attend), dL:!!d.lesson, dR:!!d.review, plan:p?hqPlanName(p):'بلا خطة معتمَدة'};
 }
 function showTodayRecitation(){
-  var studs=(DB.students||[]).filter(function(s){ return !isDiscontinued(s); });
-  if(!studs.length){ openModal('تسميع اليوم','<div class="empty-state"><div class="empty-state-icon">📖</div>لا يوجد طلاب</div>'); return; }
+  var _k=evDateKey();
+  /* (17.1) الحاضرون فقط (حاضر/متأخر/تسميع عن بعد) */
+  var studs=(DB.students||[]).filter(function(s){ return !isDiscontinued(s)&&evPresentVal((evDayRec(s.id,_k)||{}).attend); });
+  if(!studs.length){ openModal('تسميع اليوم','<div class="empty-state"><div class="empty-state-icon">📖</div>لا حاضرون بعد — حضّر الطلاب أولاً من بطاقة «تحضير الطلاب»</div>'); return; }
   studs=studs.slice().sort(function(a,b){ return String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'ar'); });
   /* بطاقة اطّلاع فقط: سطر للاسم وسطر للدرس والمراجعة، بلون واحد، بلا تقييم ولا حالات */
   var rows=studs.map(function(s,i){
@@ -11065,6 +11114,199 @@ function tmsgInbox(){
   if(ch){ save(); renderDash(); }
 }
 
+/* =====================================================================
+   (17.1) خدمة المراسلات — مركز واحد لكل الرسائل:
+   المعلّم ↔ ولي الأمر والطالب (قناتا فايربيس messages/<sid>/par|stu كما كانت)،
+   والمعلّم ↔ المشرف والشؤون التعليمية (DB.tmsgs[tid]: الرسالة تحمل from وto، وتُقرأ بعلم read).
+   ===================================================================== */
+var MH={tab:'',id:'',open:false};
+var MH_SVG='<svg viewBox="0 0 64 64" fill="none"><path d="M12 16h40a4 4 0 014 4v22a4 4 0 01-4 4H26l-10 8v-8h-4a4 4 0 01-4-4V20a4 4 0 014-4z" stroke="white" stroke-width="3" stroke-linejoin="round" fill="rgba(255,255,255,.1)"/><path d="M20 27h24M20 35h16" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>';
+var MH_SEND='<svg viewBox="0 0 24 24" fill="none"><path d="M3 11.5L20.5 4l-4.2 16.6-5.1-6.1L3 11.5z" fill="currentColor"/><path d="M11.2 14.5l9.3-10.5" stroke="#0b3a36" stroke-width="1.6"/></svg>';
+/* القنوات المتاحة للحساب الحالي */
+function mhTabs(){
+  var r=STATE.role;
+  if(r==='teacher') return [{k:'par',n:'ولي الأمر'},{k:'stu',n:'الطالب'},{k:'sup',n:'المشرف'},{k:'adm',n:'الشؤون التعليمية'}];
+  if(r==='supervisor'||r==='admin') return [{k:'tch',n:'المعلّمون'}];
+  if(r==='parent') return [{k:'par',n:'رسائل المعلّم'}];
+  return [{k:'stu',n:'رسائل المعلّم'}];
+}
+/* هل الرسالة الإدارية من قناة المشرف أو الشؤون؟ */
+function mhTmKind(m){ return (m.from==='teacher')?(m.to||'admin'):(m.from||'admin'); }   /* 'supervisor' | 'admin' */
+function mhTmThread(tid,kind){ return tmsgList(tid).filter(function(m){ return mhTmKind(m)===kind; }); }
+/* غير المقروء لكل قناة للحساب الحالي */
+function mhUnread(k){
+  try{
+    var r=STATE.role, u=STATE.user||{};
+    if(r==='teacher'){
+      if(k==='par'||k==='stu') return msgUnreadAllTeacher(k);
+      var kind=(k==='sup')?'supervisor':'admin';
+      return mhTmThread(u.tid||'',kind).filter(function(m){ return m.from!=='teacher'&&!m.read; }).length;
+    }
+    if(r==='supervisor'||r==='admin'){
+      var kind2=(r==='supervisor')?'supervisor':'admin', n=0;
+      mhTeachers().forEach(function(t){ mhTmThread(t.id,kind2).forEach(function(m){ if(m.from==='teacher'&&!m.read) n++; }); });
+      return n;
+    }
+    var sid=msgMyStudentId(); if(!sid) return 0;
+    return msgUnread(sid,(r==='parent')?'par':'stu',(r==='parent')?'parent':'student');
+  }catch(e){ return 0; }
+}
+function mhUnreadAll(){ var n=0; mhTabs().forEach(function(t){ n+=mhUnread(t.k); }); return n; }
+/* معلّمو الحساب الحالي: المشرف ← معلّمو حلقاته، الشؤون ← الجميع */
+function mhTeachers(){
+  var all=hqTeachers().slice();
+  if(STATE.role==='supervisor'){
+    var ids={}; supMyHalqat((STATE.user||{}).supId).forEach(function(h){ if(h.teacherId) ids[h.teacherId]=1; });
+    all=all.filter(function(t){ return ids[t.id]; });
+  }
+  return all.sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''),'ar'); });
+}
+/* بطاقة اللوحة */
+function mhCardHtml(wide){
+  var n=0; try{ n=mhUnreadAll(); }catch(e){}
+  return '<div class="menu-card mc-msg'+(wide?' mc-wide':'')+'" onclick="mhOpen()">'+(n>0?('<div class="msg-dot">'+arNum(n)+'</div>'):'')+
+    '<div class="mc-icon">'+MH_SVG+'</div><div class="mc-accent"></div><div class="mc-label">خدمة المراسلات</div></div>';
+}
+function mhOpen(tab){
+  var tabs=mhTabs(); if(!tabs.length) return;
+  MH.tab=tab||MH.tab||tabs[0].k; MH.id=''; MH.open=true;
+  if(!tabs.some(function(t){ return t.k===MH.tab; })) MH.tab=tabs[0].k;
+  var r=STATE.role;
+  /* الطالب وولي الأمر: محادثة واحدة مع المعلّم مباشرة */
+  if(r==='student'||r==='parent'){ MH.id=msgMyStudentId(); }
+  if(r==='teacher'&&(MH.tab==='sup'||MH.tab==='adm')) MH.id=(STATE.user||{}).tid||'';
+  openModal('خدمة المراسلات','<div class="mh" id="mh-root"></div>');
+  hqModalTall();
+  mhRender();
+}
+function mhGo(k){ MH.tab=k; MH.id=''; if(STATE.role==='teacher'&&(k==='sup'||k==='adm')) MH.id=(STATE.user||{}).tid||''; mhRender(); }
+function mhBack(){ MH.id=''; mhRender(); }
+function mhInitial(n){ n=String(n||'').trim(); return n?n.charAt(0):'؟'; }
+function mhHue(str){ var h=0; for(var i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))%360; return h; }
+function mhAvatar(name,key){ return '<div class="mh-av" style="--h:'+mhHue(String(key||name||''))+'">'+hqEsc(mhInitial(name))+'</div>'; }
+function mhDayLbl(ts){
+  try{ var d=new Date(ts), t=new Date(); var same=d.toDateString()===t.toDateString(); var y=new Date(t.getTime()-86400000);
+    if(same) return 'اليوم'; if(d.toDateString()===y.toDateString()) return 'أمس';
+    return d.toLocaleDateString('ar-SA',{day:'numeric',month:'long'}); }catch(e){ return ''; }
+}
+function mhTime(ts){ try{ return new Date(ts).toLocaleTimeString('ar-SA',{hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+/* عناصر القائمة (جهات الاتصال) للقناة الحالية */
+function mhContacts(){
+  var r=STATE.role, k=MH.tab, out=[];
+  if(r==='teacher'&&(k==='par'||k==='stu')){
+    (DB.students||[]).forEach(function(st){
+      var arr=msgThread(st.id,k), last=arr.length?arr[arr.length-1]:null;
+      out.push({id:st.id, av:st.name, name:(k==='par'?('ولي أمر '+String(st.name||'').split(/\s+/).slice(0,2).join(' ')):st.name), sub:(k==='par'?st.name:''), last:last?last.text:'', ts:last?last.ts:0, unread:msgUnread(st.id,k,'teacher'), off:isDiscontinued(st)});
+    });
+  } else if(r==='supervisor'||r==='admin'){
+    var kind=(r==='supervisor')?'supervisor':'admin';
+    mhTeachers().forEach(function(t){
+      var arr=mhTmThread(t.id,kind), last=arr.length?arr[arr.length-1]:null;
+      out.push({id:t.id, name:t.name||'', sub:hqTeacherHalqaNames?hqTeacherHalqaNames(t.id):'', last:last?last.text:'', ts:last?last.ts:0, unread:arr.filter(function(m){ return m.from==='teacher'&&!m.read; }).length});
+    });
+  }
+  out.sort(function(a,b){ return (b.ts-a.ts)||String(a.name).localeCompare(String(b.name),'ar'); });
+  return out;
+}
+/* رسائل المحادثة الحالية بصيغة موحّدة {mine, text, ts, name, seen} */
+function mhMsgs(){
+  var r=STATE.role, k=MH.tab, id=MH.id, out=[];
+  if(!id) return out;
+  if(k==='par'||k==='stu'){
+    var me=(r==='teacher')?'teacher':((r==='parent')?'parent':'student');
+    var node=((window._MSG||{})[id]||{})[k]||{}, rd=node.read||{};
+    var other=(r==='teacher')?((k==='par')?'parent':'student'):'teacher';
+    msgThread(id,k).forEach(function(m){ out.push({mine:(m.sender===me), text:m.text, ts:m.ts, name:msgSenderLabel(m.sender), seen:(m.sender===me)&&((rd[other]||0)>=m.ts)}); });
+  } else {
+    var kind=(r==='teacher')?((k==='sup')?'supervisor':'admin'):((r==='supervisor')?'supervisor':'admin');
+    var mineFrom=(r==='teacher')?'teacher':kind;
+    mhTmThread(id,kind).forEach(function(m){ out.push({mine:(m.from===mineFrom), text:m.text, ts:m.ts, name:m.fromName||'', seen:!!m.read}); });
+  }
+  return out;
+}
+/* علامة القراءة للرسائل الواردة في المحادثة المفتوحة */
+function mhMarkRead(){
+  try{
+    var r=STATE.role, k=MH.tab, id=MH.id; if(!id) return;
+    if(k==='par'||k==='stu'){
+      var me=(r==='teacher')?'teacher':((r==='parent')?'parent':'student');
+      if(window.MSG_READY&&msgUnread(id,k,me)>0) msgMarkRead(id,k,me);
+      return;
+    }
+    var kind=(r==='teacher')?((k==='sup')?'supervisor':'admin'):((r==='supervisor')?'supervisor':'admin');
+    var mineFrom=(r==='teacher')?'teacher':kind, ch=false;
+    (tmsgStore()[id]||[]).forEach(function(m){ if(mhTmKind(m)===kind&&m.from!==mineFrom&&!m.read){ m.read=true; ch=true; } });
+    if(ch){ save(); }
+  }catch(e){}
+}
+function mhThreadTitle(){
+  var r=STATE.role, k=MH.tab, id=MH.id;
+  if(r==='teacher'){
+    if(k==='sup') return {name:'مشرف الحلقة', sub:'المشرف'};
+    if(k==='adm') return {name:'الشؤون التعليمية', sub:'الجمعية'};
+    var st=(DB.students||[]).find(function(x){ return x.id===id; })||{};
+    return {name:(k==='par'?('ولي أمر '+String(st.name||'').split(/\s+/).slice(0,2).join(' ')):(st.name||'')), sub:(k==='par'?(st.name||''):'الطالب'), av:st.name||''};
+  }
+  if(r==='supervisor'||r==='admin'){ var t=hqTeacher(id)||{}; return {name:t.name||'المعلّم', sub:(typeof hqTeacherHalqaNames==='function'?hqTeacherHalqaNames(id):'')||'المعلّم'}; }
+  var hi=(typeof hqInfoOf==='function'&&typeof hqActiveHalqa==='function')?hqInfoOf(hqActiveHalqa()):{};
+  return {name:hi.teacher||'معلّم الحلقة', sub:hi.name||''};
+}
+function mhRender(keep){
+  var root=document.getElementById('mh-root'); if(!root) return;
+  var tabs=mhTabs(), r=STATE.role;
+  if(MH.id) mhMarkRead();   /* قبل حساب شارات التبويبات */
+  var tabsHtml=(tabs.length>1)?('<div class="mh-tabs">'+tabs.map(function(t){ var u=mhUnread(t.k); return '<button type="button" class="mh-tab'+(t.k===MH.tab?' cur':'')+'" onclick="mhGo(\''+t.k+'\')">'+t.n+(u>0?('<span class="mh-badge">'+arNum(u)+'</span>'):'')+'</button>'; }).join('')+'</div>'):'';
+  var body='';
+  if(!MH.id){
+    var cs=mhContacts();
+    body='<div class="mh-list">'+(cs.length?cs.map(function(c){
+      return '<button type="button" class="mh-row'+(c.unread?' un':'')+(c.off?' off':'')+'" onclick="MH.id=\''+hqEsc(c.id)+'\';mhRender()">'+mhAvatar(c.av||c.name,c.id)+
+        '<div class="mh-row-m"><div class="mh-row-n">'+hqEsc(c.name)+(c.off?' <span class="ev-stu-disc">منقطع</span>':'')+'</div>'+
+        '<div class="mh-row-p">'+(c.last?hqEsc(String(c.last).slice(0,60)):(c.sub?hqEsc(c.sub):'لا رسائل بعد'))+'</div></div>'+
+        '<div class="mh-row-e">'+(c.ts?('<span class="mh-row-t">'+mhTime(c.ts)+'</span>'):'')+(c.unread?('<span class="mh-badge">'+arNum(c.unread)+'</span>'):'')+'</div></button>';
+    }).join(''):'<div class="mh-empty">لا توجد جهات اتصال</div>')+'</div>';
+  } else {
+    var ms=mhMsgs(), tt=mhThreadTitle(), lastDay='', bub='';
+    ms.forEach(function(m){
+      var dl=mhDayLbl(m.ts); if(dl!==lastDay){ lastDay=dl; bub+='<div class="mh-day"><span>'+dl+'</span></div>'; }
+      bub+='<div class="mh-b'+(m.mine?' me':'')+'">'+(m.mine?'':('<span class="mh-b-n">'+hqEsc(m.name)+'</span>'))+'<span class="mh-b-t">'+hqEsc(m.text)+'</span>'+
+        '<span class="mh-b-m">'+mhTime(m.ts)+(m.mine?('<i class="mh-tick'+(m.seen?' seen':'')+'">✓✓</i>'):'')+'</span></div>';
+    });
+    if(!bub) bub='<div class="mh-empty">لا توجد رسائل بعد — ابدأ المحادثة</div>';
+    var backBtn=(r==='teacher'&&(MH.tab==='par'||MH.tab==='stu'))||r==='supervisor'||r==='admin';
+    var stat=((MH.tab==='par'||MH.tab==='stu')&&!window.MSG_READY)?'<div class="mh-off">دون اتصال — تصل الرسالة عند عودة الشبكة</div>':'';
+    body='<div class="mh-th">'+
+      '<div class="mh-th-hd">'+(backBtn?'<button type="button" class="mh-back" onclick="mhBack()">‹</button>':'')+mhAvatar(tt.av||tt.name,MH.id+MH.tab)+'<div class="mh-th-n"><b>'+hqEsc(tt.name)+'</b><span>'+hqEsc(tt.sub||'')+'</span></div></div>'+
+      '<div class="mh-msgs" id="mh-msgs">'+bub+'</div>'+stat+
+      '<div class="mh-compose"><textarea id="mh-ta" rows="1" placeholder="اكتب رسالة…" oninput="mhGrow(this)" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)"></textarea>'+
+        '<button type="button" class="mh-send" onclick="mhSend()" aria-label="إرسال">'+MH_SEND+'</button></div>'+
+    '</div>';
+  }
+  var ta=document.getElementById('mh-ta'), draft=ta?ta.value:'';
+  root.innerHTML=tabsHtml+body;
+  var ta2=document.getElementById('mh-ta'); if(ta2&&keep&&draft){ ta2.value=draft; mhGrow(ta2); }
+  var box=document.getElementById('mh-msgs'); if(box) box.scrollTop=box.scrollHeight;
+  try{ if(STATE.page==='dashboard'&&typeof renderDash==='function'){ window._hqQuiet=1; renderDash(); window._hqQuiet=0; } }catch(e){ window._hqQuiet=0; }
+}
+function mhGrow(ta){ try{ ta.style.height='auto'; ta.style.height=Math.min(120,ta.scrollHeight)+'px'; }catch(e){} }
+function mhSend(){
+  var ta=document.getElementById('mh-ta'); if(!ta) return;
+  var txt=String(ta.value||'').trim(); if(!txt){ showToast('اكتب نص الرسالة أولاً','error'); return; }
+  var r=STATE.role, k=MH.tab, id=MH.id; if(!id){ showToast('اختر جهة الاتصال','error'); return; }
+  if(k==='par'||k==='stu'){
+    if(typeof window.msgSend!=='function'){ showToast('خدمة الرسائل غير متاحة حالياً','error'); return; }
+    var me=(r==='teacher')?'teacher':((r==='parent')?'parent':'student');
+    Promise.resolve(window.msgSend(id,k,me,txt)).then(function(){ ta.value=''; mhGrow(ta); if(window.MSG_READY) msgMarkRead(id,k,me); mhRender(); })
+      .catch(function(){ showToast('تعذّر الإرسال، حاول مجدداً','error'); });
+    return;
+  }
+  var M=tmsgStore(); if(!M[id]) M[id]=[];
+  var kind=(r==='teacher')?((k==='sup')?'supervisor':'admin'):((r==='supervisor')?'supervisor':'admin');
+  var m={ id:'tm'+Date.now()+Math.random().toString(36).slice(2,6), text:txt, ts:Date.now(), read:false };
+  if(r==='teacher'){ m.from='teacher'; m.to=kind; m.fromName=(STATE.user||{}).name||'المعلّم'; }
+  else { m.from=kind; m.fromName=tmsgSenderLabel(); }
+  M[id].push(m); save(); ta.value=''; mhGrow(ta); mhRender();
+}
 /* ---------- متابعة زيارات مشرف بعينه ---------- */
 function supVisitsOf(sid){
   return (DB.visits||[]).filter(function(x){ return x.supId===sid; })
@@ -14473,46 +14715,138 @@ function renderGrades(){
   /* أبجدياً بالاسم كاملاً: يُقارَن الاسم الأول ثم الثاني ثم ما بعده */
   list.sort(function(a,b){ return String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'ar'); });
   var key=evDateKey();
-  /* (17.0) المقيَّمون (تقييم مكتمل) في أعلى القائمة أبجدياً، ثم الباقون أبجدياً، والمنقطعون في آخرها */
-  var _rank={}; list.forEach(function(s){
-    var _rc=DB.evals[s.id]||{}, _dy=(_rc.days&&_rc.days[key])||null;
+  if(STATE.role==='teacher') list=list.filter(function(s){ return evStuOnDay(s,key); });   /* المنضمّ لاحقاً لا يظهر في أيام قبل انضمامه */
+  var _isT2=(STATE.role==='teacher');
+  /* (17.1) في حساب المعلّم: لا يُعرض للتقييم إلا الحاضرون (حاضر/متأخر/تسميع عن بعد) — التحضير من بطاقته */
+  var base=list.filter(function(s){ return !isDiscontinued(s); });
+  var evalList=_isT2?base.filter(function(s){ return evPresentVal((evDayRec(s.id,key)||{}).attend); }):list;
+  /* المقيَّمون (تقييم مكتمل) في أعلى القائمة أبجدياً، ثم الباقون أبجدياً، والمنقطعون في آخرها */
+  var _rank={}; evalList.forEach(function(s){
+    var _dy=evDayRec(s.id,key);
     var _dn=!!(_dy&&evIsComplete(_dy)&&!(_dy.auto===1&&evIsAbsentVal(_dy.attend)));
     _rank[s.id]=isDiscontinued(s)?2:(_dn?0:1);
   });
-  list.sort(function(a,b){ return _rank[a.id]-_rank[b.id]; });
-  if(STATE.role==='teacher') list=list.filter(function(s){ return evStuOnDay(s,key); });   /* المنضمّ لاحقاً لا يظهر في أيام قبل انضمامه */
-  var cards=list.map(function(s,i){
+  evalList.sort(function(a,b){ return _rank[a.id]-_rank[b.id]; });
+  var _nDone=0;
+  var cards=evalList.map(function(s,i){
     var rec=DB.evals[s.id]||{}; var _day=(rec.days&&rec.days[key])||null;
     var done=(_day&&evIsComplete(_day))||evIsSuspended();
     var partial=(!!_day && !done);   /* بدأ المعلّم تقييمه ولم يكتمل */
     /* غياب سجّله البرنامج تلقائياً عن يوم سابق: يُميَّز حتى يعرف المعلّم أنه لم يقيّمه بنفسه */
     var _auto=!!(_day && _day.auto===1 && evIsAbsentVal(_day.attend) && !evIsSuspended());
+    if(done&&!_auto) _nDone++;
     var sc=evCurrentScore(s.id).score;
     var _off=isDiscontinued(s);
     return '<div class="ev-stu'+(done&&!_auto?' done':'')+(partial?' partial':'')+(_auto?' autoabs':'')+(_off?' disc':'')+'" onclick="openStudentEval(\''+s.id+'\')">'
       +'<div class="stu-avatar">'+arNum(i+1)+'</div>'
-      +'<div class="ev-stu-name">'+(s.name||'')+(_off?' <span class="ev-stu-disc">\u0645\u0646\u0642\u0637\u0639</span>':'')+'</div>'
+      +'<div class="ev-stu-name">'+(s.name||'')+(_off?' <span class="ev-stu-disc">منقطع</span>':'')+'</div>'
       +(partial?'<span class="ev-stu-partial">غير مكتمل</span>':(_auto?'<span class="ev-stu-partial auto">غياب تلقائي</span>':''))
       +'<span class="ev-stu-score">'+evFmt(sc.total)+'</span>'
-      +(partial?'':('<span class="ev-stu-chevron">'+((done&&!_auto)?'\u2713':'\u203a')+'</span>'))
+      +(partial?'':('<span class="ev-stu-chevron">'+((done&&!_auto)?'✓':'›')+'</span>'))
       +'</div>';
   }).join('');
-  if(!cards) cards='<div class="empty-state"><div class="empty-state-icon">\ud83d\udcca</div>\u0644\u0627 \u064a\u0648\u062c\u062f \u0637\u0644\u0627\u0628</div>';
-  var _isT2=(STATE.role==='teacher');
   var _sus=evSuspToday();
   var _bar=_isT2?('<div class="ev-tools">'
     +'<button type="button" class="ev-tool bulk" onclick="evBulkAbsent()">اعتماد الغياب</button>'
     +'<button type="button" class="ev-tool susp'+(_sus?' on':'')+'" onclick="evSuspOpen()">'+(_sus?'إلغاء التعليق':'تعليق الحضور')+'</button>'
     +'</div>'
     ):'';
-  wrap.innerHTML='<div class="ev-wrap"><div class="rec-top"><div class="rec-title">\u062a\u0642\u064a\u064a\u0645 \u0627\u0644\u0637\u0644\u0627\u0628</div></div>'
+  var body;
+  if(_isT2){
+    var nAtt=0, nPres=0;
+    base.forEach(function(s){ var d=evDayRec(s.id,key); if(d&&d.attend) nAtt++; if(d&&evPresentVal(d.attend)) nPres++; });
+    if(!cards) cards='<div class="evh-empty">'+(nAtt?'لا حاضرون في هذا اليوم':'ابدأ بتحضير الطلاب من البطاقة أعلاه — يظهر هنا الحاضرون للتقييم')+'</div>';
+    body='<div class="evh-grid">'+
+      '<button type="button" class="evh-card evh-att" onclick="evhPress(this);evAttendOpen()"><span class="evh-ring"></span><div class="evh-in">'+
+        '<div class="evh-ic"><svg viewBox="0 0 48 48" fill="none"><rect x="10" y="8" width="28" height="34" rx="5" stroke="currentColor" stroke-width="2.4"/><path d="M18 8V6a3 3 0 013-3h6a3 3 0 013 3v2" stroke="currentColor" stroke-width="2.4"/><path d="M17 24l5 5 10-11" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 34h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></div>'+
+        '<div class="evh-t">تحضير الطلاب</div>'+
+        '<div class="evh-s"><b>'+arNum(nAtt)+'</b> من '+arNum(base.length)+(nAtt<base.length?'<span class="evh-pulse"></span>':'')+'</div>'+
+      '</div></button>'+
+      '<button type="button" class="evh-card evh-rec" onclick="evhPress(this);showTodayRecitation()"><span class="evh-ring"></span><div class="evh-in">'+
+        '<div class="evh-ic"><svg viewBox="0 0 48 48" fill="none"><path d="M24 12c-5-4-12-5-18-3v28c6-2 13-1 18 3 5-4 12-5 18-3V9c-6-2-13-1-18 3z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M24 12v28" stroke="currentColor" stroke-width="2.2"/><path d="M11 18h8M11 24h8M29 18h8M29 24h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></div>'+
+        '<div class="evh-t">تسميع اليوم</div>'+
+        '<div class="evh-s"><b>'+arNum(nPres)+'</b> حاضرون</div>'+
+      '</div></button>'+
+      '<div class="evh-card evh-wide evh-eval"><span class="evh-ring"></span><div class="evh-in">'+
+        '<div class="evh-hd"><div class="evh-t"><svg viewBox="0 0 48 48" fill="none"><path d="M24 6l5.2 10.6 11.8 1.7-8.5 8.3 2 11.7L24 32.8l-10.5 5.5 2-11.7-8.5-8.3 11.8-1.7z" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"/></svg>تقييم الحاضرين</div>'+
+          '<span class="evh-chip">'+arNum(_nDone)+' / '+arNum(evalList.length)+'</span></div>'+
+        '<div class="ev-stu-list">'+cards+'</div>'+
+      '</div></div>'+
+    '</div>';
+  } else {
+    if(!cards) cards='<div class="empty-state"><div class="empty-state-icon">📊</div>لا يوجد طلاب</div>';
+    body='<div class="ev-stu-list">'+cards+'</div>';
+  }
+  wrap.innerHTML='<div class="ev-wrap"><div class="rec-top"><div class="rec-title">تقييم الطلاب</div></div>'
     +(_isT2?evWeekStrip():'')
     +(_sus?('<div class="ev-susp-bar">'+(evDayIsToday()?'حضور اليوم مُعلَّق':('حضور '+evDayLabel(key)+' مُعلَّق'))+' - '+hqEsc(_sus.reason)+(_sus.days>1?(' - '+arNum(_sus.days)+' أيام'):'')+'</div>'):'')
-    +'<div class="ev-stu-list">'+cards+'</div>'
+    +body
     +_bar+'</div>';
   if(!window._hqQuiet) setTimeout(function(){ hqAnimNums(wrap,'.ev-stu-score'); },120);
 }
-
+/* ---------- (17.1) الحضور والتحضير ---------- */
+var EV_ATT_OPTS=['حاضر','متأخر','غائب','غائب بعذر','تسميع عن بعد'];
+var EV_ATT_CLS={'حاضر':'p','متأخر':'l','غائب':'a','غائب بعذر':'e','تسميع عن بعد':'r'};
+function evPresentVal(v){ return v==='حاضر'||v==='متأخر'||v==='تسميع عن بعد'; }
+function evDayRec(sid,key){ var r=(DB.evals||{})[sid]; return (r&&r.days&&r.days[key||evDateKey()])||null; }
+function evhPress(el){ try{ el.classList.remove('press'); void el.offsetWidth; el.classList.add('press'); }catch(e){} }
+/* شاشة تحضير الطلاب: كل الطلاب (المنقطعون في الأسفل) وخمس حالات لكل طالب تُحفظ فور لمسها */
+function evAttendOpen(){
+  var key=evDateKey();
+  if(evSuspToday()){ openModal('تحضير الطلاب','<div class="empty-state"><div class="empty-state-icon">⛔</div>حضور هذا اليوم مُعلَّق</div>'); return; }
+  var list=(DB.students||[]).filter(function(s){ return evStuOnDay(s,key); })
+    .sort(function(a,b){ return String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'ar'); });
+  var off=[], on=[]; list.forEach(function(s){ (isDiscontinued(s)?off:on).push(s); });
+  var all=on.concat(off);
+  if(!all.length){ openModal('تحضير الطلاب','<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد طلاب</div>'); return; }
+  var rows=all.map(function(s,i){ return evAttendRowHtml(s,i,key); }).join('');
+  openModal('تحضير الطلاب — '+evDayLabel(key),
+    '<div class="att-wrap" id="att-wrap">'+
+      '<div class="att-sum" id="att-sum">'+evAttendSumHtml(key)+'</div>'+
+      '<div class="att-list">'+rows+'</div>'+
+      '<button type="button" class="att-bulk" onclick="evAttendBulk()">اعتماد غياب من لم يُحضَّر</button>'+
+    '</div>');
+  hqModalTall();
+}
+function evAttendRowHtml(s,i,key){
+  var d=evDayRec(s.id,key)||{}, cur=d.attend||'', off=isDiscontinued(s);
+  return '<div class="att-row'+(off?' off':'')+(cur?' has':'')+'" id="att-'+hqEsc(s.id)+'">'+
+    '<div class="att-top"><div class="stu-avatar">'+arNum(i+1)+'</div>'+
+      '<div class="att-name">'+hqEsc(s.name||'')+(off?' <span class="ev-stu-disc">منقطع</span>':'')+'</div>'+
+      '<span class="att-state'+(cur?(' k-'+(EV_ATT_CLS[cur]||'p')):'')+'">'+(cur?hqEsc(cur):'لم يُحضَّر')+'</span></div>'+
+    '<div class="att-chips">'+EV_ATT_OPTS.map(function(o){
+      return '<button type="button" class="att-chip k-'+EV_ATT_CLS[o]+(cur===o?' sel':'')+'"'+(off?' disabled':'')+' onclick="evAttendSet(\''+hqEsc(s.id)+'\',\''+o+'\')">'+o+'</button>'; }).join('')+
+    '</div></div>';
+}
+function evAttendSumHtml(key){
+  var p=0,a=0,n=0;
+  (DB.students||[]).forEach(function(s){ if(isDiscontinued(s)||!evStuOnDay(s,key)) return; var d=evDayRec(s.id,key); var v=d&&d.attend; if(!v) n++; else if(evPresentVal(v)) p++; else a++; });
+  return '<span class="att-sum-i k-p"><b>'+arNum(p)+'</b> حاضر</span><span class="att-sum-i k-a"><b>'+arNum(a)+'</b> غائب</span><span class="att-sum-i k-n"><b>'+arNum(n)+'</b> لم يُحضَّر</span>';
+}
+function evAttendSet(sid,val){
+  try{
+    var key=evDateKey();
+    if(!DB.evals) DB.evals={};
+    var rec=DB.evals[sid]||{progress:{lesson:0,review:0},days:{}}; if(!rec.days) rec.days={};
+    var d=rec.days[key]||{};
+    if((d.attend||'')===val){ delete d.attend; val=''; } else d.attend=val;   /* اللمسة الثانية على الحالة نفسها تلغيها */
+    delete d.auto;
+    if(evIsAbsentVal(val)) delete d.tajweed;
+    if(Object.keys(d).length) rec.days[key]=d; else delete rec.days[key];
+    DB.evals[sid]=rec; save();
+    if(evIsAbsentVal(val)){ try{ evAbsWatch(sid); }catch(e){} }
+    /* تحديث الصفّ والملخّص في مكانهما */
+    var row=document.getElementById('att-'+sid);
+    if(row){
+      row.classList.toggle('has',!!val);
+      var st=row.querySelector('.att-state'); if(st){ st.className='att-state'+(val?(' k-'+(EV_ATT_CLS[val]||'p')):''); st.textContent=val||'لم يُحضَّر'; }
+      var ch=row.querySelectorAll('.att-chip'); for(var i=0;i<ch.length;i++) ch[i].classList.toggle('sel', ch[i].textContent===val);
+    }
+    var sm=document.getElementById('att-sum'); if(sm) sm.innerHTML=evAttendSumHtml(key);
+    try{ window._hqQuiet=1; renderGrades(); window._hqQuiet=0; }catch(e){ window._hqQuiet=0; }
+  }catch(e){ if(typeof showToast==='function') showToast('حدث خطأ، حاول مجدداً','error'); }
+}
+function evAttendBulk(){ evBulkAbsentGo(); setTimeout(evAttendOpen,420); }
 /* ===== منتقيا الجزء + الرقم داخل الجزء (قائمة مخصّصة بمحاذاة يمين كاملة) ===== */
 function evJuzOptions(sel){
   var o=''; for(var j=30;j>=1;j--){ o+='<div class="ev-dd-opt'+(j===sel?' sel':'')+'" data-v="'+j+'" onclick="evJPPick(this)">\u0627\u0644\u062c\u0632\u0621 '+arNum(j)+'</div>'; }
@@ -14694,6 +15028,7 @@ function evMarkEval(sid, kind, num){
     var flds=['tajweed','attend','behavior'];
     for(var i=0;i<flds.length;i++){ var v=val('ev-'+flds[i]); if(v) day[flds[i]]=v; }
     day[kind]='x:'+req;                 /* x: = تم التقييم بلا نقطة، دون تعديل progress */
+    try{ var _e=evDayEdge(sid,kind,req); if(_e){ day[kind+'T']=_e.t; day[kind+'E']=_e.e; } }catch(e){}
     rec.days[key]=day;
     DB.evals[sid]=rec; save();
     if(typeof evAbsWatch==='function') evAbsWatch(sid);
@@ -14769,7 +15104,6 @@ function evUndo(sid,kind){
       delete day[kind]; try{ hqTombAdd('f', sid+'|'+key+'|'+kind, hqNow()); }catch(e){}
     }
     rec.days[key]=day; DB.evals[sid]=rec; save();
-    if(typeof showToast==='function') showToast('↺ تراجعت عن تقييم '+w+' - قيّمه من جديد','info');
     openStudentEval(sid);
   }catch(e){ if(typeof showToast==='function') showToast('حدث خطأ، حاول مجدداً','error'); }
 }
@@ -14805,6 +15139,38 @@ function evMarkDone(sid, kind, num, silent, free){
 }
 
 /* \ud83c\udfaf \u0646\u0642\u0637\u0629 \u0627\u0644\u0628\u062f\u0627\u064a\u0629 \u0644\u0644\u0637\u0627\u0644\u0628 \u0627\u0644\u062c\u062f\u064a\u062f */
+/* (17.1) تجميد ما سبق: كل يوم مقيَّم بلا نصّ محفوظ يُكتب له نصّ درسه ومراجعته وحدودهما من الخطة الحالية —
+   يُستدعى قبل استبدال خطة الطالب وعند أول تشغيل، فيبقى الكشف اليومي ثابتاً مهما تغيّرت الخطة بعده */
+function hqSnapshotDays(sid){
+  var n=0;
+  try{
+    var rec=(DB.evals||{})[sid]; if(!rec||!rec.days) return 0;
+    if(!(typeof hqPlanActive==='function'&&hqPlanActive(sid))) return 0;
+    for(var k in rec.days){
+      var d=rec.days[k]; if(!d||typeof d!=='object') continue;
+      ['lesson','review'].forEach(function(kind){
+        var v=String(d[kind]||''); if(!(v.indexOf('n:')===0||v.indexOf('z:')===0||v.indexOf('x:')===0)) return;
+        if(d[kind+'T']) return;
+        var num=parseInt(v.slice(2),10)||0; if(!num) return;
+        var e=evDayEdge(sid,kind,num); if(e&&e.t){ d[kind+'T']=e.t; d[kind+'E']=e.e; n++; }
+      });
+    }
+  }catch(e){}
+  return n;
+}
+/* بعد تعديل مقطع يوم (زيادة/نقص آية): يُحدَّث النصّ المحفوظ في سجل اليوم الذي أُنجز به هذا الرقم */
+function hqRefreshDayT(sid,kind,n){
+  try{
+    var rec=(DB.evals||{})[sid]; if(!rec||!rec.days) return;
+    for(var k in rec.days){ var d=rec.days[k]; if(!d) continue; var v=String(d[kind]||'');
+      if(v.length>2&&(parseInt(v.slice(2),10)||0)===n){ var e=evDayEdge(sid,kind,n); if(e){ d[kind+'T']=e.t; d[kind+'E']=e.e; } } }
+  }catch(e){}
+}
+function hqSnapshotAll(){
+  var n=0;
+  try{ (DB.students||[]).forEach(function(st){ n+=hqSnapshotDays(st.id); }); if(n) save(); }catch(e){}
+  return n;
+}
 /* نصّ مقطع اليوم وحدّاه (سورة، آية، صفحة) لحفظهما في سجل اليوم */
 function evDayEdge(sid,kind,n){
   if(!(typeof hqPlanActive==='function'&&hqPlanActive(sid))) return null;
@@ -15605,8 +15971,6 @@ function saveStudentEval(sid){
     if(typeof evAbsWatch==='function') evAbsWatch(sid);
     evtSessionCommit();
     closeModal();
-    var st=DB.students.find(function(x){return x.id===sid;});
-    showToast('\u2705 \u062a\u0645 \u062d\u0641\u0638 \u062a\u0642\u064a\u064a\u0645 '+((st&&st.name)||''),'success');
     renderGrades();
   }catch(e){ showToast('\u062d\u062f\u062b \u062e\u0637\u0623\u060c \u062d\u0627\u0648\u0644 \u0645\u062c\u062f\u062f\u0627\u064b','error'); }
 }
@@ -16250,7 +16614,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 17.0';
+  window.HQ_BUILD='2026 - 17.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -16923,6 +17287,112 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .mis-selrow button i{width:12px;height:12px;border-radius:4px;flex:none}
 .mis-selrow button.gray{color:#cbd5e1}
 .mis-selrow button.red{color:#fca5a5}
+
+/* ===== (17.1) بطاقات صفحة التقييم الثلاث ===== */
+.evh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 12px}
+.evh-card{position:relative;overflow:hidden;border-radius:20px;padding:1.5px;background:linear-gradient(160deg,rgba(240,208,96,.35),rgba(240,208,96,.08) 45%,rgba(95,227,161,.18));border:0;cursor:pointer;text-align:center;font-family:inherit;color:#fff;transition:transform .18s cubic-bezier(.2,.9,.3,1.3),box-shadow .3s;box-shadow:0 10px 28px rgba(0,0,0,.28),0 0 0 0 rgba(240,208,96,0);animation:hqStaggerIn .5s cubic-bezier(.22,.9,.3,1) both}
+.evh-card.evh-rec{animation-delay:.08s}.evh-card.evh-wide{animation-delay:.16s}
+.evh-card:active{transform:scale(.965)}
+.evh-card.press{animation:evhPress .45s ease}
+@keyframes evhPress{0%{box-shadow:0 10px 28px rgba(0,0,0,.28),0 0 0 0 rgba(240,208,96,.55)}100%{box-shadow:0 10px 28px rgba(0,0,0,.28),0 0 0 18px rgba(240,208,96,0)}}
+.evh-ring{position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent 0 62%,rgba(240,208,96,.9) 80%,transparent 100%);animation:evhSpin 5.5s linear infinite;opacity:.55;pointer-events:none}
+.evh-rec .evh-ring{background:conic-gradient(from 180deg,transparent 0 62%,rgba(95,227,161,.9) 80%,transparent 100%);animation-duration:7s}
+.evh-eval .evh-ring{animation-duration:9s;opacity:.4}
+@keyframes evhSpin{to{transform:rotate(360deg)}}
+.evh-in{position:relative;z-index:1;border-radius:18.5px;background:linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%);padding:14px 10px 12px;min-height:124px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.evh-in::before{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120px 80px at 50% 0%,rgba(240,208,96,.16),transparent 70%);pointer-events:none}
+.evh-rec .evh-in::before{background:radial-gradient(120px 80px at 50% 0%,rgba(95,227,161,.16),transparent 70%)}
+.evh-ic{width:46px;height:46px;border-radius:15px;display:flex;align-items:center;justify-content:center;background:rgba(240,208,96,.12);border:1px solid rgba(240,208,96,.35);color:#f7d774;box-shadow:0 0 18px rgba(240,208,96,.22);animation:evhFloat 3.4s ease-in-out infinite}
+.evh-ic svg{width:28px;height:28px}
+.evh-rec .evh-ic{background:rgba(95,227,161,.1);border-color:rgba(95,227,161,.38);color:#7cf0b9;box-shadow:0 0 18px rgba(95,227,161,.22);animation-delay:1.2s}
+@keyframes evhFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.evh-t{font-size:.9rem;font-weight:900;color:#fff;display:flex;align-items:center;gap:7px;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.evh-t svg{width:20px;height:20px;color:#f7d774}
+.evh-s{font-size:.72rem;color:#b9d6d2;font-weight:700;display:flex;align-items:center;gap:5px}
+.evh-s b{color:#f7d774;font-size:1.05rem;font-family:'Cairo','Noto Sans Arabic',sans-serif}
+.evh-rec .evh-s b{color:#7cf0b9}
+.evh-pulse{width:8px;height:8px;border-radius:50%;background:#fbbf24;box-shadow:0 0 0 0 rgba(251,191,36,.6);animation:evhPulse 1.6s ease-out infinite}
+@keyframes evhPulse{to{box-shadow:0 0 0 9px rgba(251,191,36,0)}}
+.evh-wide{grid-column:1 / -1;cursor:default}
+.evh-wide:active{transform:none}
+.evh-eval .evh-in{align-items:stretch;justify-content:flex-start;padding:12px 10px 12px;min-height:0;text-align:right}
+.evh-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 10px;padding-bottom:9px;border-bottom:1px solid rgba(240,208,96,.18)}
+.evh-chip{font-family:'Cairo','Noto Sans Arabic',sans-serif;font-size:.74rem;font-weight:800;color:#0b3a36;background:linear-gradient(135deg,#ffe99b,#f2c74a 60%,#c9a227);border-radius:999px;padding:3px 11px;box-shadow:0 4px 12px rgba(201,162,39,.3)}
+.evh-eval .ev-stu-list{margin-top:0}
+.evh-empty{text-align:center;color:rgba(255,255,255,.55);font-size:.8rem;font-weight:700;padding:16px 8px;line-height:1.8}
+/* شاشة التحضير */
+.att-wrap{direction:rtl}
+.att-sum{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 0 12px}
+.att-sum-i{font-size:.72rem;font-weight:800;color:#cfe4e2;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:4px 12px;display:flex;gap:5px;align-items:center}
+.att-sum-i b{font-family:'Cairo','Noto Sans Arabic',sans-serif;font-size:.95rem}
+.att-sum-i.k-p b{color:#5fe3a1}.att-sum-i.k-a b{color:#f87171}.att-sum-i.k-n b{color:#fbbf24}
+.att-list{display:flex;flex-direction:column;gap:8px}
+.att-row{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:9px 10px 10px;transition:border-color .25s,background .25s;animation:hqStaggerIn .4s cubic-bezier(.22,.9,.3,1) both}
+.att-row.has{border-color:rgba(240,208,96,.3);background:rgba(240,208,96,.05)}
+.att-row.off{opacity:.55}
+.att-top{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.att-top .stu-avatar{width:30px;height:30px;font-size:.76rem;margin:0;flex:none}
+.att-name{flex:1;font-size:.86rem;font-weight:800;color:#fff;line-height:1.3}
+.att-state{flex:none;font-size:.64rem;font-weight:800;color:rgba(255,255,255,.5);background:rgba(255,255,255,.06);border-radius:999px;padding:2px 9px}
+.att-state.k-p{color:#5fe3a1;background:rgba(95,227,161,.14)}.att-state.k-l{color:#fbbf24;background:rgba(251,191,36,.14)}.att-state.k-a{color:#f87171;background:rgba(248,113,113,.14)}.att-state.k-e{color:#fb923c;background:rgba(251,146,60,.14)}.att-state.k-r{color:#7dd3fc;background:rgba(125,211,252,.14)}
+.att-chips{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.att-chip{font-family:inherit;font-size:.62rem;font-weight:800;color:#cfe4e2;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 2px;cursor:pointer;transition:transform .12s,background .2s,color .2s,border-color .2s;white-space:nowrap}
+.att-chip:active{transform:scale(.94)}
+.att-chip:disabled{opacity:.4;cursor:default}
+.att-chip.k-p.sel{background:rgba(95,227,161,.22);border-color:#5fe3a1;color:#7cf0b9;box-shadow:0 0 12px rgba(95,227,161,.3)}
+.att-chip.k-l.sel{background:rgba(251,191,36,.22);border-color:#fbbf24;color:#fde68a;box-shadow:0 0 12px rgba(251,191,36,.3)}
+.att-chip.k-a.sel{background:rgba(248,113,113,.22);border-color:#f87171;color:#fca5a5;box-shadow:0 0 12px rgba(248,113,113,.3)}
+.att-chip.k-e.sel{background:rgba(251,146,60,.22);border-color:#fb923c;color:#fdba74;box-shadow:0 0 12px rgba(251,146,60,.3)}
+.att-chip.k-r.sel{background:rgba(125,211,252,.2);border-color:#7dd3fc;color:#bae6fd;box-shadow:0 0 12px rgba(125,211,252,.3)}
+.att-bulk{width:100%;margin-top:14px;padding:12px;border-radius:14px;border:1px solid rgba(248,113,113,.4);background:rgba(248,113,113,.1);color:#fca5a5;font-family:inherit;font-weight:800;font-size:.84rem;cursor:pointer}
+.att-bulk:active{transform:scale(.98)}
+/* ===== (17.1) خدمة المراسلات ===== */
+.menu-card.mc-msg{background:linear-gradient(145deg,#1d5a52 0%,#113f3a 55%,#0b2f2b 100%)}
+.menu-card.mc-msg .msg-dot{left:auto;right:12px;top:12px}
+.mh{direction:rtl;display:flex;flex-direction:column;gap:10px;min-height:52vh}
+.mh-tabs{display:flex;gap:6px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:4px}
+.mh-tab{flex:1;position:relative;border:0;border-radius:11px;padding:9px 4px;font-family:inherit;font-size:.72rem;font-weight:800;color:#b9d6d2;background:transparent;cursor:pointer;transition:background .25s,color .25s;white-space:nowrap}
+.mh-tab.cur{background:linear-gradient(135deg,#ffe99b,#f2c74a 60%,#c9a227);color:#0b3a36;box-shadow:0 6px 16px rgba(201,162,39,.3)}
+.mh-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:linear-gradient(135deg,#ff5252,#d32f2f);color:#fff;font-size:.62rem;font-weight:900;font-family:'Cairo','Noto Sans Arabic',sans-serif;margin-inline-start:5px;box-shadow:0 2px 8px rgba(211,47,47,.5)}
+.mh-tab.cur .mh-badge{background:#0b3a36;color:#ffe99b}
+.mh-list{display:flex;flex-direction:column;gap:7px}
+.mh-row{display:flex;align-items:center;gap:10px;width:100%;text-align:right;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);border-radius:16px;padding:9px 10px;font-family:inherit;color:#fff;cursor:pointer;transition:background .2s,border-color .2s,transform .12s;animation:hqStaggerIn .4s cubic-bezier(.22,.9,.3,1) both}
+.mh-row:active{transform:scale(.985)}
+.mh-row.un{border-color:rgba(240,208,96,.4);background:rgba(240,208,96,.06)}
+.mh-row.off{opacity:.6}
+.mh-av{flex:none;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;color:#fff;background:linear-gradient(145deg,hsl(var(--h),55%,46%),hsl(var(--h),60%,30%));box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 12px rgba(0,0,0,.3)}
+.mh-row-m{flex:1;min-width:0}
+.mh-row-n{font-size:.86rem;font-weight:800;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-row-p{font-size:.7rem;color:rgba(255,255,255,.55);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-row.un .mh-row-p{color:#f7d774}
+.mh-row-e{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
+.mh-row-t{font-size:.62rem;color:rgba(255,255,255,.45);font-family:'Cairo','Noto Sans Arabic',sans-serif}
+.mh-empty{text-align:center;color:rgba(255,255,255,.5);font-size:.82rem;font-weight:700;padding:28px 8px}
+.mh-th{display:flex;flex-direction:column;gap:8px;min-height:52vh}
+.mh-th-hd{display:flex;align-items:center;gap:10px;padding:6px 8px 10px;border-bottom:1px solid rgba(240,208,96,.18)}
+.mh-th-hd .mh-av{width:38px;height:38px;font-size:.95rem}
+.mh-th-n{flex:1;min-width:0;display:flex;flex-direction:column}
+.mh-th-n b{font-size:.9rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh-th-n span{font-size:.66rem;color:#9fd4d0}
+.mh-back{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#f7d774;font-size:1.3rem;font-weight:900;cursor:pointer;font-family:inherit;line-height:1;display:flex;align-items:center;justify-content:center;transform:scaleX(-1)}
+.mh-msgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:7px;padding:6px 2px 10px;max-height:52vh;min-height:30vh;background:radial-gradient(240px 120px at 80% 0%,rgba(240,208,96,.06),transparent),radial-gradient(240px 160px at 10% 100%,rgba(95,227,161,.05),transparent)}
+.mh-day{align-self:center;margin:6px 0 2px}
+.mh-day span{font-size:.62rem;font-weight:800;color:#cfe4e2;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:3px 11px}
+.mh-b{position:relative;max-width:84%;align-self:flex-start;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:18px 18px 18px 5px;padding:8px 12px 6px;font-size:.88rem;line-height:1.7;color:#eef;word-break:break-word;white-space:pre-wrap;animation:mhIn .28s cubic-bezier(.2,.9,.3,1.1) both;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.mh-b.me{align-self:flex-end;background:linear-gradient(135deg,rgba(242,199,74,.95),rgba(201,162,39,.9));color:#1a1408;border:0;border-radius:18px 18px 5px 18px;box-shadow:0 6px 18px rgba(201,162,39,.3)}
+@keyframes mhIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+.mh-b-n{display:block;font-size:.64rem;font-weight:800;color:#f7d774;margin-bottom:2px}
+.mh-b-t{display:block}
+.mh-b-m{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:.6rem;opacity:.65;margin-top:3px;font-family:'Cairo','Noto Sans Arabic',sans-serif}
+.mh-tick{font-style:normal;letter-spacing:-3px;font-size:.7rem;opacity:.7}
+.mh-tick.seen{color:#0b5c3a;opacity:1}
+.mh-off{text-align:center;font-size:.68rem;color:#fbbf24;padding:2px 0}
+.mh-compose{display:flex;align-items:flex-end;gap:8px;padding:8px;border-radius:22px;background:rgba(0,0,0,.22);border:1px solid rgba(240,208,96,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.mh-compose textarea{flex:1;min-height:40px;max-height:120px;resize:none;border:0;outline:0;background:transparent;color:#fff;font-family:inherit;font-size:16px;line-height:1.55;padding:8px 6px;direction:rtl}
+.mh-compose textarea::placeholder{color:rgba(255,255,255,.4)}
+.mh-send{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:linear-gradient(135deg,#ffe99b,#f2c74a 60%,#c9a227);color:#0b3a36;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px rgba(201,162,39,.4);transition:transform .15s}
+.mh-send svg{width:20px;height:20px;transform:scaleX(-1)}
+.mh-send:active{transform:scale(.9)}
 /* ==== شاشة التلاوة (16.9): عودة تصميم البطاقة (سورة/بسملة/آيات) — صفحات المصحح بخطوط المجمّع أُزيلت لثقلها ==== */
 .qnum[data-sa]{cursor:pointer}
 .mis-page .qnum.qa-cur{color:#2e8b74}
