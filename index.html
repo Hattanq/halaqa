@@ -4841,6 +4841,7 @@ function launchApp(){
   if(typeof cloudSetStatus==='function') cloudSetStatus(_cloudReconciled?'synced':'connecting');
   const u=STATE.user;
   var _ah=null; for(var _i=0;_i<DB.halqat.length;_i++){ if(DB.halqat[_i].id===STATE.activeHid){_ah=DB.halqat[_i];break;} }
+  try{ document.body.classList.toggle('hq-t', STATE.role==='teacher'); }catch(e){}
   var _hh=document.getElementById('hdr-halqa');
   if(_hh){ _hh.textContent = (STATE.role==='admin') ? 'الشؤون التعليمية'
     : (STATE.role==='supervisor' ? ('المشرف: '+((STATE.user&&STATE.user.name)||'')) : (_ah?_ah.name:'الحلقة')); }
@@ -11818,6 +11819,12 @@ function tlDatePicker(pfx, v, cls){
 
 /* ترقيم بطاقات لوحة كل حساب تلقائيًا */
 /* (17.3) لوحة المعلّم بتصميم «تعليق الحضور»: لكل بطاقة سطر وصف وسهم */
+var HQ_TDASH_SUB2={'إضافة مشرف':'تسجيل مشرف جديد','إضافة معلم':'تسجيل معلّم جديد','إضافة حلقة':'إنشاء حلقة وربطها بمعلّمها',
+  'بيانات المشرفين':'الحسابات والحلقات والزيارات','بيانات المعلمين':'الحسابات والحلقات','بيانات الحلقات':'الطلاب والمعلّمون والمشرفون',
+  'تغيير اسم المستخدم وكلمة المرور':'بيانات الدخول إلى الحساب','أدوات التجربة (مؤقّتة)':'أدوات مؤقّتة للاختبار','تشخيص المزامنة':'حالة الاتصال والتخزين',
+  'النسخ الاحتياطي':'حفظ البيانات واستعادتها','تقارير الجمعية':'إحصاءات الحلقات والتقارير PDF','زيارة الحلقات':'تسجيل زيارة المشرف وتقييمها',
+  'إحصائيات وتقارير الحلقة':'إحصاءات حلقاتك وتقاريرها','عرض التقييم':'تسميع اليوم ومواضع الأخطاء','ترتيب الطالب':'لوحة الشرف والنقاط',
+  'عرض الخطة':'المراحل والدروس والمراجعات','تغيير كلمة المرور':'بيانات الدخول إلى الحساب'};
 var HQ_TDASH_SUB={'تقييم الطلاب':'التحضير والتسميع وتقييم الحاضرين','إضافة طالب':'تسجيل طالب جديد في الحلقة','بيانات الطلاب':'الملفات والخطط والانقطاع',
   'تحديد خطة الطالب':'المنهج والدرس والمراجعة','ترتيب الطلاب':'لوحة الشرف والنقاط','اختبارات الجمعية':'الاختبارات الثلاثة ودرجاتها',
   'تحميل البيانات':'العمل بلا إنترنت','خدمة المراسلات':'أولياء الأمور والطلاب والمشرف والشؤون','الخط الزمني':'أسابيع الفصل والإجازات','تقارير الحلقة':'الحضور والكشوف والمتابعة PDF'};
@@ -11825,7 +11832,7 @@ function hqTdashDecor(w){
   var cards=w.querySelectorAll('.tdash .menu-card');
   for(var i=0;i<cards.length;i++){
     var c=cards[i], lb=c.querySelector('.mc-label'); if(!lb||c.querySelector('.mc-sub')) continue;
-    var key=String(lb.textContent||'').replace(/\s*\(.*\)\s*$/,'').trim(), sub=HQ_TDASH_SUB[key]||'';
+    var key=String(lb.textContent||'').replace(/\s*\((?!مؤ).*\)\s*$/,'').trim(), sub=HQ_TDASH_SUB[key]||HQ_TDASH_SUB2[key]||'';
     var t=document.createElement('div'); t.className='mc-txt'; lb.parentNode.insertBefore(t,lb); t.appendChild(lb);
     if(sub){ var sd=document.createElement('div'); sd.className='mc-sub'; sd.textContent=sub; t.appendChild(sd); }
     var ch=document.createElement('span'); ch.className='mc-chev'; ch.textContent='‹'; c.appendChild(ch);
@@ -11834,6 +11841,15 @@ function hqTdashDecor(w){
 function hqNumberCards(){
   try{
     var w=document.getElementById('dash-content'); if(!w) return;
+    /* (17.4) تصميم اللوحة الموحَّد لكل الحسابات؛ وآخر بطاقة فردية تصير عريضة */
+    var g=w.querySelector('.menu-grid');
+    if(g&&!g.classList.contains('tdash')){
+      g.classList.add('tdash');
+      var cs=g.querySelectorAll(':scope > .menu-card'), nN=0;
+      for(var q=0;q<cs.length;q++){ if(!cs[q].classList.contains('mc-wide')) nN++; }
+      if(nN%2===1){ for(var q2=cs.length-1;q2>=0;q2--){ if(!cs[q2].classList.contains('mc-wide')){ cs[q2].classList.add('mc-wide'); break; } } }
+    }
+    try{ hqTdashDecor(w); }catch(e){}
     var cards=w.querySelectorAll('.menu-card');
     for(var i=0;i<cards.length;i++){
       var b=cards[i].querySelector(':scope > .mc-badge');
@@ -14776,7 +14792,7 @@ function renderGrades(){
       '<button type="button" class="evh-card evh-att" onclick="evhPress(this);evAttendOpen()"><span class="evh-ring"></span><div class="evh-in">'+
         '<div class="evh-ic"><svg viewBox="0 0 48 48" fill="none"><rect x="10" y="8" width="28" height="34" rx="5" stroke="currentColor" stroke-width="2.4"/><path d="M18 8V6a3 3 0 013-3h6a3 3 0 013 3v2" stroke="currentColor" stroke-width="2.4"/><path d="M17 24l5 5 10-11" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 34h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></div>'+
         '<div class="evh-t">تحضير الطلاب</div>'+
-        '<div class="evh-s"><b>'+arNum(nAtt)+'</b> من '+arNum(base.length)+'<span class="evh-pulse"></span>'+'</div>'+
+        '<div class="evh-s"><b>'+arNum(nPres)+'</b> من '+arNum(base.length)+'<span class="evh-pulse"></span>'+'</div>'+
       '</div></button>'+
       '<button type="button" class="evh-card evh-rec" onclick="evhPress(this);showTodayRecitation()"><span class="evh-ring"></span><div class="evh-in">'+
         '<div class="evh-ic"><svg viewBox="0 0 48 48" fill="none"><path d="M24 12c-5-4-12-5-18-3v28c6-2 13-1 18 3 5-4 12-5 18-3V9c-6-2-13-1-18 3z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M24 12v28" stroke="currentColor" stroke-width="2.2"/><path d="M11 18h8M11 24h8M29 18h8M29 24h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></div>'+
@@ -14812,17 +14828,17 @@ function evAttendOpen(){
   if(evSuspToday()){ openModal('تحضير الطلاب','<div class="empty-state"><div class="empty-state-icon">⛔</div>حضور هذا اليوم مُعلَّق</div>'); return; }
   var list=(DB.students||[]).filter(function(s){ return evStuOnDay(s,key); })
     .sort(function(a,b){ return String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'ar'); });
-  var off=[], on=[]; list.forEach(function(s){ (isDiscontinued(s)?off:on).push(s); });
-  var all=on.concat(off);
+  /* (17.4) المنقطعون لا يظهرون في التحضير — مكانهم «بيانات الطلاب» */
+  var all=list.filter(function(s){ return !isDiscontinued(s); });
   if(!all.length){ openModal('تحضير الطلاب','<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد طلاب</div>'); return; }
   var rows=all.map(function(s,i){ return evAttendRowHtml(s,i,key); }).join('');
   openModal('تحضير الطلاب — '+evDayLabel(key),
-    '<div class="att-wrap" id="att-wrap">'+
-      '<div class="att-sum" id="att-sum">'+evAttendSumHtml(key)+'</div>'+
-      '<div class="att-list">'+rows+'</div>'+
+    '<div class="att-wrap atx" id="att-wrap">'+
+      '<div class="atx-sum" id="att-sum">'+evAttendSumHtml(key)+'</div>'+
+      '<div class="atx-list">'+rows+'</div>'+
       '<div class="att-acts">'+
         '<button type="button" class="att-act abs" onclick="evAttendBulk()"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>اعتماد غياب من لم يُحضَّر</button>'+
-        '<button type="button" class="att-act rst" onclick="evAttendReset()"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 0 2.4-5.7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M4 4.5v4h4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>إعادة تعيين الغياب</button>'+
+        '<button type="button" class="att-act rst" onclick="evAttendReset()"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 0 2.4-5.7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M4 4.5v4h4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>إعادة تعيين التحضير</button>'+
       '</div>'+
     '</div>');
   hqModalTall();
@@ -14842,34 +14858,44 @@ function evAttendBind(){
   },{passive:false});
   w.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.att-chip'); if(b) fire(b); });
 }
-/* إعادة تعيين الغياب: يُمحى «غائب/غائب بعذر» لهذا اليوم عن كل الطلاب فيعودون «لم يُحضَّر» */
+/* (17.4) إعادة تعيين التحضير: يُمحى الحضور والغياب لهذا اليوم عن كل الطلاب فيعودون «لم يُحضَّر» */
 function evAttendReset(){
   var key=evDateKey(), n=0;
   (DB.students||[]).forEach(function(s){
-    var rec=(DB.evals||{})[s.id]; var d=rec&&rec.days&&rec.days[key]; if(!d||!evIsAbsentVal(d.attend)) return;
+    var rec=(DB.evals||{})[s.id]; var d=rec&&rec.days&&rec.days[key]; if(!d||!d.attend) return;
     delete d.attend; delete d.auto; n++;
     try{ hqTombAdd('f', s.id+'|'+key+'|attend', hqNow()); }catch(e){}
     if(!Object.keys(d).length) delete rec.days[key];
   });
-  if(!n){ showToast('لا غياب مسجَّل في هذا اليوم','info'); return; }
+  if(!n){ showToast('لا تحضير مسجَّل في هذا اليوم','info'); return; }
   save();
   try{ window._hqQuiet=1; renderGrades(); window._hqQuiet=0; }catch(e){ window._hqQuiet=0; }
   evAttendOpen();
 }
 function evAttendRowHtml(s,i,key){
-  var d=evDayRec(s.id,key)||{}, cur=d.attend||'', off=isDiscontinued(s);
-  return '<div class="att-row'+(off?' off':'')+(cur?' has':'')+'" id="att-'+hqEsc(s.id)+'">'+
-    '<div class="att-top"><div class="stu-avatar">'+arNum(i+1)+'</div>'+
-      '<div class="att-name">'+hqEsc(s.name||'')+(off?' <span class="ev-stu-disc">منقطع</span>':'')+'</div>'+
-      '<span class="att-state'+(cur?(' k-'+(EV_ATT_CLS[cur]||'p')):'')+'">'+(cur?hqEsc(cur):'لم يُحضَّر')+'</span></div>'+
-    '<div class="att-chips">'+EV_ATT_OPTS.map(function(o){
-      return '<button type="button" class="att-chip k-'+EV_ATT_CLS[o]+(cur===o?' sel':'')+'"'+(off?' disabled':'')+' data-sid="'+hqEsc(s.id)+'" data-v="'+o+'">'+o+'</button>'; }).join('')+
+  var d=evDayRec(s.id,key)||{}, cur=d.attend||'', k=cur?(EV_ATT_CLS[cur]||'p'):'n';
+  var nm=String(s.name||'').trim();
+  return '<div class="atx-row k-'+k+'" id="att-'+hqEsc(s.id)+'" style="--i:'+i+'">'+
+    '<div class="atx-top">'+
+      '<div class="atx-av"><span>'+hqEsc(nm.charAt(0)||'؟')+'</span><i class="atx-num">'+arNum(i+1)+'</i></div>'+
+      '<div class="atx-name">'+hqEsc(nm)+'</div>'+
+      '<span class="att-state atx-state k-'+k+'">'+(cur?hqEsc(cur):'لم يُحضَّر')+'</span>'+
+    '</div>'+
+    '<div class="atx-seg">'+EV_ATT_OPTS.map(function(o){
+      return '<button type="button" class="att-chip atx-chip k-'+EV_ATT_CLS[o]+(cur===o?' sel':'')+'" data-sid="'+hqEsc(s.id)+'" data-v="'+o+'">'+o+'</button>'; }).join('')+
     '</div></div>';
 }
 function evAttendSumHtml(key){
-  var p=0,a=0,n=0;
-  (DB.students||[]).forEach(function(s){ if(isDiscontinued(s)||!evStuOnDay(s,key)) return; var d=evDayRec(s.id,key); var v=d&&d.attend; if(!v) n++; else if(evPresentVal(v)) p++; else a++; });
-  return '<span class="att-sum-i k-p"><b>'+arNum(p)+'</b> حاضر</span><span class="att-sum-i k-a"><b>'+arNum(a)+'</b> غائب</span><span class="att-sum-i k-n"><b>'+arNum(n)+'</b> لم يُحضَّر</span>';
+  var p=0,a=0,n=0,t=0;
+  (DB.students||[]).forEach(function(s){ if(isDiscontinued(s)||!evStuOnDay(s,key)) return; t++; var d=evDayRec(s.id,key); var v=d&&d.attend; if(!v) n++; else if(evPresentVal(v)) p++; else a++; });
+  var pc=t?Math.round((t-n)*100/t):0;
+  return '<div class="atx-prog"><div class="atx-prog-hd"><b>'+arNum(t-n)+'</b> من '+arNum(t)+' مُحضَّر<span>'+arNum(pc)+'٪</span></div>'+
+      '<div class="atx-bar"><i class="k-p" style="width:'+(t?p*100/t:0)+'%"></i><i class="k-a" style="width:'+(t?a*100/t:0)+'%"></i></div></div>'+
+    '<div class="atx-stats">'+
+      '<div class="atx-st k-p"><b>'+arNum(p)+'</b><span>حاضر</span></div>'+
+      '<div class="atx-st k-a"><b>'+arNum(a)+'</b><span>غائب</span></div>'+
+      '<div class="atx-st k-n"><b>'+arNum(n)+'</b><span>لم يُحضَّر</span></div>'+
+    '</div>';
 }
 function evAttendSet(sid,val){
   try{
@@ -14886,8 +14912,9 @@ function evAttendSet(sid,val){
     /* تحديث الصفّ والملخّص في مكانهما */
     var row=document.getElementById('att-'+sid);
     if(row){
-      row.classList.toggle('has',!!val);
-      var st=row.querySelector('.att-state'); if(st){ st.className='att-state'+(val?(' k-'+(EV_ATT_CLS[val]||'p')):''); st.textContent=val||'لم يُحضَّر'; }
+      var kk=val?(EV_ATT_CLS[val]||'p'):'n';
+      row.className='atx-row k-'+kk+' pop';
+      var st=row.querySelector('.att-state'); if(st){ st.className='att-state atx-state k-'+kk; st.textContent=val||'لم يُحضَّر'; }
       var ch=row.querySelectorAll('.att-chip'); for(var i=0;i<ch.length;i++) ch[i].classList.toggle('sel', ch[i].textContent===val);
     }
     var sm=document.getElementById('att-sum'); if(sm) sm.innerHTML=evAttendSumHtml(key);
@@ -16662,7 +16689,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 17.3';
+  window.HQ_BUILD='2026 - 17.4';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -16736,16 +16763,45 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
       '<div class="hq-off-wrap">'+
         '<div class="ev-susp-note">تنزيل المصحف والخطوط في الجهاز، ليعمل التسميع وعرض الآيات دون إنترنت بالشكل الصحيح — ويصبح فتحها فوريًا.<br>الحجم بضعة ميغابايتات، ويُنزَّل مرة واحدة فقط.</div>'+
         '<div class="hq-qr-bar"><div class="hq-qr-fill" id="hq-qr-fill"></div></div>'+
-        '<div class="hq-qr-txt" id="hq-qr-txt">جاهز للتنزيل</div>'+
+        '<div class="hq-qr-txt" id="hq-qr-txt">جارٍ فحص الجهاز…</div>'+
         '<button class="prof-form-save" id="hq-qr-btn" onclick="hqQuranCache()">تنزيل المصحف والخطوط الآن</button>'+
       '</div>');
+    /* (17.4) تُعرض الحالة الحقيقية: هل الملفّان محفوظان فعلاً في الجهاز؟ (كانت النافذة تعرض «جاهز للتنزيل» دائماً) */
+    hqOfflineCheck(function(ok){
+      var t=document.getElementById('hq-qr-txt'), f=document.getElementById('hq-qr-fill'), b=document.getElementById('hq-qr-btn');
+      if(ok){ if(f) f.style.width='100%'; var at=0; try{ at=parseInt(localStorage.getItem('hq_qr_at'),10)||0; }catch(e){}
+        if(t) t.textContent='✅ المصحف والخطوط محفوظة في الجهاز'+(at?(' منذ '+new Date(at).toLocaleDateString('ar-SA',{day:'numeric',month:'long'})):'')+' — يعمل بلا إنترنت';
+        if(b) b.textContent='إعادة التنزيل';
+      } else { if(t) t.textContent='غير محفوظة بعد — نزّلها الآن'; }
+    });
+  };
+  var HQ_OFF_FILES=['quran_hafs.json','HafsSmart.woff2'];
+  function _offUrl(f){ try{ return new URL(f,location.href).href; }catch(e){ return f; } }
+  window.hqOfflineCheck=function(cb){
+    if(!window.caches){ cb(false); return; }
+    Promise.all(HQ_OFF_FILES.map(function(f){ return caches.match(_offUrl(f)).then(function(r){ return !!r; }).catch(function(){ return false; }); }))
+      .then(function(a){ cb(a.every(Boolean)); }).catch(function(){ cb(false); });
+  };
+  /* تنزيل مباشر من الصفحة إلى ذاكرة المتصفّح (مستقلّ عن عامل الخدمة) ثم التحقّق الفعلي */
+  window.hqOfflineDirect=function(){
+    if(!window.caches) return Promise.reject('no-cache');
+    return caches.open('hq-offline-v1').then(function(c){
+      var i=0;
+      return HQ_OFF_FILES.reduce(function(p,f){
+        return p.then(function(){ return fetch(_offUrl(f),{cache:'reload'}).then(function(r){ if(!r.ok) throw new Error(f); return c.put(_offUrl(f),r.clone()); })
+          .then(function(){ i++; hqQrUpdate(i,HQ_OFF_FILES.length,'full'); }); });
+      },Promise.resolve());
+    });
   };
   window.hqQuranCache=function(){
     var b=document.getElementById('hq-qr-btn');
     if(b){ b.disabled=true; b.textContent='جارٍ التنزيل...'; b.style.opacity='.6'; }
     hqQrUpdate(0,100);
-    try{ navigator.serviceWorker.controller.postMessage({type:'CACHE_QURAN'}); }
-    catch(e){ hqQrDone(114,114); }
+    window._hqQrDirect=true;
+    try{ navigator.serviceWorker.controller.postMessage({type:'CACHE_QURAN'}); }catch(e){}
+    hqOfflineDirect().then(function(){
+      hqOfflineCheck(function(ok){ window._hqQrDirect=false; if(ok){ try{ localStorage.setItem('hq_qr_at',String(Date.now())); }catch(e){} } _hqQrFinish(!ok); });
+    }).catch(function(){ window._hqQrDirect=false; _hqQrFinish(true); });
   };
   function _n(x){ return (typeof arNum==='function')?arNum(x):x; }
   window.hqQrUpdate=function(done,total,mode){
@@ -16753,11 +16809,14 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
     var pc=Math.round((done/total)*100);
     if(f) f.style.width=pc+'%';
     if(!t) return;
+    if(window._hqQrDirect&&mode!=='full') return;   /* تقدّم عامل الخدمة لا يُعرض فوق التنزيل المباشر */
     t.textContent=(mode==='full'||!mode)
       ? ('جارٍ التنزيل... '+_n(pc)+'٪')
       : (_n(done)+' من '+_n(total)+' سورة - '+_n(pc)+'٪');
   };
-  window.hqQrDone=function(total,failed,mode){
+  /* رسالة عامل الخدمة: نهاية التنزيل الحقيقية يقرّرها التحقّق المباشر أعلاه */
+  window.hqQrDone=function(total,failed,mode){ if(window._hqQrDirect) return; _hqQrFinish(!!failed); };
+  window._hqQrFinish=function(failed){
     var b=document.getElementById('hq-qr-btn'), t=document.getElementById('hq-qr-txt');
     var f=document.getElementById('hq-qr-fill');
     if(f&&!failed) f.style.width='100%';
@@ -16765,7 +16824,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
       ? 'تعذّر التنزيل — تحقّق من الاتصال وأعد المحاولة'
       : '✅ المصحف والخطوط جاهزة للعمل بلا إنترنت';
     if(b){ b.disabled=false; b.style.opacity='1'; b.textContent=failed?'إعادة المحاولة':'إعادة التنزيل'; }
-    if(typeof showToast==='function') showToast(failed?'تعذّر تنزيل المصحف':'✅ المصحف والخطوط متاحة الآن بلا إنترنت','success');
+    if(typeof showToast==='function') showToast(failed?'تعذّر تنزيل المصحف':'✅ المصحف والخطوط متاحة الآن بلا إنترنت',failed?'error':'success');
   };
 })();
 </script>
@@ -17495,6 +17554,119 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .tdash .menu-card.mc-wide .msg-dot{position:static;order:3;flex:none}
 .tdash .menu-card.mc-gold{border-color:rgba(240,208,96,.6) !important;background:linear-gradient(130deg,#2a3a1c 0%,#1d3a2a 45%,#123f3a 100%) !important}
 .tdash .menu-card>.mc-badge{top:12px !important;left:12px !important}
+
+/* ===== (17.4) قائمة «تقييم الحاضرين» ===== */
+.evh-eval .ev-stu-list{gap:9px !important}
+.evh-eval .ev-stu{position:relative;overflow:hidden;padding:11px 12px !important;gap:11px !important;border-radius:18px !important;
+  border:1px solid rgba(255,255,255,.09) !important;background:linear-gradient(110deg,rgba(255,255,255,.07),rgba(255,255,255,.02)) !important;
+  box-shadow:0 8px 20px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .18s cubic-bezier(.2,.9,.3,1.3),box-shadow .25s,border-color .25s;
+  animation:evxIn .5s cubic-bezier(.22,.9,.3,1) both}
+.evh-eval .ev-stu::before{content:'';position:absolute;top:10px;bottom:10px;right:0;width:4px;border-radius:4px 0 0 4px;background:rgba(240,208,96,.35);transition:background .3s,box-shadow .3s}
+.evh-eval .ev-stu::after{content:'';position:absolute;top:0;bottom:0;width:35%;left:-40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.07),transparent);transition:left .6s ease;pointer-events:none}
+.evh-eval .ev-stu:active{transform:scale(.975);box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.evh-eval .ev-stu:active::after{left:110%}
+@keyframes evxIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.evh-eval .ev-stu .stu-avatar{width:38px !important;height:38px !important;font-size:.85rem !important;background:linear-gradient(145deg,#1f7a70,#0e4c46) !important;
+  box-shadow:0 0 0 2px rgba(240,208,96,.35),0 4px 12px rgba(0,0,0,.3) !important;color:#fff3c4 !important}
+.evh-eval .ev-stu-name{font-size:.92rem !important;font-weight:800 !important;color:#fff}
+.evh-eval .ev-stu-score{font-size:.82rem !important;min-width:52px !important;padding:5px 10px !important;border-radius:12px !important;
+  background:linear-gradient(135deg,rgba(240,208,96,.22),rgba(240,208,96,.08)) !important;border:1px solid rgba(240,208,96,.35);color:#ffe79a !important}
+.evh-eval .ev-stu-chevron{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#f7d774;font-size:1rem !important}
+.evh-eval .ev-stu-partial{border-radius:999px !important;padding:3px 10px !important;font-weight:800 !important;animation:evxPulse 2.2s ease-in-out infinite}
+@keyframes evxPulse{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.45)}50%{box-shadow:0 0 0 6px rgba(251,191,36,0)}}
+.evh-eval .ev-stu.partial{border-color:rgba(251,191,36,.35) !important}
+.evh-eval .ev-stu.partial::before{background:#fbbf24;box-shadow:0 0 12px rgba(251,191,36,.7)}
+.evh-eval .ev-stu.done{border-color:rgba(95,227,161,.35) !important;background:linear-gradient(110deg,rgba(95,227,161,.12),rgba(255,255,255,.02)) !important}
+.evh-eval .ev-stu.done::before{background:#5fe3a1;box-shadow:0 0 12px rgba(95,227,161,.75)}
+.evh-eval .ev-stu.done .ev-stu-chevron{background:linear-gradient(135deg,#34d399,#0ea672);border-color:transparent;color:#04231a;font-weight:900;box-shadow:0 0 14px rgba(52,211,153,.55)}
+.evh-eval .ev-stu.done .stu-avatar{box-shadow:0 0 0 2px rgba(95,227,161,.6),0 0 14px rgba(95,227,161,.35) !important}
+/* ===== (17.4) شاشة التحضير ===== */
+.atx{direction:rtl}
+.atx-sum{position:sticky;top:-2px;z-index:5;margin:0 0 12px;padding:12px;border-radius:20px;background:linear-gradient(135deg,rgba(15,74,68,.97),rgba(8,43,40,.97));
+  border:1px solid rgba(240,208,96,.3);box-shadow:0 12px 26px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
+.atx-prog-hd{display:flex;align-items:center;justify-content:space-between;font-size:.78rem;font-weight:800;color:#cfe4e2;margin-bottom:8px}
+.atx-prog-hd b{color:#ffe79a;font-size:1.05rem;margin-left:3px;font-family:'Cairo','Noto Sans Arabic',sans-serif}
+.atx-prog-hd span{font-family:'Cairo','Noto Sans Arabic',sans-serif;color:#0b3a36;background:linear-gradient(135deg,#ffe99b,#f2c74a);border-radius:999px;padding:2px 10px;font-size:.72rem}
+.atx-bar{display:flex;height:9px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.08);gap:2px}
+.atx-bar i{display:block;height:100%;transition:width .5s cubic-bezier(.2,.9,.3,1)}
+.atx-bar i.k-p{background:linear-gradient(90deg,#34d399,#5fe3a1);box-shadow:0 0 10px rgba(95,227,161,.6)}
+.atx-bar i.k-a{background:linear-gradient(90deg,#f87171,#fca5a5)}
+.atx-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.atx-st{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 4px;border-radius:13px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.atx-st b{font-family:'Cairo','Noto Sans Arabic',sans-serif;font-size:1.15rem;line-height:1.2}
+.atx-st span{font-size:.62rem;font-weight:700;color:#b9d6d2}
+.atx-st.k-p b{color:#5fe3a1}.atx-st.k-a b{color:#fca5a5}.atx-st.k-n b{color:#fbbf24}
+.atx-list{display:flex;flex-direction:column;gap:10px}
+.atx-row{--c:rgba(255,255,255,.18);--g:rgba(255,255,255,0);position:relative;overflow:hidden;padding:11px 11px 12px;border-radius:20px;
+  background:linear-gradient(120deg,#123f3a 0%,#0d332f 60%,#0f3a33 100%);border:1px solid var(--c);
+  box-shadow:0 8px 20px rgba(0,0,0,.22),inset 0 0 0 1px rgba(255,255,255,.03),0 0 22px var(--g);transition:border-color .3s,box-shadow .35s;
+  animation:evxIn .45s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(var(--i)*.03s)}
+.atx-row.k-p{--c:rgba(95,227,161,.55);--g:rgba(95,227,161,.12)}
+.atx-row.k-l{--c:rgba(251,191,36,.55);--g:rgba(251,191,36,.12)}
+.atx-row.k-a{--c:rgba(248,113,113,.55);--g:rgba(248,113,113,.12)}
+.atx-row.k-e{--c:rgba(251,146,60,.55);--g:rgba(251,146,60,.12)}
+.atx-row.k-r{--c:rgba(125,211,252,.55);--g:rgba(125,211,252,.12)}
+.atx-row.pop{animation:atxPop .35s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes atxPop{0%{transform:scale(1)}40%{transform:scale(1.015)}100%{transform:scale(1)}}
+.atx-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.atx-av{position:relative;flex:none;width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,#1f7a70,#0e4c46);box-shadow:0 0 0 2px var(--c),0 4px 12px rgba(0,0,0,.3);transition:box-shadow .3s}
+.atx-av span{font-weight:900;font-size:1rem;color:#fff3c4}
+.atx-num{position:absolute;bottom:-5px;left:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#0b2f2b;border:1px solid rgba(240,208,96,.5);
+  color:#f7d774;font-style:normal;font-size:.56rem;font-weight:900;display:flex;align-items:center;justify-content:center;font-family:'Cairo','Noto Sans Arabic',sans-serif}
+.atx-name{flex:1;min-width:0;font-size:.92rem;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.atx-state{font-size:.64rem !important;padding:3px 10px !important}
+.atx-seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px;border-radius:15px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06)}
+.atx-chip{border:0 !important;background:transparent !important;border-radius:11px !important;padding:9px 1px !important;font-size:.62rem !important;color:#9fc7c2 !important;
+  transition:background .25s,color .25s,box-shadow .25s,transform .12s !important}
+.atx-chip.sel{color:#062a26 !important;font-weight:900 !important}
+.atx-chip.k-p.sel{background:linear-gradient(135deg,#7cf0b9,#34d399) !important;box-shadow:0 4px 14px rgba(52,211,153,.45) !important}
+.atx-chip.k-l.sel{background:linear-gradient(135deg,#fde68a,#fbbf24) !important;box-shadow:0 4px 14px rgba(251,191,36,.45) !important}
+.atx-chip.k-a.sel{background:linear-gradient(135deg,#fecaca,#f87171) !important;box-shadow:0 4px 14px rgba(248,113,113,.45) !important}
+.atx-chip.k-e.sel{background:linear-gradient(135deg,#fed7aa,#fb923c) !important;box-shadow:0 4px 14px rgba(251,146,60,.45) !important}
+.atx-chip.k-r.sel{background:linear-gradient(135deg,#bae6fd,#7dd3fc) !important;box-shadow:0 4px 14px rgba(125,211,252,.45) !important}
+/* ===== (17.4) رأس حساب المعلّم ===== */
+body.hq-t #appHeader .hdr-card{border-radius:26px;background:
+  radial-gradient(130% 90% at 100% 0%,rgba(240,208,96,.22) 0%,transparent 45%),
+  radial-gradient(120% 120% at 0% 100%,rgba(52,211,153,.16) 0%,transparent 50%),
+  linear-gradient(150deg,#06302c 0%,#0b4943 45%,#0e5a52 70%,#08332f 100%);
+  border:1px solid rgba(240,208,96,.35);box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(0,0,0,.25)}
+body.hq-t #appHeader .hdr-card::before{content:'';position:absolute;inset:-40%;z-index:0;pointer-events:none;
+  background:conic-gradient(from 0deg at 70% 30%,transparent 0 30%,rgba(240,208,96,.10) 40%,transparent 52%,rgba(52,211,153,.08) 70%,transparent 82%);animation:htAurora 14s linear infinite}
+@keyframes htAurora{to{transform:rotate(360deg)}}
+body.hq-t #appHeader .hdr-card::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(rgba(255,236,170,.55) 1px,transparent 1.3px),radial-gradient(rgba(255,255,255,.35) 1px,transparent 1.2px);
+  background-size:46px 46px,73px 73px;background-position:0 0,23px 31px;animation:htStars 9s ease-in-out infinite alternate;
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent 85%);mask-image:linear-gradient(180deg,#000,transparent 85%)}
+@keyframes htStars{from{opacity:.25}to{opacity:.6}}
+body.hq-t #appHeader .hdr-top-line{height:3px;background:linear-gradient(90deg,transparent,#f7d774 30%,#fff3c4 50%,#f7d774 70%,transparent);background-size:200% 100%;animation:htLine 4s linear infinite;box-shadow:0 0 12px rgba(247,215,116,.7)}
+@keyframes htLine{from{background-position:200% 0}to{background-position:0 0}}
+body.hq-t #appHeader .hdr-row1,body.hq-t #appHeader .hdr-row2{border-bottom-color:rgba(240,208,96,.14);position:relative;z-index:1}
+body.hq-t #appHeader .hdr-logo-ring{position:relative;width:60px;height:60px}
+body.hq-t #appHeader .hdr-logo-ring::before{content:'';position:absolute;inset:-5px;border-radius:50%;
+  background:conic-gradient(#f7d774,rgba(247,215,116,0) 30%,#34d399 50%,rgba(52,211,153,0) 75%,#f7d774);animation:htSpin 6s linear infinite;
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px))}
+body.hq-t #appHeader .hdr-logo-ring::after{content:'';position:absolute;inset:-2px;border-radius:50%;box-shadow:0 0 22px rgba(247,215,116,.45);animation:htGlow 3s ease-in-out infinite}
+@keyframes htSpin{to{transform:rotate(360deg)}}
+@keyframes htGlow{0%,100%{opacity:.5}50%{opacity:1}}
+body.hq-t #appHeader .hdr-halqa{font-size:1.18rem;text-shadow:0 2px 12px rgba(0,0,0,.4)}
+body.hq-t #appHeader .hdr-welcome-badge{background:linear-gradient(135deg,rgba(247,215,116,.22),rgba(247,215,116,.06));border:1px solid rgba(247,215,116,.55);color:#ffe79a;
+  box-shadow:0 0 16px rgba(247,215,116,.25),inset 0 1px 0 rgba(255,255,255,.15);padding:4px 14px;position:relative;overflow:hidden}
+body.hq-t #appHeader .hdr-welcome-badge::after{content:'';position:absolute;top:0;bottom:0;width:40%;left:-50%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:evhSheen 3.8s ease-in-out infinite}
+body.hq-t #appHeader .hdr-student-name{font-size:1.65rem;line-height:1.35}
+body.hq-t #appHeader #hdr-sname{background:linear-gradient(100deg,#c9a227 0%,#f7d774 25%,#fff6cf 45%,#f7d774 60%,#c9a227 100%);background-size:220% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:htShine 5s ease-in-out infinite;
+  filter:drop-shadow(0 2px 10px rgba(247,215,116,.3))}
+@keyframes htShine{0%,100%{background-position:100% 0}50%{background-position:0 0}}
+body.hq-t #appHeader .hdr-quran-deco{opacity:.11}
+body.hq-t #appHeader .hdr-hadith-bar{border-radius:16px;background:linear-gradient(90deg,rgba(247,215,116,.04),rgba(247,215,116,.14),rgba(247,215,116,.04));border:1px solid rgba(247,215,116,.32);padding:8px 12px}
+body.hq-t #appHeader .hdr-hadith-bar .hstar{color:#f7d774;animation:htTwinkle 2.4s ease-in-out infinite}
+body.hq-t #appHeader .hdr-hadith-bar .hstar:last-child{animation-delay:1.2s}
+@keyframes htTwinkle{0%,100%{opacity:.35;transform:scale(.85) rotate(0)}50%{opacity:1;transform:scale(1.2) rotate(45deg)}}
+body.hq-t #appHeader .hdr-datebox{background:rgba(0,0,0,.28);border:1px solid rgba(247,215,116,.38);border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.25);backdrop-filter:blur(6px)}
+body.hq-t #appHeader .hdr-sync-pill{backdrop-filter:blur(6px);border-color:rgba(95,227,161,.35) !important;box-shadow:0 0 14px rgba(95,227,161,.18)}
+body.hq-t #appHeader .hdr-logout-btn{border-radius:14px;backdrop-filter:blur(6px)}
+@media (prefers-reduced-motion: reduce){ body.hq-t #appHeader .hdr-card::before, body.hq-t #appHeader .hdr-logo-ring::before{animation:none} }
 /* ==== شاشة التلاوة (16.9): عودة تصميم البطاقة (سورة/بسملة/آيات) — صفحات المصحح بخطوط المجمّع أُزيلت لثقلها ==== */
 .qnum[data-sa]{cursor:pointer}
 .mis-page .qnum.qa-cur{color:#2e8b74}
