@@ -1668,6 +1668,9 @@ button,.ev-pm-btn,.ev-tool,.ev-jp-btn,.ev-act-box,.mtype-btn,.menu-card,.ev-dd-b
 .hqr-row:last-child{margin-bottom:0}
 .hqr-lbl{flex:0 0 52px;font-weight:800;font-size:.78rem;color:#cfe4e2}
 .hqr-pair{flex:1;display:grid;grid-template-columns:2fr 1fr;gap:7px;min-width:0}
+.hqr-t0{flex-wrap:wrap;gap:6px 8px}
+.hqr-t0 .hqr-lbl{flex:0 0 100%}
+.hqr-t0 .hqr-pair{flex:0 0 100%}
 .hqr-sel{min-width:0}
 /* النهاية المحسوبة تلقائياً في المنهج الحر: مربّع للقراءة فقط بشكل القوائم نفسه */
 .hqr-ro{min-width:0;box-sizing:border-box;padding:11px 10px;border-radius:10px;background:rgba(13,80,74,.55);border:1px dashed rgba(201,162,39,.45);
@@ -1923,7 +1926,9 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .stul-body{display:none;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 12px}
 .stul-item.open .stul-body{display:grid;animation:pageReveal .25s ease both}
 .stul-field{display:flex;flex-direction:column;gap:2px;background:rgba(255,255,255,0.04);border-radius:10px;padding:7px 10px}
-.stul-field:last-child{grid-column:1 / -1}
+.stul-acts4{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.stul-acts4 button{margin:0 !important;padding:11px 6px !important;border-radius:12px !important;font-size:.78rem !important;font-weight:800 !important;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:44px;white-space:nowrap}
+.stul-acts4 .stul-plan-btn{grid-column:auto;margin-top:0}
 .stul-plan-btn{grid-column:1 / -1;margin-top:2px;padding:11px;border-radius:12px;border:1px solid rgba(247,215,116,.4);background:rgba(247,215,116,.1);color:#f7d774;font-family:inherit;font-weight:800;font-size:.78rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
 .stul-plan-btn:active{transform:scale(.98)}
 .stul-lbl{font-size:.62rem;color:#9fd4d0;font-weight:600}
@@ -7036,6 +7041,45 @@ function hqPlanRevLines(p){
 /* أسطر النوع المطلوب */
 function hqLinesOf(p,kind){ return (kind==='review')?hqPlanRevLines(p):hqPlanLines(p); }
 
+/* =====================================================================
+   (17.0) بداية الفصل الدراسي للطالب: أول درس وأول مراجعة في الفصل — تُحفظ في سجل تقييمه (DB.evals[sid].t0)
+   لا في الخطة، فتبقى عند تغيير الخطة: منها تُحسب صفحات الفصل في التقارير، ومنها تُحسب مرحلته (لا من أول الخطة الجديدة)
+   ===================================================================== */
+function hqTermStart(sid){ try{ var r=(DB.evals||{})[sid]; return (r&&r.t0&&typeof r.t0==='object')?r.t0:null; }catch(e){ return null; } }
+function hqTermStartSet(sid,l,r){
+  if(!sid) return;
+  if(!DB.evals) DB.evals={};
+  var rec=DB.evals[sid]||{progress:{lesson:0,review:0},days:{}};
+  var t0=rec.t0||{};
+  if(l&&l.s) t0.l={s:+l.s,a:+l.a||1};
+  if(r&&r.s) t0.r={s:+r.s,a:+r.a||1};
+  rec.t0=t0; DB.evals[sid]=rec;
+}
+/* صفحة آية في المصحف (من فهرس الأسطر) */
+function hqPageOfAyah(s,a){
+  try{ var all=hqBuildLines(), i=hqLineIdxAt(all,s,a); return (i>=0)?(all[i].p||null):null; }catch(e){ return null; }
+}
+/* معرّف صاحب الخطة (للمرحلة النسبية إلى بداية الفصل) */
+function hqPlanSidOf(p){ try{ var st=hqPlanStore(); for(var k in st){ if(st[k]===p) return k; } }catch(e){} return ''; }
+/* أسطر ما قبل الخطة من بداية الفصل (للمنهج الحر بالاتجاه نفسه): تُضاف إلى مدى المراحل كي لا تعود الخطة الجديدة إلى المرحلة الأولى */
+function hqStageOffset(p){
+  try{
+    if(!p||p.type!=='fr'||!p.lFrom) return 0;
+    var sid=hqPlanSidOf(p), t0=sid?hqTermStart(sid):null; if(!t0||!t0.l) return 0;
+    if(t0.l.s===p.lFrom.s&&t0.l.a===p.lFrom.a) return 0;
+    var ln=hqRangeLines(t0.l,hqFrTerminal(p)); if(!ln.length) return 0;
+    var i=hqLineIdxAt(ln,p.lFrom.s,p.lFrom.a); if(i<=0) return 0;
+    return i;
+  }catch(e){ return 0; }
+}
+/* صفّ خانة «بداية الفصل»: التسمية في سطر والقائمتان تحتها */
+function hqT0Row(lbl,id,pos){
+  return '<div class="hqr-row hqr-t0"><div class="hqr-lbl" style="flex-basis:100%">'+lbl+'</div>'+
+    '<div class="hqr-pair">'+
+      '<select class="prof-form-input hqr-sel" id="'+id+'-s" onchange="hqRangeSurChanged(\''+id+'\')">'+hqSurOptions(pos?pos.s:114)+'</select>'+
+      '<select class="prof-form-input hqr-sel hqr-ay" id="'+id+'-a">'+hqAyahOptions(pos?pos.s:114,pos?pos.a:1)+'</select>'+
+    '</div></div>';
+}
 /* ---------- شاشة تحديد المدى قبل الاعتماد ---------- */
 var _hqRangeCtx=null;
 function hqSurOptions(cur){
@@ -7113,10 +7157,15 @@ function hqPlanRangeOpen(type,sid,juz){
       hqRangeRow('النهاية','hqr-lt',dTo)+
     '</div>';
   }
+  var _t0=hqTermStart(sid)||{};
+  var t0Box=isFree?('<div class="hqr-box"><div class="hqr-hd">بداية الفصل الدراسي</div>'+
+      hqT0Row('أول درس في الفصل الدراسي','hqr-t0l',_t0.l||dFrom)+
+      hqT0Row('أول مراجعة في الفصل الدراسي','hqr-t0r',_t0.r||rFrom)+
+    '</div>'):'';
   openModal(isFree?hqEsc(t.n):(hqEsc(t.n)+' — '+hqPlanName(p)),
     '<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">'+hqEsc(s.name||'')+'</div>'+
-    '<div class="mp-info-s">'+(isFree?'حدّد اتجاه الدرس ونوعه وكميّته اليومية وبدايته — والنهاية تُحسب تلقائياً، ثم المراجعة بالطريقة نفسها وصفحاتها اليومية':'حدّد بداية الدرس ونهايته، ثم مدى المراجعة')+'</div></div>'+
-    lessonBox+
+    (isFree?'':'<div class="mp-info-s">حدّد بداية الدرس ونهايته، ثم مدى المراجعة</div>')+'</div>'+
+    t0Box+lessonBox+
     '<div class="hqr-box"><div class="hqr-hd">المراجعة</div>'+
       reviewRows+
       (isFree?'<div class="vs-hint" style="margin:2px 4px 0">مراجعة يومية بقدر الكميّة أعلاه تسير خلف الدرس من بدايتها، وتعود إلى البداية كلما لحقت به</div>'
@@ -7146,6 +7195,7 @@ function hqPlanRangeApprove(){
     if(!rv){ showToast('حدّد بداية المراجعة','error'); return; }
     var all0=hqBuildLines(); if(hqLineIdxAt(all0,rv.from.s,rv.from.a)<0){ showToast('تعذّر تحديد بداية المراجعة','error'); return; }
     /* الدرس كما اعتُمد (الاتجاه والنوع والكميّة والبداية لم تتغيّر): تبقى أيامه ونهايته وتقدّم الطالب، ويُحدَّث قسم المراجعة وحده */
+    try{ hqTermStartSet(c.sid,hqRangeRead('hqr-t0l'),hqRangeRead('hqr-t0r')); }catch(e){}
     var oldP=hqPlanOf(c.sid);
     if(hqFrSameLesson(oldP,fr)){
       oldP.rDir=rv.dir; oldP.rUnit=rv.unit; oldP.rQty=rv.qty; oldP.rFrom=rv.from; oldP.rTo=hqFrRevEnd(oldP,rv); oldP.rPages=hqFrRevDaily(rv);
@@ -7676,7 +7726,7 @@ function hqFrPreview(k){
     var oldP=hqPlanOf(_hqRangeCtx.sid);
     if(hqFrSameLesson(oldP,fr)&&oldP.lTo){
       es.textContent=arNum(oldP.lTo.s)+'. '+hqSurName(oldP.lTo.s); ea.textContent=arNum(oldP.lTo.a);
-      if(info) info.innerHTML='النهاية المعتمَدة ثابتة: <b>'+arNum(oldP.days.length)+'</b> يوماً - نحو <b>'+arNum(hqFrPlanPages(oldP))+'</b> صفحة. لا تتغيّر بغياب الطالب أو تأخّره؛ وتغيير الاتجاه أو النوع أو الكميّة أو البداية يبني خطة جديدة من اليوم';
+      if(info) info.innerHTML='';
       return;
     }
   }
@@ -7685,13 +7735,21 @@ function hqFrPreview(k){
   es.textContent=arNum(est.end.s)+'. '+hqSurName(est.end.s);
   ea.textContent=arNum(est.end.a);
   if(!info) return;
-  if(k==='r') info.innerHTML='نهاية المراجعة تُحسب تلقائياً من الاتجاه والنوع والكميّة والبداية: مدى نحو <b>'+arNum(est.pages)+'</b> صفحة'+(est.done?' (حتى طرف المصحف)':'');
-  else info.innerHTML='النهاية تُحسب تلقائياً من الاتجاه والنوع والكميّة والبداية وأيام الدراسة المتبقية: <b>'+arNum(est.days)+'</b> يوماً دراسياً'+
-    (est.real?'':' (افتراضي بلا خط زمني)')+(est.done?' — يكتمل المدى قبل نهاية الفصل':' حتى آخر يوم في الفصل')+' - نحو <b>'+arNum(est.pages)+'</b> صفحة';
+  info.innerHTML='';
 }
 /* ---------- بناء أيام الخطة ---------- */
 /* keepDays: عدد الأيام الماضية التي تبقى كما هي (إعادة التوزيع بعد تعديل الخط الزمني) */
+var _hqCarry=null;
 function hqPlanBuildDays(p,nDays,keepDays){
+  _hqCarry=null;
+  var out=hqPlanBuildDays0(p,nDays,keepDays);
+  try{
+    if(_hqCarry){ var k=Math.max(0,Math.min(keepDays||0,(p.days||[]).length)), x=out[k]; if(x&&x.l&&x.l[0]===_hqCarry.line) x.lf=_hqCarry.fs; }
+  }catch(e){}
+  _hqCarry=null;
+  return out;
+}
+function hqPlanBuildDays0(p,nDays,keepDays){
   var frQ=hqFrIsQty(p);
   /* المنهج الحر الجديد: تُقطع الأيام من المدى الكامل إلى الطرف، ثم تُثبَّت النهاية حيث بلغ آخر يوم */
   var lines=frQ?hqFrSeq(p):hqPlanLines(p), L=lines.length;
@@ -7703,9 +7761,12 @@ function hqPlanBuildDays(p,nDays,keepDays){
     days=(p.days||[]).slice(0,keepDays);
     for(var d0=keepDays-1;d0>=0;d0--){
       if(days[d0].l){
-        /* خاتمة آخر يوم محفوظ تُرجَع إلى آخر آية كاملة فيه، فلا يبدأ اليوم التالي من آيةٍ انتهى بها سابقه */
         var _e=days[d0].l[1], _s=days[d0].l[0];
-        if(!hqIsAyahEnd(lines,_e)){ var _e2=hqAyahBack(lines,_e,_s); if(_e2>=_s){ days[d0]={l:[_s,_e2], r:days[d0].r}; _e=_e2; } }
+        /* (17.0) يوم انتهى بآية في منتصف سطر: اليوم التالي يبدأ من السطر نفسه بالآية بعدها */
+        var _nx=days[d0].lt?hqNextAyahIn(days[d0].lt):null;
+        if(_nx){ startLine=_e; _hqCarry={line:_e, fs:_nx}; break; }
+        /* خاتمة آخر يوم محفوظ تُرجَع إلى آخر آية كاملة فيه، فلا يبدأ اليوم التالي من آيةٍ انتهى بها سابقه */
+        if(!hqIsAyahEnd(lines,_e)){ var _e2=hqAyahBack(lines,_e,_s); if(_e2>=_s){ var _c=JSON.parse(JSON.stringify(days[d0])); _c.l=[_s,_e2]; delete _c.lt; days[d0]=_c; _e=_e2; } }
         startLine=_e+1; break;
       }
     }
@@ -7763,6 +7824,8 @@ function hqSegText(p,seg,kind){
   var lines=hqLinesOf(p,kind);
   if(!lines.length||seg[0]<1||seg[1]>lines.length) return '';
   var st=hqLineStart(lines,seg[0]), en=lines[seg[1]-1];
+  if(seg.fs&&seg.fs.s===st.s) st={s:st.s,a:seg.fs.a};
+  if(seg.te&&seg.te.s===en.s) en={s:en.s,a:seg.te.a};
   var nameA=hqSurName(st.s), nameB=hqSurName(en.s), cntB=0;
   try{ cntB=misAyahCount(en.s); }catch(e){}
   if(st.s===en.s){
@@ -7910,12 +7973,16 @@ function hqPlanDayEnd(sid,n,pos){
   n=parseInt(n,10)||0; var days=p.days||[];
   if(n<1||n>days.length||!days[n-1]||!days[n-1].l) return {err:'لا يوجد درس لهذا اليوم في الخطة'};
   var lines=hqFrIsQty(p)?hqFrSeq(p):hqPlanLines(p), L=lines.length;
-  var j=hqLineIdxAt(lines,pos.s,pos.a,true); if(j<0) return {err:'هذه الآية خارج مدى خطة الطالب'};
-  var e=j+1, st=days[n-1].l[0];
+  if(!pos||!(pos.a>=1)||pos.a>(misAyahCount(pos.s)||0)) return {err:'آية غير صالحة'};
+  var j=hqLineIdxAt(lines,pos.s,pos.a,true); if(j<0||lines[j].s!==pos.s) return {err:'هذه الآية خارج مدى خطة الطالب'};
+  var e=j+1, cd=days[n-1], st=cd.l[0];
   if(e<st) return {err:'هذه الآية قبل بداية درس اليوم'};
-  if(!hqIsAyahEnd(lines,e)) e=hqAyahSnap(lines,e,st,L);
-  if(e<st) e=st;
-  days[n-1]={l:[st,e], r:days[n-1].r||null};
+  if(e===st&&cd.lf&&pos.s===cd.lf.s&&pos.a<cd.lf.a) return {err:'هذه الآية قبل بداية درس اليوم'};
+  /* (17.0) حدّ دقيق بالآية: إن انتهت الآية في منتصف السطر حُفظت نهايتها مع اليوم، ويبدأ اليوم التالي من الآية بعدها */
+  var te=(lines[j].s===pos.s&&lines[j].a===pos.a&&hqIsAyahEnd(lines,e))?null:{s:pos.s,a:pos.a};
+  var nd={l:[st,e], r:cd.r||null}; if(cd.lf) nd.lf=cd.lf; if(te) nd.lt=te;
+  if(cd.rf) nd.rf=cd.rf; if(cd.rt) nd.rt=cd.rt; if(cd.rq) nd.rq=cd.rq;
+  days[n-1]=nd;
   var tl=(typeof tlActive==='function')?tlActive():null;
   var ds=hqPlanStudyDays(tl), off=hqPlanOffOf(p,ds);
   var total=ds.length?Math.max(1,ds.length-off):HQ_DAYS_DEFAULT;
@@ -7924,6 +7991,25 @@ function hqPlanDayEnd(sid,n,pos){
   p.mt=hqNow(); p.v2=1; p.v3=1; p.v4=1; p.v5=1;
   try{ save(); }catch(e){}
   return {ok:true, end:hqLinePos(lines,e-1,true)};
+}
+/* (17.0) نهاية مراجعة يومٍ بعينه آيةً آية من شاشة التسميع (زيادة أو نقص) — تتبعها مراجعة الأيام التالية */
+function hqPlanRevDayEnd(sid,n,pos){
+  var p=hqPlanActive(sid); if(!p) return {err:'لا توجد خطة معتمَدة للطالب'};
+  n=parseInt(n,10)||0; var d=p.days[n-1]; if(!d) return {err:'لا يوجد يوم بهذا الرقم في الخطة'};
+  var cur=hqPlanSegOf(sid,'review',n); if(!cur) return {err:'لا مراجعة لهذا اليوم في الخطة'};
+  if(!pos||!(pos.a>=1)||pos.a>(misAyahCount(pos.s)||0)) return {err:'آية غير صالحة'};
+  var rl=hqLinesOf(p,'review'), j=hqLineIdxAt(rl,pos.s,pos.a,true);
+  if(j<0||rl[j].s!==pos.s) return {err:'هذه الآية خارج مدى المراجعة'};
+  var e=j+1, ra=cur[0];
+  if(e<ra||(e===ra&&cur.fs&&pos.s===cur.fs.s&&pos.a<cur.fs.a)) return {err:'هذه الآية قبل بداية مراجعة اليوم'};
+  var te=(rl[j].s===pos.s&&rl[j].a===pos.a&&hqIsAyahEnd(rl,e))?null:{s:pos.s,a:pos.a};
+  d.rq={e:e}; if(te) d.rq.t=te;
+  var pr=0; try{ pr=parseInt(((DB.evals||{})[sid]||{}).progress.review,10)||0; }catch(e2){}
+  if(n<=pr){ d.r=[ra,e]; if(cur.fs) d.rf=cur.fs; if(te) d.rt=te; else delete d.rt; }
+  try{ delete _hqRevDyn[sid]; }catch(e3){}
+  p.mt=hqNow();
+  try{ save(); }catch(e4){}
+  return {ok:true};
 }
 /* ترحيل (إصدار 14.9): تعليقٌ سُجّل قبل 14.8 على تاريخ الجهاز في يوم لا جلسة فيه (الخميس/الجمعة/السبت)
    يُنقل إلى آخر يوم جلسة قبله (الجمعة ٧ ربيع ٢ ← الأربعاء ٥ ربيع ٢)، مع شاهد حذف للمفتاح القديم كي لا يعيده الدمج */
@@ -8157,8 +8243,8 @@ function hqPlanPreview(type){
     hqAccRow('الأسطر',arNum(lines.length))+
     hqAccRow('الأيام الدراسية',arNum(td.n)+(td.real?'':' (افتراضي)'))+
     hqAccRow('معدّل الدرس اليومي',arNum(avg)+' سطر')+
-    hqAccRow('أول درس',f?hqSegText(p,f.l):'—')+
-    hqAccRow('آخر درس',l?hqSegText(p,l.l):'—')+
+    hqAccRow('أول درس',f?hqSegText(p,hqDaySeg(f,'lesson')):'—')+
+    hqAccRow('آخر درس',l?hqSegText(p,hqDaySeg(l,'lesson')):'—')+
   '</div></div>';
 }
 function hqPlanApproveUI(sid,type){
@@ -8198,7 +8284,7 @@ function hqPlanTable(sid,ro){
   for(var i=0;i<days.length;i++){
     var hl=((i+1)===pos.l), hr=((i+1)===pos.r);
     rows+='<tr'+((hl||hr)?' class="now"':'')+(hl?' id="hqp-here"':'')+'><td class="hqp-num">'+arNum(i+1)+'</td>'+
-      hqPlanCellHtml(hqSegText(p,days[i].l),hl,false)+hqPlanCellHtml(hqSegText(p,hqPlanSegOf(sid,'review',i+1),'review'),hr,true)+'</tr>';
+      hqPlanCellHtml(hqSegText(p,hqDaySeg(days[i],'lesson')),hl,false)+hqPlanCellHtml(hqSegText(p,hqPlanSegOf(sid,'review',i+1),'review'),hr,true)+'</tr>';
   }
   var h='<div style="padding:2px 0 10px;text-align:center;color:#9abdba;font-size:.8rem">'+
       hqPlanName(p)+' - '+arNum(hqPlanPages(p))+' صفحة - '+arNum(days.length)+' يوماً</div>'+hqPlanPosLine(pos)+
@@ -8243,11 +8329,12 @@ function hqCupCheer(){ if(typeof showToast==='function') showToast('🏆 أتم�
 function hqPlanStages(p){
   var days=(p&&p.days)||[], lines=hqPlanLines(p), L=lines.length;
   if(!days.length||!L) return [];
+  var off=hqStageOffset(p); L+=off;   /* (17.0) المراحل نسبةً إلى بداية الفصل لا إلى أول الخطة */
   var st=[], i, last=0;
   for(i=0;i<10;i++) st.push({k:i+1,a:0,b:0,n:0});
   for(var d=0;d<days.length;d++){
-    var e=days[d].l?days[d].l[1]:last; last=e;
-    var k=Math.ceil(e*10/L); if(k<1) k=1; if(k>10) k=10;
+    var e=(days[d].l?days[d].l[1]:last); last=e;
+    var k=Math.ceil((e+off)*10/L); if(k<1) k=1; if(k>10) k=10;
     var s=st[k-1];
     if(!s.a) s.a=d+1;
     s.b=d+1; s.n++;
@@ -8384,7 +8471,7 @@ function hqPlanStageOpen(sid,k,ro){
     var d=days[i-1]; if(!d) continue;
     var hl=(i===pos.l), hr=(i===pos.r);
     rows+='<tr'+((hl||hr)?' class="now"':'')+(hl?' id="hqp-here"':'')+'><td class="hqp-num">'+arNum(i)+'</td>'+
-      hqPlanCellHtml(hqSegText(p,d.l),hl,false)+hqPlanCellHtml(hqSegText(p,hqPlanSegOf(sid,'review',i),'review'),hr,true)+'</tr>';
+      hqPlanCellHtml(hqSegText(p,hqDaySeg(d,'lesson')),hl,false)+hqPlanCellHtml(hqSegText(p,hqPlanSegOf(sid,'review',i),'review'),hr,true)+'</tr>';
   }
   if(!rows) rows='<tr><td colspan="3">—</td></tr>';
   var head='<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-m">المرحلة '+HQ_ORD10[k-1]+'</div></div>'+
@@ -8446,7 +8533,7 @@ function hqPlanPrint(sid){
     else if(n<Math.min(pos.l,pos.r)) st='✓';
     else if(n<pos.l) st='✓ الدرس';
     else if(n<pos.r) st='✓ المراجعة';
-    rows.push([HQ_ORD10[(k||1)-1]||'', hqSegText(p,d.l)||'—', hqSegText(p,hqPlanSegOf(sid,'review',n),'review')||'—', st]);
+    rows.push([HQ_ORD10[(k||1)-1]||'', hqSegText(p,hqDaySeg(d,'lesson'))||'—', hqSegText(p,hqPlanSegOf(sid,'review',n),'review')||'—', st]);
   }
   var td=hqPlanTermDays(), start='—';
   try{ if(p.jd0){ var hj=tlJ2H(p.jd0); start=tlDateStr(hj.d,hj.m,hj.y); } }catch(e){}
@@ -8524,7 +8611,7 @@ function hqPlanStagePreview(type,k){
   var days=p.days||[], rows='';
   for(var i=x.a;i<=x.b;i++){
     var d=days[i-1]; if(!d) continue;
-    rows+='<tr><td class="hqp-num">'+arNum(i)+'</td><td>'+hqSegText(p,d.l)+'</td><td>'+hqSegText(p,d.r,'review')+'</td></tr>';
+    rows+='<tr><td class="hqp-num">'+arNum(i)+'</td><td>'+hqSegText(p,hqDaySeg(d,'lesson'))+'</td><td>'+hqSegText(p,hqDaySeg(d,'review'),'review')+'</td></tr>';
   }
   if(!rows) rows='<tr><td colspan="3">—</td></tr>';
   var seg=hqStageSeg(p,x);
@@ -8619,7 +8706,7 @@ function hqPlanSegOf(sid,kind,n){
   var p=hqPlanActive(sid); if(!p) return null;
   n=parseInt(n,10)||0;
   var d=p.days[n-1]; if(!d) return null;
-  if(kind!=='review') return d.l;
+  if(kind!=='review') return hqDaySeg(d,'lesson');
   /* المراجعة من يوم المراجعة الحالي فصاعداً تُحسب وفق ما حفظه الطالب فعلاً لا وفق الخطة المرسومة */
   try{
     var rec=(DB.evals||{})[sid];
@@ -8628,8 +8715,20 @@ function hqPlanSegOf(sid,kind,n){
       if(n>=pr+1){ var m=hqPlanRevDyn(sid,p); if(m&&(n in m)) return m[n]; }
     }
   }catch(e){}
-  return d.r;
+  return hqDaySeg(d,'review');
 }
+/* (17.0) مقطع يوم بأسطره مع حدّي الآية الدقيقين: fs = أول آية (إن بدأ اليوم في منتصف سطر)، te = آخر آية (إن انتهى في منتصفه).
+   الخطة بالأسطر، والسطر قد يحوي آيتين أو ثلاثاً (أواخر المصحف)، فيُحفظ الحدّ الدقيق مع اليوم كي يزيد الدرس آيةً وينقص آية */
+function hqDaySeg(d,kind){
+  if(!d) return null;
+  var rv=(kind==='review'), a=rv?d.r:d.l; if(!a) return null;
+  var out=[a[0],a[1]], f=rv?d.rf:d.lf, t=rv?d.rt:d.lt;
+  if(f&&f.s) out.fs={s:+f.s,a:+f.a};
+  if(t&&t.s) out.te={s:+t.s,a:+t.a};
+  return out;
+}
+/* الآية التالية داخل السورة (أو null في آخرها) */
+function hqNextAyahIn(pos){ try{ var n=misAyahCount(pos.s)||0; return (pos.a<n)?{s:pos.s,a:pos.a+1}:null; }catch(e){ return null; } }
 /* المراجعة الفعلية: إن تأخّر الدرس عن المراجعة (لم يُنجَز يوماً) صارت مراجعة الخطة المرسومة تشمل درسه
    الحالي، فتُعاد حسبتها من يوم المراجعة الحالي: تقف قُبيل الدرس مباشرة، وتعود إلى أول مداها عند بلوغه */
 var _hqRevDyn={};
@@ -8647,7 +8746,9 @@ function hqPlanRevDyn(sid,p){
   var r2l=[0]; for(j=0;j<RL;j++){ var y=rl[j]; r2l.push(lidx[y.p+':'+y.ln]||0); }
   var target=Math.max(2,Math.round(hqPlanRevPages(p)*HQ_PAGE_LINES)), tol=Math.max(2,Math.round(target*0.3));
   function lessonEnd(n){ var e=0; for(var k=0;k<Math.min(n,N);k++){ var d=days[k]; if(d&&d.l&&d.l[1]>e) e=d.l[1]; } return e; }
-  var rPtr=prevR+1, wrapNext=false, memEnd=0;
+  var rPtr=prevR+1, wrapNext=false, memEnd=0, carry=null;
+  /* انتهت مراجعة اليوم السابق في منتصف سطر: يبدأ اليوم من السطر نفسه بالآية التالية */
+  try{ var _pd=(from>0)?days[from-1]:null; if(_pd&&_pd.rt&&_pd.r){ var _nx=hqNextAyahIn(_pd.rt); if(_nx){ rPtr=prevR; carry=_nx; } } }catch(e){}
   function avail(k){ var li=r2l[k]; return !li || li<=memEnd; }
   /* إن كانت مراجعة اليوم السابق قد بلغت الدرس (لا سطر متاحاً بعدها حينئذٍ) فاليوم تعود إلى أول مداها */
   if(prevR>0){ memEnd=lessonEnd(Math.max(0,Math.min(pl,from-1))); if(prevR>=RL||!avail(prevR+1)) wrapNext=true; }
@@ -8655,19 +8756,28 @@ function hqPlanRevDyn(sid,p){
     var day=days[i]; if(!day) continue;
     if(!day.l){ map[i+1]=null; continue; }
     memEnd=lessonEnd(pl+(i-from));                            /* المحفوظ فعلاً عند هذا اليوم: دروس الطالب لا دروس الخطة */
-    if(wrapNext||rPtr>RL||!avail(rPtr)) rPtr=1;
+    if(wrapNext||rPtr>RL||!avail(rPtr)){ rPtr=1; carry=null; }
     wrapNext=false;
-    if(!avail(rPtr)){ map[i+1]=null; continue; }
+    if(!avail(rPtr)&&!day.rq){ map[i+1]=null; carry=null; continue; }
     var runEnd=rPtr; while(runEnd<RL && avail(runEnd+1)) runEnd++;
-    var ra=rPtr, rb=ra+target-1;
-    if(rb>=runEnd){ rb=runEnd; wrapNext=true; }
+    var ra=rPtr, rb=ra+target-1, te=null;
+    if(day.rq&&day.rq.e){
+      /* نهاية حدّدها المعلّم من شاشة التسميع (آيةً آية) */
+      rb=Math.max(ra,Math.min(RL,parseInt(day.rq.e,10)||ra));
+      te=(day.rq.t&&day.rq.t.s)?{s:+day.rq.t.s,a:+day.rq.t.a}:null;
+      if(rb>=runEnd) wrapNext=true;
+    }
+    else if(rb>=runEnd){ rb=runEnd; wrapNext=true; }
     else{
       rb=hqNearBoundaryTol(rl,rb,ra,runEnd,tol);
       rb=hqAyahSnap(rl,rb,ra,runEnd);
       if(runEnd-rb<tol) rb=runEnd;
       if(rb>=runEnd) wrapNext=true;
     }
-    map[i+1]=[ra,rb]; rPtr=rb+1;
+    var sg=[ra,rb]; if(carry) sg.fs=carry; if(te) sg.te=te;
+    map[i+1]=sg;
+    var _nx2=te?hqNextAyahIn(te):null;
+    if(_nx2&&!wrapNext){ rPtr=rb; carry=_nx2; } else { rPtr=rb+1; carry=null; }
   }
   _hqRevDyn[sid]={key:key,map:map};
   return map;
@@ -8677,9 +8787,12 @@ function hqPlanRevCommit(sid,n){
   var p=hqPlanActive(sid); if(!p) return;
   var d=p.days[n-1]; if(!d) return;
   var seg=hqPlanSegOf(sid,'review',n), cur=d.r||null;
-  var same=(!seg&&!cur)||(!!seg&&!!cur&&seg[0]===cur[0]&&seg[1]===cur[1]);
+  var same=(!seg&&!cur)||(!!seg&&!!cur&&seg[0]===cur[0]&&seg[1]===cur[1]&&JSON.stringify(seg.fs||null)===JSON.stringify(d.rf||null)&&JSON.stringify(seg.te||null)===JSON.stringify(d.rt||null));
   if(same) return;
-  d.r=seg?[seg[0],seg[1]]:null; p.mt=hqNow();
+  d.r=seg?[seg[0],seg[1]]:null;
+  if(seg&&seg.fs) d.rf=seg.fs; else delete d.rf;
+  if(seg&&seg.te) d.rt=seg.te; else delete d.rt;
+  p.mt=hqNow();
 }
 function hqPlanDayText(sid,kind,n){
   var p=hqPlanActive(sid); if(!p) return '';
@@ -8698,6 +8811,10 @@ function hqLineSegs(p,seg,kind){
     if(last && last.s===ln.s){ if(ln.a>last.to) last.to=ln.a; }
     else out.push({s:ln.s, from:(ln.sa||1), to:ln.a});
   }
+  /* الحدّان الدقيقان بالآية (17.0) */
+  if(out.length&&seg.fs&&out[0].s===seg.fs.s&&seg.fs.a>out[0].from&&seg.fs.a<=out[0].to) out[0].from=seg.fs.a;
+  var _l=out[out.length-1];
+  if(_l&&seg.te&&_l.s===seg.te.s&&seg.te.a<_l.to&&seg.te.a>=_l.from) _l.to=seg.te.a;
   return out;
 }
 function hqPlanAyahSegs(sid,kind,n){
@@ -9102,13 +9219,30 @@ function hsPresLbl(d){
   return arNum(d)+' \u064a\u0648\u0645 \u062d\u0636\u0648\u0631';
 }
 function hsFirstLast(td,kind){
-  var first=0,last=0;
+  var first=0,last=0,fd=null,ld=null;
   for(var i=0;i<td.length;i++){ var v=td[i]&&td[i][kind];
     if(v && String(v).indexOf('n:')===0){ var num=parseInt(String(v).slice(2),10)||0;
-      if(num){ if(!first) first=num; last=num; } }
+      if(num){ if(!first){ first=num; fd=td[i]; } last=num; ld=td[i]; } }
   }
-  return {first:first,last:last};
+  return {first:first,last:last,fd:fd,ld:ld};
 }
+/* (17.0) حدّ يوم من سجلّه المحفوظ (يصحّ ولو تغيّرت الخطة بعده) */
+function hsDayEdge(d,kind,which){
+  var e=d&&d[kind+'E']; if(!e||typeof e!=='object') return null;
+  var en=(which==='end');
+  var sN=en?e.s2:e.s1, aN=en?e.a2:e.a1, pg=en?e.p2:e.p1;
+  if(!sN) return null;
+  return { surah:hsSurahName(sN), ayah:aN, page:(pg==null)?null:(+pg), s:sN };
+}
+/* أول يوم مقيَّم في الفصل لنوع (لإحلال بداية الفصل محلّه) */
+function hsTermFirstN(sid,kind){ try{ return hsFirstLast(hsTermDays(sid),kind).first; }catch(e){ return 0; } }
+/* بداية الفصل كحدّ تقرير */
+function hsT0Edge(sid,kind){
+  var t0=hqTermStart(sid), x=t0&&(kind==='review'?t0.r:t0.l); if(!x||!x.s) return null;
+  return { surah:hsSurahName(x.s), ayah:x.a, page:hqPageOfAyah(x.s,x.a), s:x.s };
+}
+/* اليوم الذي يحمل رقماً بعينه في الفصل (أول ما يُطابق) */
+function hsDayByN(sid,kind,n){ try{ var td=hsTermDays(sid); for(var i=0;i<td.length;i++){ var v=td[i]&&td[i][kind]; if(v&&String(v)==='n:'+n) return td[i]; } }catch(e){} return null; }
 function hsFindAyah(arr,a){
   if(!arr||!arr.length) return null;
   for(var i=0;i<arr.length;i++){ if(arr[i].a===a) return arr[i]; }
@@ -9118,6 +9252,13 @@ function hsFindAyah(arr,a){
 async function hsPages(kind,firstN,lastN,sid){
   try{
     if(!firstN||!lastN) return null;
+    /* (17.0) من الحدود المحفوظة مع الأيام (وبداية الفصل إن كان الأول أول أيام الفصل) — تصحّ ولو تغيّرت الخطة */
+    if(sid){
+      var _a=(firstN<=hsTermFirstN(sid,kind))?hsT0Edge(sid,kind):null;
+      if(!_a) _a=hsDayEdge(hsDayByN(sid,kind,firstN),kind,'start');
+      var _b=hsDayEdge(hsDayByN(sid,kind,lastN),kind,'end');
+      if(_a&&_b&&_a.page!=null&&_b.page!=null) return Math.abs((+_b.page)-(+_a.page))+1;
+    }
     if(sid && typeof hqPlanActive==='function' && hqPlanActive(sid)) return hqPlanPagesBetween(sid,kind,firstN,lastN);
     var tA=misPlanText(kind,firstN), sA=misParsePlan(tA);
     var tB=misPlanText(kind,lastN), sB=misParsePlan(tB);
@@ -9138,6 +9279,10 @@ function hsSurahName(num){
 async function hsEdge(kind,n,which,sid){
   try{
     if(!n) return null;
+    if(sid){
+      if(which!=='end'&&n<=hsTermFirstN(sid,kind)){ var _t=hsT0Edge(sid,kind); if(_t) return _t; }
+      var _d=hsDayEdge(hsDayByN(sid,kind,n),kind,which); if(_d) return _d;
+    }
     if(sid && typeof hqPlanActive==='function' && hqPlanActive(sid)) return hqPlanEdge(sid,kind,n,which);
     var t=misPlanText(kind,n), segs=misParsePlan(t);
     if(!segs.length) return null;
@@ -12272,9 +12417,10 @@ function ksSpanText(kind,idx){
   return 'من '+tlShort(a.from)+' إلى '+tlShort(b.to);
 }
 /* نصّ الدرس أو المراجعة برقمه — يحترم خطة الطالب المعتمَدة إن وُجدت */
-function ksDayText(sid,kind,n){
+function ksDayText(sid,kind,n,day){
   n=parseInt(n,10)||0; if(!n) return '—';
   try{
+    var _d=day||hsDayByN(sid,kind,n); if(_d&&_d[kind+'T']) return String(_d[kind+'T']);
     if(typeof hqPlanActive==='function' && hqPlanActive(sid)) return hqPlanDayText(sid,kind,n)||'—';
     return misPlanText(kind,n)||'—';
   }catch(e){ return '—'; }
@@ -12334,8 +12480,8 @@ async function ksCompute(sid,kind){
       var d=ent.d||{};
       var ln=ksNumOf(d,'lesson'), rn=ksNumOf(d,'review');
       var pls=parseFloat(d.plus)||0, mns=parseFloat(d.minus)||0;
-      rows.push(['الدرس المُنجز', ln?ksDayText(sid,'lesson',ln):'لم يُنجز']);
-      rows.push(['المراجعة المُنجزة', rn?ksDayText(sid,'review',rn):'لم تُنجز']);
+      rows.push(['الدرس المُنجز', ln?ksDayText(sid,'lesson',ln,d):'لم يُنجز']);
+      rows.push(['المراجعة المُنجزة', rn?ksDayText(sid,'review',rn,d):'لم تُنجز']);
       rows.push(['عدد الأخطاء', arNum(ksMistakes(sid,ent.k))]);
       rows.push(['الحضور', d.attend||'—']);
       rows.push(['المشاركة', pls>0?('شارك · '+arNum(pls)+(d.plusWhy?(' - '+String(d.plusWhy)):'')):'لم يشارك']);
@@ -14326,10 +14472,14 @@ function renderGrades(){
   if(STATE.role!=='teacher'){ var meId=STATE.user?STATE.user.sid:''; list=list.filter(function(s){return s.id===meId;}); }
   /* أبجدياً بالاسم كاملاً: يُقارَن الاسم الأول ثم الثاني ثم ما بعده */
   list.sort(function(a,b){ return String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'ar'); });
-  /* المنقطعون في آخر القائمة (16.9) — لا يُحتاج إليهم في التقييم اليومي */
-  var _dMap={}; list.forEach(function(s){ _dMap[s.id]=isDiscontinued(s)?1:0; });
-  list.sort(function(a,b){ return _dMap[a.id]-_dMap[b.id]; });
   var key=evDateKey();
+  /* (17.0) المقيَّمون (تقييم مكتمل) في أعلى القائمة أبجدياً، ثم الباقون أبجدياً، والمنقطعون في آخرها */
+  var _rank={}; list.forEach(function(s){
+    var _rc=DB.evals[s.id]||{}, _dy=(_rc.days&&_rc.days[key])||null;
+    var _dn=!!(_dy&&evIsComplete(_dy)&&!(_dy.auto===1&&evIsAbsentVal(_dy.attend)));
+    _rank[s.id]=isDiscontinued(s)?2:(_dn?0:1);
+  });
+  list.sort(function(a,b){ return _rank[a.id]-_rank[b.id]; });
   if(STATE.role==='teacher') list=list.filter(function(s){ return evStuOnDay(s,key); });   /* المنضمّ لاحقاً لا يظهر في أيام قبل انضمامه */
   var cards=list.map(function(s,i){
     var rec=DB.evals[s.id]||{}; var _day=(rec.days&&rec.days[key])||null;
@@ -14643,6 +14793,8 @@ function evMarkDone(sid, kind, num, silent, free){
     var flds=['tajweed','attend','behavior'];
     for(var i=0;i<flds.length;i++){ var v=val('ev-'+flds[i]); if(v) day[flds[i]]=v; }
     day[kind]=(free?'z:':'n:')+req;
+    /* (17.0) يُحفظ نصّ المقطع وحدّاه مع سجل اليوم، فتبقى التقارير والكشوف صحيحة ولو تغيّرت الخطة بعده */
+    try{ var _e=evDayEdge(sid,kind,req); if(_e){ day[kind+'T']=_e.t; day[kind+'E']=_e.e; } }catch(e){}
     if(free){ day[kind+'F']=(parseInt(day[kind+'F'],10)||0)+1; rec.free[kind]=(parseInt(rec.free[kind],10)||0)+1; }
     else { day[kind+'N']=(parseInt(day[kind+'N'],10)||0)+1; }
     if(kind==='review'){ try{ hqPlanRevCommit(sid,req); }catch(e){} }
@@ -14653,6 +14805,13 @@ function evMarkDone(sid, kind, num, silent, free){
 }
 
 /* \ud83c\udfaf \u0646\u0642\u0637\u0629 \u0627\u0644\u0628\u062f\u0627\u064a\u0629 \u0644\u0644\u0637\u0627\u0644\u0628 \u0627\u0644\u062c\u062f\u064a\u062f */
+/* نصّ مقطع اليوم وحدّاه (سورة، آية، صفحة) لحفظهما في سجل اليوم */
+function evDayEdge(sid,kind,n){
+  if(!(typeof hqPlanActive==='function'&&hqPlanActive(sid))) return null;
+  var segs=hqPlanAyahSegs(sid,kind,n); if(!segs.length) return null;
+  var g1=segs[0], g2=segs[segs.length-1];
+  return {t:hqPlanDayText(sid,kind,n)||'', e:{s1:g1.s,a1:g1.from,p1:hqPageOfAyah(g1.s,g1.from),s2:g2.s,a2:g2.to,p2:hqPageOfAyah(g2.s,g2.to)}};
+}
 function evToggleStart(){ var b=document.getElementById('ev-start-box'); if(b) b.classList.toggle('open'); }
 function evSetStart(sid){
   try{
@@ -14895,6 +15054,12 @@ function hqSelEnhance(root){
       var t=ev.target;
       if(t&&t.closest&&t.closest('.hqrow-body')) return;
       hqRowCloseAll();
+    },false);
+    /* (17.0) قوائم بطاقة التقييم (.ev-dd): النقر خارج القائمة المفتوحة يغلقها */
+    document.addEventListener('click',function(ev){
+      var t=ev.target;
+      if(t&&t.closest&&t.closest('.ev-dd,.ev-dd-menu')) return;
+      if(typeof evDDCloseAll==='function') evDDCloseAll();
     },false);
     if(window.MutationObserver){
       var pend=false;
@@ -15208,6 +15373,7 @@ function evtFold(id){
   try{ evtFixHeight(); }catch(e){}
 }
 function evtGo(k,quiet){
+  try{ evDDCloseAll(); }catch(e){}   /* (17.0) قائمة منسدلة مفتوحة تُغلق عند الانتقال بين خانات البطاقة */
   var wrap=document.getElementById('evt-panes'); if(!wrap) return;
   var panes=wrap.querySelectorAll('.evt-pane');
   for(var i=0;i<panes.length;i++){
@@ -15862,18 +16028,20 @@ function showStudentsData(){
           '<div class="stu-avatar">'+arNum(i+1)+'</div>'+
           '<div class="stul-id"><div class="stul-name">'+esc(s.name)+_discHint+'</div></div>'+
         '</div>'+
-        '<div class="stul-acts">'+
-          '<button class="stul-disc'+(s.discontinued?' on':'')+'" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();toggleStudentDiscontinued(this.getAttribute(\'data-sid\'))" title="\u062a\u0639\u064a\u064a\u0646 \u0627\u0644\u0637\u0627\u0644\u0628 \u0645\u0646\u0642\u0637\u0639\u0627\u064b">منقطع</button>'+
-          '<button class="stul-edit" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();openProfileEdit(this.getAttribute(\'data-sid\'))" title="\u062a\u0639\u062f\u064a\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0637\u0627\u0644\u0628">تعديل</button>'+
-          '<button class="stul-del" data-sid="'+esc(s.id)+'" data-sname="'+esc(s.name)+'" onclick="event.stopPropagation();handleDeleteClick(this)" title="\u062d\u0630\u0641 \u0627\u0644\u0637\u0627\u0644\u0628">حذف</button>'+
-        '</div>'+
         '<div class="stul-body">'+
           '<div class="stul-field"><span class="stul-lbl">\u0627\u0644\u0639\u0645\u0631</span><span class="stul-val">'+(s.age?ageStr(s.age):'\u2014')+'</span></div>'+
           '<div class="stul-field"><span class="stul-lbl">\u0627\u0644\u0635\u0641</span><span class="stul-val">'+esc(s.grade)+'</span></div>'+
           '<div class="stul-field"><span class="stul-lbl">\u0627\u0644\u062c\u0646\u0633\u064a\u0629</span><span class="stul-val">'+esc(s.nationality)+'</span></div>'+
+          '<div class="stul-field"><span class="stul-lbl">الهوية / الإقامة</span><span class="stul-val ltr">'+esc(s.nationalId)+'</span></div>'+
           '<div class="stul-field"><span class="stul-lbl">\u062c\u0648\u0627\u0644 \u0627\u0644\u0637\u0627\u0644\u0628</span><span class="stul-val ltr">'+esc(s.phone)+'</span></div>'+
           '<div class="stul-field"><span class="stul-lbl">\u062c\u0648\u0627\u0644 \u0648\u0644\u064a \u0627\u0644\u0623\u0645\u0631</span><span class="stul-val ltr">'+esc(s.guardianPhone)+'</span></div>'+
-          '<button class="stul-plan-btn" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();hqPlanOpenFor(this.getAttribute(\'data-sid\'))">عرض خطط الطالب ومساره</button>'+
+          /* (17.0) أربعة أزرار متساوية تحت البيانات: صفّان في كل صفّ زرّان */
+          '<div class="stul-acts4">'+
+            '<button class="stul-plan-btn" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();hqPlanOpenFor(this.getAttribute(\'data-sid\'))">خطة الطالب</button>'+
+            '<button class="stul-disc'+(s.discontinued?' on':'')+'" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();toggleStudentDiscontinued(this.getAttribute(\'data-sid\'))" title="\u062a\u0639\u064a\u064a\u0646 \u0627\u0644\u0637\u0627\u0644\u0628 \u0645\u0646\u0642\u0637\u0639\u0627\u064b">انقطاع الطالب</button>'+
+            '<button class="stul-edit" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();openProfileEdit(this.getAttribute(\'data-sid\'))" title="\u062a\u0639\u062f\u064a\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0637\u0627\u0644\u0628">تعديل البيانات</button>'+
+            '<button class="stul-del" data-sid="'+esc(s.id)+'" data-sname="'+esc(s.name)+'" onclick="event.stopPropagation();handleDeleteClick(this)" title="\u062d\u0630\u0641 \u0627\u0644\u0637\u0627\u0644\u0628">حذف الطالب</button>'+
+          '</div>'+
         '</div>'+
       '</div>';
   }
@@ -16082,7 +16250,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 16.9';
+  window.HQ_BUILD='2026 - 17.0';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -16719,14 +16887,20 @@ body.mis-reading .mis-topcard{position:fixed;top:56px;left:10px;right:10px;z-ind
 body.mis-reading .mis-savebar{position:fixed;left:10px;right:10px;bottom:calc(64px + env(safe-area-inset-bottom,0px) + 8px);z-index:60;margin:0}
 /* إفساح مساحة للآيات بين الشريطين الثابتين */
 body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
-.mis-ayat{direction:rtl;text-align:justify;text-align-last:center;line-height:2.35;font-family:'HafsSmart','Amiri',serif;font-size:26px;color:#123a37}
-.qw{display:inline-block;padding:1px 3px;margin:0 1px;border-radius:6px;cursor:pointer;transition:background .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;direction:rtl;unicode-bidi:bidi-override}
+.mis-ayat{direction:rtl;text-align:justify;text-align-last:center;line-height:2.35;font-family:'HafsSmart','Amiri',serif;--qfs:26px;font-size:var(--qfs);color:#123a37}
+/* (17.0) الكلمة صندوق بقدر حجمها (line-height ضيّق لا ارتفاع السطر)، والغلافان qrun/qay سطريّان بخط ١px كي لا يرسما
+   ارتفاع الخط الكامل، وبحشوة ثابتة بالبكسل تحيط بحبر الكلمة؛ box-decoration-break يُكمل الصندوق حين يلتفّ السطر */
+.qw{display:inline-block;padding:0 3px;margin:0 1px;line-height:1.45;font-size:var(--qfs);border-radius:7px;cursor:pointer;transition:background .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;direction:rtl;unicode-bidi:bidi-override;vertical-align:baseline}
 .qw:active{background:rgba(201,162,39,.25)}
-.qw.m1{background:rgba(239,68,68,.20);box-shadow:inset 0 -3px 0 #ef4444}
-.qw.m2{background:rgba(245,158,11,.22);box-shadow:inset 0 -3px 0 #f59e0b}
-.qw.m3{background:rgba(139,92,246,.20);box-shadow:inset 0 -3px 0 #8b5cf6}
-.qw.m4{background:rgba(190,18,60,.20);box-shadow:inset 0 -3px 0 #be123c}
-.qw.m5{background:rgba(14,165,233,.20);box-shadow:inset 0 -3px 0 #0ea5e9}
+.qay,.qrun{font-size:1px;line-height:1;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.qrun{padding:24px 2px 8px;border-radius:9px;border-bottom:3px solid transparent}
+.qrun.m1{background:rgba(178,58,72,.15);border-color:#b23a48}
+.qrun.m2{background:rgba(196,138,26,.18);border-color:#c48a1a}
+.qrun.m3{background:rgba(63,111,168,.15);border-color:#3f6fa8}
+.qrun.m4{background:rgba(190,18,60,.15);border-color:#be123c}
+.qrun.m5{background:rgba(14,165,233,.15);border-color:#0ea5e9}
+.qay .qnum{margin:0 5px}
+.qay.qa-cur{background:rgba(46,139,116,.16);padding:24px 3px 8px;border-radius:10px;border-bottom:3px solid #2e8b74}
 /* --- مجموعة كلمات متتالية = خطأ واحد --- */
 .qw.qg{margin:0;border-radius:0}
 .qw.qg.qg-s{border-radius:0 6px 6px 0;margin-right:1px}
@@ -16751,10 +16925,9 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .mis-selrow button.red{color:#fca5a5}
 /* ==== شاشة التلاوة (16.9): عودة تصميم البطاقة (سورة/بسملة/آيات) — صفحات المصحح بخطوط المجمّع أُزيلت لثقلها ==== */
 .qnum[data-sa]{cursor:pointer}
-.mis-page .qw.qa-cur{background:rgba(16,185,129,.22);box-shadow:inset 0 -3px 0 #10b981}
-.mis-page .qnum.qa-cur{color:#0ea672}
+.mis-page .qnum.qa-cur{color:#2e8b74}
 .mis-ext{display:flex;justify-content:center;margin:10px 0 2px}
-.mis-ext button{font-family:inherit;font-size:12.5px;font-weight:800;color:#f0d060;background:rgba(201,162,39,.12);border:1px dashed rgba(201,162,39,.55);border-radius:12px;padding:9px 14px;cursor:pointer}
+.mis-ext button{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:13px;font-weight:800;color:#f0d060;background:rgba(201,162,39,.12);border:1px dashed rgba(201,162,39,.55);border-radius:12px;padding:9px 16px;cursor:pointer}
 .mis-ext button:active{transform:scale(.97)}
 /* مشغّل التلاوة */
 .qa-bar{direction:rtl;background:rgba(255,255,255,.05);border:1px solid rgba(201,162,39,.28);border-radius:14px;padding:9px 10px;margin:0 0 12px}
@@ -17194,12 +17367,14 @@ html,body{background:#051e1c}
    =================================================================== */
 const MIS_SURAHS=[[1,"الفَاتِحة",7],[2,"البَقَرَة",286],[3,"آل عِمران",200],[4,"النِّسَاء",176],[5,"المَائدة",120],[6,"الأنعَام",165],[7,"الأعرَاف",206],[8,"الأنفَال",75],[9,"التوبَة",129],[10,"يُونس",109],[11,"هُود",123],[12,"يُوسُف",111],[13,"الرَّعد",43],[14,"إبراهِيم",52],[15,"الحِجر",99],[16,"النَّحل",128],[17,"الإسرَاء",111],[18,"الكَهف",110],[19,"مَريَم",98],[20,"طه",135],[21,"الأنبيَاء",112],[22,"الحج",78],[23,"المؤمنُون",118],[24,"النور",64],[25,"الفُرقَان",77],[26,"الشعراء",227],[27,"النَّمل",93],[28,"القَصَص",88],[29,"العَنكبُوت",69],[30,"الرُّوم",60],[31,"لُقمَان",34],[32,"السَّجدة",30],[33,"الأحزَاب",73],[34,"سَبإ",54],[35,"فَاطِر",45],[36,"يسٓ",83],[37,"الصَّافَات",182],[38,"صٓ",88],[39,"الزُّمَر",75],[40,"غَافِر",85],[41,"فُصِّلَت",54],[42,"الشُّورى",53],[43,"الزُّخرُف",89],[44,"الدُّخان",59],[45,"الجاثِية",37],[46,"الأحقَاف",35],[47,"مُحمد",38],[48,"الفَتح",29],[49,"الحُجُرَات",18],[50,"قٓ",45],[51,"الذَّاريَات",60],[52,"الطُّور",49],[53,"النَّجم",62],[54,"القَمَر",55],[55,"الرَّحمٰن",78],[56,"الوَاقِعة",96],[57,"الحدِيد",29],[58,"المُجَادلة",22],[59,"الحَشر",24],[60,"المُمتَحنَة",13],[61,"الصَّف",14],[62,"الجُمعَة",11],[63,"المُنَافِقُونَ",11],[64,"التغَابُن",18],[65,"الطَّلَاق",12],[66,"التَّحرِيم",12],[67,"المُلك",30],[68,"القَلَم",52],[69,"الحَاقة",52],[70,"المَعَارج",44],[71,"نُوح",28],[72,"الجِن",28],[73,"المُزمل",20],[74,"المُدثر",56],[75,"القِيَامة",40],[76,"الإنسَان",31],[77,"المُرسَلات",50],[78,"النَّبَإ",40],[79,"النَّازعَات",46],[80,"عَبَسَ",42],[81,"التَّكوير",29],[82,"الانفِطَار",19],[83,"المُطَففين",36],[84,"الانشِقَاق",25],[85,"البُرُوج",22],[86,"الطَّارق",17],[87,"الأعلى",19],[88,"الغَاشِية",26],[89,"الفَجر",30],[90,"البَلَد",20],[91,"الشَّمس",15],[92,"اللَّيل",21],[93,"الضُّحى",11],[94,"الشَّرح",8],[95,"التِّين",8],[96,"العَلَق",19],[97,"القَدر",5],[98,"البَينَة",8],[99,"الزَّلزَلة",8],[100,"العَاديَات",11],[101,"القَارعَة",11],[102,"التَّكاثُر",8],[103,"العَصر",3],[104,"الهُمَزة",9],[105,"الفِيل",5],[106,"قُرَيش",4],[107,"المَاعُون",7],[108,"الكَوثر",3],[109,"الكافِرون",6],[110,"النَّصر",3],[111,"المَسَد",5],[112,"الإخلَاص",4],[113,"الفَلَق",5],[114,"النَّاس",6]];
 
+/* (17.0) ألوان منسجمة مع صفحة المصحف وذهب التطبيق: خطأ عنّابي · نسيان أزرق مطفأ · تنبيه زعفراني */
 const MIS_TYPES=[
-  {k:1,n:'خطأ',   c:'#ef4444'},
-  {k:2,n:'تنبيه', c:'#f59e0b', hide:true},   /* أُخفي من القوائم (16.7) — السجلات القديمة تبقى بلونها */
-  {k:3,n:'نسيان', c:'#8b5cf6'},
+  {k:1,n:'خطأ',   c:'#b23a48'},
+  {k:2,n:'تنبيه', c:'#c48a1a'},
+  {k:3,n:'نسيان', c:'#3f6fa8'},
 ];
-const MIS_TYPES_ON=MIS_TYPES.filter(function(t){ return !t.hide; });
+/* ترتيب العرض في القوائم: خطأ · نسيان · تنبيه */
+const MIS_TYPES_ON=[MIS_TYPES[0],MIS_TYPES[2],MIS_TYPES[1]];
 const misType=k=>MIS_TYPES.find(t=>t.k===k)||MIS_TYPES[0];
 
 let MIS={view:'pick',sid:'',lesson:1,review:1,kind:'lesson',num:1,planText:'',segs:[],verses:[],marks:{},
@@ -17538,7 +17713,7 @@ function qaStop(){
 function qaHighlight(s,a){
   var old=document.querySelectorAll('.qa-cur'); for(var i=0;i<old.length;i++) old[i].classList.remove('qa-cur');
   if(!s) return;
-  var ws=document.querySelectorAll('.qw[data-k^="'+s+'_'+a+'_"],.qnum[data-sa="'+s+'_'+a+'"]');
+  var ws=document.querySelectorAll('.qay[data-ay="'+s+'_'+a+'"],.qnum[data-sa="'+s+'_'+a+'"]');
   for(var k=0;k<ws.length;k++) ws[k].classList.add('qa-cur');
   if(ws.length){ try{ var r=ws[0].getBoundingClientRect(), vh=window.innerHeight||600; if(r.top<120||r.bottom>vh-110) ws[0].scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){} }
 }
@@ -17565,6 +17740,22 @@ function qaSyncUI(){
   }catch(e){}
 })();
 
+/* (17.0) كلمات آية واحدة: الكلمات المتجاورة بنوع الخطأ نفسه في صندوق واحد متّصل (qrun)، والآية كلّها في غلاف (qay)
+   يُضاء صندوقاً واحداً عند الاستماع. opt: mark(key)→علامة، cls(key,m)→أصناف إضافية، after(key)→html بعد الكلمة، tap، uid */
+function misAyahHtml(v,opt){
+  var n=Math.max(v.w.length,v.e.length), h='<span class="qay" data-ay="'+v.s+'_'+v.a+'">', run=0, i;
+  for(i=0;i<n;i++){
+    var key=v.s+'_'+v.a+'_'+i, m=opt.mark(key), t=(m&&m.t)||0;
+    var nx=(i+1<n)?opt.mark(v.s+'_'+v.a+'_'+(i+1)):null, nt=(nx&&nx.t)||0;
+    if(t&&!run){ h+='<span class="qrun m'+t+'">'; run=t; }
+    var cls='qw'+(t?' m'+t:'')+(opt.cls?(opt.cls(key,m)||''):'');
+    h+='<span class="'+cls+'" data-k="'+key+'"'+(opt.tap?' onclick="misTap(\''+key+'\')"':'')+'>'+(v.w[i]||v.e[i]||'')+'</span>'+(opt.after?(opt.after(key)||''):'');
+    if(run){ if(nt===run) h+=' '; else { h+='</span> '; run=0; } }
+    else h+=' ';
+  }
+  h+='<span class="qnum" data-sa="'+v.s+'_'+v.a+'" onclick="qaPlayOne('+v.s+','+v.a+',\''+(opt.uid||'mis')+'\')">'+(v.m||'')+'</span></span> ';
+  return h;
+}
 /* ---------- ٢) شاشة التلاوة ---------- */
 function misViewRead(){
   const w=document.getElementById('mis-content'); if(!w) return;
@@ -17597,24 +17788,18 @@ function misViewRead(){
     if(g.s!==1&&g.s!==9&&g.from===1) html+='<div class="mis-bism">﷽</div>';
     html+='<div class="mis-ayat">';
     vs.forEach(function(v){
-      const n=Math.max(v.w.length,v.e.length);
-      for(let i=0;i<n;i++){
-        const key=v.s+'_'+v.a+'_'+i;
-        const m=MIS.marks[key];
-        const idx=MIS.flatIdx[key];
-        let cls='qw'+(m?' m'+m.t:'');
-        if(m&&m.g){
-          const pm=MIS.marks[MIS.flat[idx-1]], nm=MIS.marks[MIS.flat[idx+1]];
-          cls+=' qg';
-          if(!(pm&&pm.g===m.g)) cls+=' qg-s';
-          if(!(nm&&nm.g===m.g)) cls+=' qg-e';
-        }
-        if(stopIdx>=0){ if(idx===stopIdx) cls+=' qw-stop'; else if(idx>stopIdx) cls+=' qw-after'; }
-        html+='<span class="'+cls+'" data-k="'+key+'" onclick="misTap(\''+key+'\')">'+(v.w[i]||v.e[i]||'')+'</span>'+
-              (idx===stopIdx?'<span class="mis-stopflag">⏸</span>':'')+' ';
-      }
-      /* رقم الآية: لمسه يُسمِع الآية وحدها */
-      html+='<span class="qnum" data-sa="'+v.s+'_'+v.a+'" onclick="qaPlayOne('+v.s+','+v.a+',\'mis\')">'+(v.m||'')+'</span> ';
+      html+=misAyahHtml(v,{tap:true,uid:'mis',
+        mark:function(key){ return MIS.marks[key]; },
+        cls:function(key,m){
+          const idx=MIS.flatIdx[key]; let cls='';
+          if(m&&m.g){
+            const pm=MIS.marks[MIS.flat[idx-1]], nm=MIS.marks[MIS.flat[idx+1]];
+            cls+=' qg'; if(!(pm&&pm.g===m.g)) cls+=' qg-s'; if(!(nm&&nm.g===m.g)) cls+=' qg-e';
+          }
+          if(stopIdx>=0){ if(idx===stopIdx) cls+=' qw-stop'; else if(idx>stopIdx) cls+=' qw-after'; }
+          return cls;
+        },
+        after:function(key){ return (MIS.flatIdx[key]===stopIdx)?'<span class="mis-stopflag">\u23f8</span>':''; }});
       _qaAll.push({s:v.s,a:v.a});
     });
     html+='</div>';
@@ -17651,46 +17836,40 @@ function misViewRead(){
 function misNextAyah(){
   var p=(typeof hqPlanActive==='function')?hqPlanActive(MIS.sid):null; if(!p) return null;
   var seg=MIS.segs&&MIS.segs[MIS.segs.length-1]; if(!seg) return null;
-  var lines=hqFrIsQty(p)?hqFrSeq(p):hqPlanLines(p);
+  var nx=hqNextAyahIn({s:seg.s,a:seg.to}); if(nx) return nx;          /* داخل السورة: الآية التالية مباشرة */
+  var rv=(MIS.kind==='review');
+  var lines=rv?hqLinesOf(p,'review'):(hqFrIsQty(p)?hqFrSeq(p):hqPlanLines(p));
   var j=hqLineIdxAt(lines,seg.s,seg.to,true); if(j<0) return null;
-  for(var k=j+1;k<lines.length;k++){
-    var x=lines[k];
-    if(x.s!==seg.s) return {s:x.s,a:(x.sa||x.a)};
-    if(x.a>seg.to) return {s:seg.s,a:seg.to+1};
-  }
+  for(var k=j+1;k<lines.length;k++){ var x=lines[k]; if(x.s!==seg.s) return {s:x.s,a:(x.sa||1)}; }
   return null;
 }
-/* زر «مدّ الدرس إلى الآية التالية» تحت الآيات — للمعلّم مع خطة معتمَدة فقط */
+/* زر «إضافة آية» تحت الآيات (الدرس والمراجعة) — للمعلّم مع خطة معتمَدة فقط */
 function misExtendHtml(){
   try{
-    if(MIS.ro||MIS.kind!=='lesson') return '';
+    if(MIS.ro) return '';
     if(!(STATE.role==='teacher'||STATE.role==='supervisor')) return '';
     var p=(typeof hqPlanActive==='function')?hqPlanActive(MIS.sid):null; if(!p) return '';
-    var day=hqPlanDay(MIS.sid,MIS.num); if(!day||!day.l) return '';
+    if(!hqPlanSegOf(MIS.sid,MIS.kind==='review'?'review':'lesson',MIS.num)) return '';
     var nx=misNextAyah(); if(!nx) return '';
-    return '<div class="mis-ext"><button type="button" onclick="misExtendAsk('+nx.s+','+nx.a+')">+ مدّ الدرس إلى '+misSurahName(nx.s)+' '+nx.a+'</button></div>';
+    return '<div class="mis-ext"><button type="button" onclick="misApplyDayEnd('+nx.s+','+nx.a+')">'+
+      '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>إضافة آية</button></div>';
   }catch(e){ return ''; }
 }
-function misExtendAsk(s,a){
-  var txt=misSurahName(s)+' '+a;
-  var curTxt=hqPlanDayText(MIS.sid,'lesson',MIS.num)||'';
-  openModal('تعديل درس اليوم',
-    '<div style="direction:rtl;text-align:center;padding:4px 0">'+
-      '<div style="font-size:.86rem;color:#cfe4e2;line-height:1.9">درس اليوم الآن: <b style="color:#f0d060">'+hqEsc(curTxt)+'</b><br>'+
-      'ضمّ الآيات حتى <b style="color:#5fe3a6">'+hqEsc(txt)+'</b> إلى درس اليوم؟<br><span class="vs-hint">تُعاد قسمة الأيام التالية في خطة الطالب من هذا الموضع</span></div>'+
-      '<div style="display:flex;gap:10px;justify-content:center;margin-top:14px">'+
-        '<button class="mis-btn" style="width:auto;padding:10px 22px" onclick="closeModal();misApplyDayEnd('+s+','+a+')">نعم، ضمّها</button>'+
-        '<button class="mis-btn ghost" style="width:auto;padding:10px 22px" onclick="closeModal()">إلغاء</button>'+
-      '</div></div>');
-}
-/* تنفيذ: جعل الآية (s,a) آخر درس اليوم (مدّاً أو نقصاً) ثم إعادة قسمة ما بعده في الخطة */
+/* تنفيذ: جعل الآية (s,a) آخر درس اليوم أو مراجعته (زيادة آية أو نقص) ثم إعادة قسمة ما بعده في الخطة */
 function misApplyDayEnd(s,a){
-  var r=null;
-  try{ r=hqPlanDayEnd(MIS.sid,MIS.num,{s:s,a:a}); }catch(e){ r={err:'تعذّر التعديل'}; }
+  var rv=(MIS.kind==='review'), kind=rv?'review':'lesson', r=null;
+  try{ r=rv?hqPlanRevDayEnd(MIS.sid,MIS.num,{s:s,a:a}):hqPlanDayEnd(MIS.sid,MIS.num,{s:s,a:a}); }catch(e){ r={err:'تعذّر التعديل'}; }
   if(!r||r.err){ misToast(r&&r.err||'تعذّر التعديل','err'); return; }
-  var keep=MIS.marks, stop=MIS.stop;
-  misToast('✅ عُدّل درس اليوم: '+(hqPlanDayText(MIS.sid,'lesson',MIS.num)||''),'ok');
-  misStart('lesson',MIS.num).then(function(){ MIS.marks=keep||{}; MIS.stop=stop||''; MIS._scrolled=1; misViewRead(); });
+  var keep=MIS.marks||{}, stop=MIS.stop, y=0;
+  try{ var pw=document.getElementById('pagesWrap'); y=pw?pw.scrollTop:0; }catch(e){}
+  misToast('✅ '+(rv?'مراجعة':'درس')+' اليوم: '+(hqPlanDayText(MIS.sid,kind,MIS.num)||''),'ok');
+  misStart(kind,MIS.num).then(function(){
+    /* تبقى الأخطاء المسجّلة داخل المقطع الجديد فقط */
+    var ok={}; (MIS.flat||[]).forEach(function(k){ ok[k]=1; });
+    var m={}; for(var k in keep){ if(ok[k]||!MIS.flat) m[k]=keep[k]; }
+    MIS.marks=m; MIS.stop=(stop&&ok[stop])?stop:''; MIS._scrolled=1; misViewRead();
+    try{ var pw2=document.getElementById('pagesWrap'); if(pw2) pw2.scrollTop=y; }catch(e){}
+  });
 }
 function _misStopWord(){
   var p=String(MIS.stop||'').split('_'); if(p.length<3) return '';
@@ -17850,8 +18029,8 @@ function misOpenType(key){
   const body='<div class="mword">'+disp+'</div><div class="mtype-grid">'+
     MIS_TYPES_ON.map(function(t){ return '<button class="mtype-btn" style="'+(cur&&cur.t===t.k?'border-color:'+t.c+';background:'+t.c+'22':'')+'" onclick="misSet(\''+key+'\','+t.k+')"><i style="background:'+t.c+'"></i>'+t.n+'</button>'; }).join('')+
     (cur?'<button class="mtype-btn" style="color:#fca5a5" onclick="misSet(\''+key+'\',0)">\u2715 إزالة الخطأ</button>':'')+
-    /* خيار «نهاية التسميع» أُزيل من القائمة (16.7) */
-    ((MIS.kind==='lesson'&&typeof hqPlanActive==='function'&&hqPlanActive(MIS.sid))?'<button class="mtype-btn" style="color:#fcd34d" onclick="closeModal();misApplyDayEnd('+s+','+a+')"><i style="background:#f59e0b"></i>اجعل الدرس ينتهي بهذه الآية ('+misSurahName(s)+' '+a+')</button>':'')+
+    /* نهاية الدرس / نهاية المراجعة بهذه الآية (مع خطة معتمَدة) */
+    ((!MIS.ro&&typeof hqPlanActive==='function'&&hqPlanActive(MIS.sid))?'<button class="mtype-btn" style="color:#f0d060" onclick="closeModal();misApplyDayEnd('+s+','+a+')"><i style="background:#c9a227"></i>'+(MIS.kind==='review'?'نهاية المراجعة':'نهاية الدرس')+'</button>':'')+
 
   '</div>';
   openModal('نوع الخطأ',body);
@@ -17950,7 +18129,7 @@ async function showRecitationView(dk){
   function _st(v){ v=String(v||''); if(v.indexOf('n:')===0) return {t:'أنجز',c:'ok'}; if(v.indexOf('z:')===0) return {t:'أنجز (لا يوجد)',c:'ok'};
     if(v.indexOf('x:')===0) return {t:'لم ينجز',c:'no'}; return {t:'لم يُقيَّم',c:''}; }
   function _num(v){ v=String(v||''); var m=v.match(/^[nxz]:(\d+)/); return m?parseInt(m[1],10):0; }
-  function _txt(kind){ var n=_num(day[kind]); if(!n) return ''; try{ return (typeof hqPlanActive==='function'&&hqPlanActive(sid))?hqPlanDayText(sid,kind,n):(upText(kind,n)||''); }catch(e){ return ''; } }
+  function _txt(kind){ var n=_num(day[kind]); if(!n) return ''; if(day[kind+'T']) return String(day[kind+'T']); try{ return (typeof hqPlanActive==='function'&&hqPlanActive(sid))?hqPlanDayText(sid,kind,n):(upText(kind,n)||''); }catch(e){ return ''; } }
   var sL=_st(day.lesson), sR=_st(day.review);
   if(_sp){ at='مُعلَّق'; tj='—'; sL={t:'مُعلَّق',c:'sus'}; sR={t:'مُعلَّق',c:'sus'}; }
   var plus=parseFloat(day.plus)||0, minus=parseFloat(day.minus)||0;
@@ -18013,16 +18192,10 @@ async function _recSessionHtml(ses){
       if(g.s!==1 && g.s!==9 && g.from===1) html+='<div class="mis-bism">﷽</div>';
       html+='<div class="mis-ayat">';
       vs.forEach(function(v){
-        var n=Math.max(v.w.length, v.e.length);
-        for(var i=0;i<n;i++){
-          var _k2=v.s+'_'+v.a+'_'+i;
-          var m=mm[_k2];
-          var c2='qw'+(m?' m'+m.t:'');
-          if(m&&m.g) c2+=' qg';
-          if(stK){ if(_k2===stK){ c2+=' qw-stop'; seen=true; } else if(seen) c2+=' qw-after'; }
-          html+='<span class="'+c2+'" data-k="'+_k2+'">'+(v.w[i]||v.e[i]||'')+'</span>'+(_k2===stK?'<span class="mis-stopflag">⏸</span>':'')+' ';
-        }
-        html+='<span class="qnum" data-sa="'+v.s+'_'+v.a+'" onclick="qaPlayOne('+v.s+','+v.a+',\''+uid+'\')">'+(v.m||'')+'</span> ';
+        html+=misAyahHtml(v,{tap:false,uid:uid,
+          mark:function(k){ return mm[k]; },
+          cls:function(k,m){ var c2=''; if(m&&m.g) c2+=' qg'; if(stK){ if(k===stK){ c2+=' qw-stop'; seen=true; } else if(seen) c2+=' qw-after'; } return c2; },
+          after:function(k){ return (k===stK)?'<span class="mis-stopflag">\u23f8</span>':''; }});
         all.push({s:v.s,a:v.a});
       });
       html+='</div>';
