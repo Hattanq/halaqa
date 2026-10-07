@@ -14746,11 +14746,12 @@ function renderGrades(){
       +'</div>';
   }).join('');
   var _sus=evSuspToday();
-  var _bar=_isT2?('<div class="ev-tools">'
-    +'<button type="button" class="ev-tool bulk" onclick="evBulkAbsent()">اعتماد الغياب</button>'
-    +'<button type="button" class="ev-tool susp'+(_sus?' on':'')+'" onclick="evSuspOpen()">'+(_sus?'إلغاء التعليق':'تعليق الحضور')+'</button>'
-    +'</div>'
-    ):'';
+  /* (17.2) اعتماد الغياب انتقل إلى شاشة التحضير؛ هنا زر تعليق الحضور وحده عريضاً */
+  var _bar=_isT2?('<button type="button" class="evh-susp'+(_sus?' on':'')+'" onclick="evhPress(this);evSuspOpen()">'
+    +'<span class="evh-susp-ic"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="15" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M8 3v4M16 3v4M3.5 10h17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'
+    +(_sus?'<path d="M9 15l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>':'<path d="M10 13.5v4M14 13.5v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>')+'</svg></span>'
+    +'<span class="evh-susp-t"><b>'+(_sus?'إلغاء تعليق الحضور':'تعليق الحضور')+'</b><small>'+(_sus?'استئناف التقييم في هذا اليوم':'إجازة أو ظرف طارئ يوقف حضور اليوم')+'</small></span>'
+    +'<span class="evh-susp-ar">‹</span></button>'):'';
   var body;
   if(_isT2){
     var nAtt=0, nPres=0;
@@ -14804,9 +14805,41 @@ function evAttendOpen(){
     '<div class="att-wrap" id="att-wrap">'+
       '<div class="att-sum" id="att-sum">'+evAttendSumHtml(key)+'</div>'+
       '<div class="att-list">'+rows+'</div>'+
-      '<button type="button" class="att-bulk" onclick="evAttendBulk()">اعتماد غياب من لم يُحضَّر</button>'+
+      '<div class="att-acts">'+
+        '<button type="button" class="att-act abs" onclick="evAttendBulk()"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>اعتماد غياب من لم يُحضَّر</button>'+
+        '<button type="button" class="att-act rst" onclick="evAttendReset()"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 0 2.4-5.7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M4 4.5v4h4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>إعادة تعيين الغياب</button>'+
+      '</div>'+
     '</div>');
   hqModalTall();
+  evAttendBind();
+}
+/* (17.2) لمسة واحدة تكفي: الاستجابة عند رفع الإصبع مباشرة (بلا انتظار نقرة سفاري المزدوجة)، ونقرة الفأرة احتياطاً */
+function evAttendBind(){
+  var w=document.getElementById('att-wrap'); if(!w||w._bound) return; w._bound=1;
+  var t0=null, last=0, lastB=null;
+  /* الحارس للزرّ نفسه فقط (لمسة ثم نقرة متولّدة عنها) — لا يمنع التحضير السريع لطلاب متتالين */
+  function fire(btn){ if(!btn||btn.disabled) return; var now=Date.now(); if(btn===lastB&&now-last<450) return; last=now; lastB=btn; evAttendSet(btn.getAttribute('data-sid'),btn.getAttribute('data-v')); }
+  w.addEventListener('touchstart',function(e){ var b=e.target.closest&&e.target.closest('.att-chip'); t0=b?{b:b,x:e.touches[0].clientX,y:e.touches[0].clientY}:null; },{passive:true});
+  w.addEventListener('touchend',function(e){
+    if(!t0) return; var c=e.changedTouches[0], b=t0.b; var mv=Math.abs(c.clientX-t0.x)+Math.abs(c.clientY-t0.y); t0=null;
+    if(mv>12) return;
+    e.preventDefault(); fire(b);
+  },{passive:false});
+  w.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.att-chip'); if(b) fire(b); });
+}
+/* إعادة تعيين الغياب: يُمحى «غائب/غائب بعذر» لهذا اليوم عن كل الطلاب فيعودون «لم يُحضَّر» */
+function evAttendReset(){
+  var key=evDateKey(), n=0;
+  (DB.students||[]).forEach(function(s){
+    var rec=(DB.evals||{})[s.id]; var d=rec&&rec.days&&rec.days[key]; if(!d||!evIsAbsentVal(d.attend)) return;
+    delete d.attend; delete d.auto; n++;
+    try{ hqTombAdd('f', s.id+'|'+key+'|attend', hqNow()); }catch(e){}
+    if(!Object.keys(d).length) delete rec.days[key];
+  });
+  if(!n){ showToast('لا غياب مسجَّل في هذا اليوم','info'); return; }
+  save();
+  try{ window._hqQuiet=1; renderGrades(); window._hqQuiet=0; }catch(e){ window._hqQuiet=0; }
+  evAttendOpen();
 }
 function evAttendRowHtml(s,i,key){
   var d=evDayRec(s.id,key)||{}, cur=d.attend||'', off=isDiscontinued(s);
@@ -14815,7 +14848,7 @@ function evAttendRowHtml(s,i,key){
       '<div class="att-name">'+hqEsc(s.name||'')+(off?' <span class="ev-stu-disc">منقطع</span>':'')+'</div>'+
       '<span class="att-state'+(cur?(' k-'+(EV_ATT_CLS[cur]||'p')):'')+'">'+(cur?hqEsc(cur):'لم يُحضَّر')+'</span></div>'+
     '<div class="att-chips">'+EV_ATT_OPTS.map(function(o){
-      return '<button type="button" class="att-chip k-'+EV_ATT_CLS[o]+(cur===o?' sel':'')+'"'+(off?' disabled':'')+' onclick="evAttendSet(\''+hqEsc(s.id)+'\',\''+o+'\')">'+o+'</button>'; }).join('')+
+      return '<button type="button" class="att-chip k-'+EV_ATT_CLS[o]+(cur===o?' sel':'')+'"'+(off?' disabled':'')+' data-sid="'+hqEsc(s.id)+'" data-v="'+o+'">'+o+'</button>'; }).join('')+
     '</div></div>';
 }
 function evAttendSumHtml(key){
@@ -14829,7 +14862,7 @@ function evAttendSet(sid,val){
     if(!DB.evals) DB.evals={};
     var rec=DB.evals[sid]||{progress:{lesson:0,review:0},days:{}}; if(!rec.days) rec.days={};
     var d=rec.days[key]||{};
-    if((d.attend||'')===val){ delete d.attend; val=''; } else d.attend=val;   /* اللمسة الثانية على الحالة نفسها تلغيها */
+    if((d.attend||'')===val){ delete d.attend; val=''; try{ hqTombAdd('f', sid+'|'+key+'|attend', hqNow()); }catch(e){} } else d.attend=val;   /* اللمسة الثانية على الحالة نفسها تلغيها */
     delete d.auto;
     if(evIsAbsentVal(val)) delete d.tajweed;
     if(Object.keys(d).length) rec.days[key]=d; else delete rec.days[key];
@@ -16614,7 +16647,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 17.1';
+  window.HQ_BUILD='2026 - 17.2';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -17344,8 +17377,26 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .att-chip.k-a.sel{background:rgba(248,113,113,.22);border-color:#f87171;color:#fca5a5;box-shadow:0 0 12px rgba(248,113,113,.3)}
 .att-chip.k-e.sel{background:rgba(251,146,60,.22);border-color:#fb923c;color:#fdba74;box-shadow:0 0 12px rgba(251,146,60,.3)}
 .att-chip.k-r.sel{background:rgba(125,211,252,.2);border-color:#7dd3fc;color:#bae6fd;box-shadow:0 0 12px rgba(125,211,252,.3)}
-.att-bulk{width:100%;margin-top:14px;padding:12px;border-radius:14px;border:1px solid rgba(248,113,113,.4);background:rgba(248,113,113,.1);color:#fca5a5;font-family:inherit;font-weight:800;font-size:.84rem;cursor:pointer}
-.att-bulk:active{transform:scale(.98)}
+.att-chip{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.att-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.att-act{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 6px;border-radius:15px;font-family:inherit;font-weight:800;font-size:.76rem;cursor:pointer;touch-action:manipulation;transition:transform .15s,box-shadow .25s;line-height:1.3}
+.att-act svg{width:18px;height:18px;flex:none}
+.att-act:active{transform:scale(.97)}
+.att-act.abs{color:#ffd9d3;border:1px solid rgba(232,121,107,.55);background:linear-gradient(145deg,rgba(178,58,72,.38),rgba(120,30,42,.28));box-shadow:0 6px 16px rgba(120,30,42,.25),inset 0 1px 0 rgba(255,255,255,.08)}
+.att-act.rst{color:#f7e3a3;border:1px solid rgba(240,208,96,.45);background:linear-gradient(145deg,rgba(240,208,96,.16),rgba(201,162,39,.08));box-shadow:0 6px 16px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.08)}
+.evh-susp{position:relative;overflow:hidden;width:100%;display:flex;align-items:center;gap:12px;margin:2px 0 12px;padding:13px 14px;border-radius:18px;border:1px solid rgba(240,208,96,.4);background:linear-gradient(120deg,#123f3a 0%,#0d332f 55%,#1d3a2a 100%);color:#fff;font-family:inherit;text-align:right;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .18s}
+.evh-susp::after{content:'';position:absolute;top:0;bottom:0;width:40%;left:-45%;background:linear-gradient(100deg,transparent,rgba(255,236,170,.13),transparent);animation:evhSheen 4.5s ease-in-out infinite;pointer-events:none}
+@keyframes evhSheen{0%,60%{left:-45%}100%{left:110%}}
+.evh-susp:active{transform:scale(.98)}
+.evh-susp-ic{flex:none;width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;color:#f7d774;background:rgba(240,208,96,.12);border:1px solid rgba(240,208,96,.35);box-shadow:0 0 16px rgba(240,208,96,.2)}
+.evh-susp-ic svg{width:24px;height:24px}
+.evh-susp-t{flex:1;display:flex;flex-direction:column;gap:2px}
+.evh-susp-t b{font-size:.9rem;font-weight:900;color:#f7e3a3}
+.evh-susp-t small{font-size:.66rem;color:#9fc7c2;font-weight:600}
+.evh-susp-ar{flex:none;color:#f7d774;font-size:1.4rem;font-weight:900;opacity:.8}
+.evh-susp.on{border-color:rgba(95,227,161,.5);background:linear-gradient(120deg,#0f4a3c,#0b3a30)}
+.evh-susp.on .evh-susp-ic{color:#7cf0b9;background:rgba(95,227,161,.12);border-color:rgba(95,227,161,.4)}
+.evh-susp.on .evh-susp-t b{color:#a7f3d0}
 /* ===== (17.1) خدمة المراسلات ===== */
 .menu-card.mc-msg{background:linear-gradient(145deg,#1d5a52 0%,#113f3a 55%,#0b2f2b 100%)}
 .menu-card.mc-msg .msg-dot{left:auto;right:12px;top:12px}
