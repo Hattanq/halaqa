@@ -5000,7 +5000,7 @@ function renderDash(){
     const msgStuSVG=`<svg viewBox="0 0 64 64" fill="none"><rect x="8" y="14" width="48" height="34" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M8 20l24 16 24-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="48" cy="46" r="10" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/><path d="M44 46h8M48 42v8" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>`;
     const msgParSVG=msgStuSVG; const _msgParSVGOld=`<svg viewBox="0 0 64 64" fill="none"><rect x="6" y="14" width="46" height="32" rx="6" stroke="white" stroke-width="3" fill="rgba(255,255,255,.1)"/><path d="M6 20l23 15 23-15" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="50" cy="46" r="11" fill="rgba(255,255,255,.15)" stroke="white" stroke-width="2"/><path d="M50 41v5.5l3.5 3.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     wrap.innerHTML=`<div class="menu-grid tdash">
-      <div class="menu-card mc-2 mc-wide" onclick="showPage('grades')"><div class="mc-icon"><img src="${cSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تقييم الطلاب</div></div>
+      <div class="menu-card mc-2 mc-wide mc-hero" onclick="showPage('grades')"><div class="mc-icon"><img src="${cSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تقييم الطلاب</div></div>
       <div class="menu-card mc-1" onclick="showAddStudent()"><div class="mc-icon">${addSVG}</div><div class="mc-accent"></div><div class="mc-label">إضافة طالب</div></div>
       <div class="menu-card mc-4" onclick="showStudentsData()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="20" cy="20" r="9" stroke="white" stroke-width="2.5"/><circle cx="44" cy="20" r="9" stroke="white" stroke-width="2.5"/><path d="M4 50c0-9 7-16 16-16s16 7 16 16" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M36 50c0-9 7-16 16-16" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label" id="mc-stu-count">بيانات الطلاب</div></div>
       <div class="menu-card mc-4" onclick="hqPlanTypesHome()"><div class="mc-icon"><img src="${dSrc}" style="width:64px;height:64px;object-fit:contain"></div><div class="mc-accent"></div><div class="mc-label">تحديد خطة الطالب</div></div>
@@ -11185,6 +11185,7 @@ function mhGo(k){ MH.tab=k; MH.id=''; if(STATE.role==='teacher'&&(k==='sup'||k==
 function mhBack(){ MH.id=''; mhRender(); }
 function mhInitial(n){ n=String(n||'').trim(); return n?n.charAt(0):'؟'; }
 function mhHue(str){ var h=0; for(var i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))%360; return h; }
+function mhAvatarN(n,key){ return '<div class="mh-av mh-av-n" style="--h:'+mhHue(String(key||n))+'"><span>'+arNum(n)+'</span></div>'; }
 function mhAvatar(name,key){ return '<div class="mh-av" style="--h:'+mhHue(String(key||name||''))+'">'+hqEsc(mhInitial(name))+'</div>'; }
 function mhDayLbl(ts){
   try{ var d=new Date(ts), t=new Date(); var same=d.toDateString()===t.toDateString(); var y=new Date(t.getTime()-86400000);
@@ -11261,8 +11262,8 @@ function mhRender(keep){
   var body='';
   if(!MH.id){
     var cs=mhContacts();
-    body='<div class="mh-list">'+(cs.length?cs.map(function(c){
-      return '<button type="button" class="mh-row'+(c.unread?' un':'')+(c.off?' off':'')+'" onclick="MH.id=\''+hqEsc(c.id)+'\';mhRender()">'+mhAvatar(c.av||c.name,c.id)+
+    body='<div class="mh-list">'+(cs.length?cs.map(function(c,ci){
+      return '<button type="button" class="mh-row'+(c.unread?' un':'')+(c.off?' off':'')+'" onclick="MH.id=\''+hqEsc(c.id)+'\';mhRender()">'+mhAvatarN(ci+1,c.id)+
         '<div class="mh-row-m"><div class="mh-row-n">'+hqEsc(c.name)+(c.off?' <span class="ev-stu-disc">منقطع</span>':'')+'</div>'+
         '<div class="mh-row-p">'+(c.last?hqEsc(String(c.last).slice(0,60)):(c.sub?hqEsc(c.sub):'لا رسائل بعد'))+'</div></div>'+
         '<div class="mh-row-e">'+(c.ts?('<span class="mh-row-t">'+mhTime(c.ts)+'</span>'):'')+(c.unread?('<span class="mh-badge">'+arNum(c.unread)+'</span>'):'')+'</div></button>';
@@ -14832,7 +14833,8 @@ function evAttendOpen(){
   var all=list.filter(function(s){ return !isDiscontinued(s); });
   if(!all.length){ openModal('تحضير الطلاب','<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد طلاب</div>'); return; }
   var rows=all.map(function(s,i){ return evAttendRowHtml(s,i,key); }).join('');
-  openModal('تحضير الطلاب — '+evDayLabel(key),
+  window._attTtl='تحضير الطلاب — '+evDayLabel(key);
+  openModal('',
     '<div class="att-wrap atx" id="att-wrap">'+
       '<div class="atx-sum" id="att-sum">'+evAttendSumHtml(key)+'</div>'+
       '<div class="atx-list">'+rows+'</div>'+
@@ -14877,7 +14879,7 @@ function evAttendRowHtml(s,i,key){
   var nm=String(s.name||'').trim();
   return '<div class="atx-row k-'+k+'" id="att-'+hqEsc(s.id)+'" style="--i:'+i+'">'+
     '<div class="atx-top">'+
-      '<div class="atx-av"><span>'+hqEsc(nm.charAt(0)||'؟')+'</span><i class="atx-num">'+arNum(i+1)+'</i></div>'+
+      '<div class="atx-av"><span>'+arNum(i+1)+'</span></div>'+
       '<div class="atx-name">'+hqEsc(nm)+'</div>'+
       '<span class="att-state atx-state k-'+k+'">'+(cur?hqEsc(cur):'لم يُحضَّر')+'</span>'+
     '</div>'+
@@ -14889,8 +14891,7 @@ function evAttendSumHtml(key){
   var p=0,a=0,n=0,t=0;
   (DB.students||[]).forEach(function(s){ if(isDiscontinued(s)||!evStuOnDay(s,key)) return; t++; var d=evDayRec(s.id,key); var v=d&&d.attend; if(!v) n++; else if(evPresentVal(v)) p++; else a++; });
   var pc=t?Math.round((t-n)*100/t):0;
-  return '<div class="atx-prog"><div class="atx-prog-hd"><b>'+arNum(t-n)+'</b> من '+arNum(t)+' مُحضَّر<span>'+arNum(pc)+'٪</span></div>'+
-      '<div class="atx-bar"><i class="k-p" style="width:'+(t?p*100/t:0)+'%"></i><i class="k-a" style="width:'+(t?a*100/t:0)+'%"></i></div></div>'+
+  return '<div class="atx-ttl">'+hqEsc(window._attTtl||('تحضير الطلاب — '+evDayLabel(key)))+'</div>'+
     '<div class="atx-stats">'+
       '<div class="atx-st k-p"><b>'+arNum(p)+'</b><span>حاضر</span></div>'+
       '<div class="atx-st k-a"><b>'+arNum(a)+'</b><span>غائب</span></div>'+
@@ -16689,7 +16690,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 17.4';
+  window.HQ_BUILD='2026 - 17.5';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -17667,6 +17668,73 @@ body.hq-t #appHeader .hdr-datebox{background:rgba(0,0,0,.28);border:1px solid rg
 body.hq-t #appHeader .hdr-sync-pill{backdrop-filter:blur(6px);border-color:rgba(95,227,161,.35) !important;box-shadow:0 0 14px rgba(95,227,161,.18)}
 body.hq-t #appHeader .hdr-logout-btn{border-radius:14px;backdrop-filter:blur(6px)}
 @media (prefers-reduced-motion: reduce){ body.hq-t #appHeader .hdr-card::before, body.hq-t #appHeader .hdr-logo-ring::before{animation:none} }
+
+/* ===== (17.5) نمط «البطاقة المتوهّجة» (إطار ضوئي دوّار كبطاقتَي التحضير والتسميع) معمَّماً ===== */
+.stul-item,.atx-st,.atx-row,.ex-exam-btn,.ex-stu-row,.ex-q,.mh-row{position:relative !important;overflow:hidden !important;isolation:isolate;
+  border:0 !important;background:transparent !important;--rc:rgba(240,208,96,.85);--r:18px;border-radius:var(--r) !important;
+  box-shadow:0 10px 24px rgba(0,0,0,.28) !important}
+.stul-item::before,.atx-st::before,.atx-row::before,.ex-exam-btn::before,.ex-stu-row::before,.ex-q::before,.mh-row::before{content:'';position:absolute;inset:-70%;z-index:-2;
+  background:conic-gradient(from 0deg,rgba(240,208,96,.12) 0 55%,var(--rc) 75%,rgba(240,208,96,.12) 92%);animation:evhSpin 7s linear infinite;pointer-events:none;display:block !important;opacity:1;width:auto;height:auto;left:-70%;right:-70%;top:-70%;bottom:-70%;border-radius:0}
+.stul-item::after,.atx-st::after,.atx-row::after,.ex-exam-btn::after,.ex-stu-row::after,.ex-q::after,.mh-row::after{content:'';position:absolute;inset:1.5px;z-index:-1;border-radius:calc(var(--r) - 1.5px);
+  background:radial-gradient(160px 80px at 50% 0%,rgba(240,208,96,.10),transparent 70%),linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%);pointer-events:none;display:block !important;width:auto;height:auto;left:1.5px;top:1.5px;right:1.5px;bottom:1.5px;transform:none;opacity:1}
+.stul-item:nth-child(2n)::before,.atx-row:nth-child(2n)::before,.mh-row:nth-child(2n)::before,.ex-stu-row:nth-child(2n)::before{animation-duration:9s;animation-direction:reverse}
+.ex-exam-btn.done,.atx-row.k-p,.atx-row.k-l,.atx-row.k-a,.atx-row.k-e,.atx-row.k-r,.mh-row.un{--rc:rgba(95,227,161,.95)}
+.ex-exam-btn{padding:16px 6px !important;font-size:14px !important;color:#f7e3a3 !important;transition:transform .15s}
+.ex-exam-btn:active,.ex-stu-row:active,.mh-row:active,.stul-item .stul-head:active{transform:scale(.97)}
+.ex-term{background:transparent !important;border:0 !important;padding:0 !important}
+.ex-stu-row{padding:14px 16px !important;margin-bottom:9px}
+.ex-stu-nm{color:#f7e3a3;font-weight:800}
+.ex-q{padding:14px !important;--r:20px}
+.ex-q-toggle{border-radius:14px !important;border:1px solid rgba(240,208,96,.4) !important;background:linear-gradient(135deg,rgba(240,208,96,.16),rgba(240,208,96,.05)) !important;color:#ffe79a !important}
+.stul-list{display:flex;flex-direction:column;gap:10px}
+.stul-item{--r:20px}
+.stul-name{color:#f7e3a3 !important;font-size:.88rem !important}
+.stul-item .stu-avatar{background:linear-gradient(145deg,#1f7a70,#0e4c46) !important;box-shadow:0 0 0 2px rgba(240,208,96,.4),0 0 14px rgba(240,208,96,.25) !important;color:#fff3c4 !important}
+.stul-field{background:rgba(0,0,0,.2) !important;border:1px solid rgba(240,208,96,.15)}
+/* التحضير: عنوان مكان شريط التقدّم، وألوان موحّدة خضراء */
+.atx-ttl{text-align:center;font-weight:900;font-size:.95rem;color:#ffe79a;margin:0 0 10px;text-shadow:0 0 14px rgba(247,215,116,.35)}
+.atx-sum{padding:14px 12px !important}
+.atx-stats{margin-top:0 !important;gap:9px !important}
+.atx-st{--r:16px;padding:10px 4px !important;--rc:rgba(95,227,161,.9)}
+.atx-st b{color:#5fe3a1 !important;font-size:1.3rem !important;text-shadow:0 0 12px rgba(95,227,161,.45)}
+.atx-st span{color:#cfe4e2 !important}
+.atx-chip.sel{background:linear-gradient(135deg,#7cf0b9,#34d399) !important;box-shadow:0 4px 14px rgba(52,211,153,.45) !important;color:#062a26 !important}
+.atx-state.k-p,.atx-state.k-l,.atx-state.k-a,.atx-state.k-e,.atx-state.k-r{color:#5fe3a1 !important;background:rgba(95,227,161,.14) !important}
+.atx-row{--r:22px;padding:12px 12px 13px !important;transition:transform .2s cubic-bezier(.2,.9,.3,1.3)}
+.atx-row:active{transform:scale(.985)}
+.atx-row.pop{animation:atxPop .45s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes atxPop{0%{transform:scale(1)}35%{transform:scale(1.025)}100%{transform:scale(1)}}
+.atx-chip{position:relative;overflow:hidden}
+.atx-chip::after{content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%;background:rgba(255,255,255,.55);transform:scale(0);opacity:0;pointer-events:none}
+.atx-chip.sel::after{animation:atxRipple .55s ease-out}
+@keyframes atxRipple{0%{transform:scale(0);opacity:.8}100%{transform:scale(14);opacity:0}}
+.atx-seg{background:rgba(0,0,0,.32) !important;border:1px solid rgba(240,208,96,.14) !important}
+/* المربع الرقمي */
+.atx-av{width:44px !important;height:44px !important;border-radius:15px !important;position:relative;overflow:hidden;
+  background:linear-gradient(150deg,#f7d774 0%,#c9a227 55%,#8a6a10 100%) !important;box-shadow:0 0 0 1.5px rgba(255,243,196,.6),0 6px 16px rgba(201,162,39,.35),inset 0 1px 0 rgba(255,255,255,.5) !important}
+.atx-av::after{content:'';position:absolute;top:0;bottom:0;width:45%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:evhSheen 3.6s ease-in-out infinite}
+.atx-row:nth-child(3n) .atx-av::after{animation-delay:1.2s}.atx-row:nth-child(3n+1) .atx-av::after{animation-delay:2.4s}
+.atx-av span{font-family:'Cairo','Noto Sans Arabic',sans-serif !important;font-size:1.15rem !important;font-weight:900 !important;color:#2a1d02 !important;text-shadow:0 1px 0 rgba(255,255,255,.4)}
+.atx-row.k-p .atx-av,.atx-row.k-l .atx-av,.atx-row.k-a .atx-av,.atx-row.k-e .atx-av,.atx-row.k-r .atx-av{background:linear-gradient(150deg,#a7f3d0 0%,#34d399 55%,#0e7a55 100%) !important;box-shadow:0 0 0 1.5px rgba(209,250,229,.7),0 6px 16px rgba(52,211,153,.4),inset 0 1px 0 rgba(255,255,255,.5) !important}
+.atx-row.k-p .atx-av span,.atx-row.k-l .atx-av span,.atx-row.k-a .atx-av span,.atx-row.k-e .atx-av span,.atx-row.k-r .atx-av span{color:#04261c !important}
+/* المراسلات: الأرقام والخط */
+.mh,.mh button,.mh textarea,.mh-row-n,.mh-row-p,.mh-tab,.mh-b{font-family:'Cairo','Noto Sans Arabic',sans-serif !important}
+.mh-row{--r:18px;padding:11px 12px !important;border:0 !important}
+.mh-row-n{color:#f7e3a3 !important;font-weight:800 !important;font-size:.9rem !important}
+.mh-av-n{background:linear-gradient(150deg,#f7d774 0%,#c9a227 55%,#8a6a10 100%) !important;border-radius:14px !important;width:42px !important;height:42px !important;box-shadow:0 0 0 1.5px rgba(255,243,196,.55),0 6px 14px rgba(201,162,39,.3) !important}
+.mh-av-n span{font-weight:900;color:#2a1d02;font-size:1.05rem}
+/* تعليق الحضور: أضيق وموسَّط */
+.evh-susp{width:82% !important;margin:4px auto 14px !important;display:flex}
+/* بطاقة «تقييم الطلاب» البارزة في الرئيسية */
+.tdash .menu-card.mc-hero{padding:22px 18px !important;min-height:150px !important;gap:16px !important;border-color:rgba(247,215,116,.75) !important;
+  background:radial-gradient(240px 140px at 90% 0%,rgba(247,215,116,.28),transparent 70%),linear-gradient(125deg,#1a5149 0%,#0f3f39 50%,#2a3a1c 100%) !important;
+  box-shadow:0 14px 34px rgba(0,0,0,.35),0 0 26px rgba(247,215,116,.22),inset 0 1px 0 rgba(255,255,255,.1);opacity:0;animation:mcEntry .6s cubic-bezier(.34,1.56,.64,1) forwards,heroGlow 3.2s ease-in-out .6s infinite}
+@keyframes heroGlow{0%,100%{box-shadow:0 14px 34px rgba(0,0,0,.35),0 0 18px rgba(247,215,116,.15),inset 0 1px 0 rgba(255,255,255,.1)}50%{box-shadow:0 14px 34px rgba(0,0,0,.35),0 0 34px rgba(247,215,116,.38),inset 0 1px 0 rgba(255,255,255,.1)}}
+.tdash .menu-card.mc-hero .mc-icon{width:66px !important;height:66px !important;border-radius:20px;background:linear-gradient(150deg,#f7d774,#c9a227) !important;box-shadow:0 0 22px rgba(247,215,116,.5)}
+.tdash .menu-card.mc-hero .mc-icon img,.tdash .menu-card.mc-hero .mc-icon svg{width:38px !important;height:38px !important;filter:brightness(0) saturate(100%) invert(12%) sepia(30%) saturate(1500%) hue-rotate(15deg) brightness(60%)}
+.tdash .menu-card.mc-hero .mc-label{font-size:1.25rem !important;color:#fff3c4 !important}
+.tdash .menu-card.mc-hero .mc-sub{font-size:.74rem;color:#d9ecd9}
+.tdash .menu-card.mc-hero .mc-chev{font-size:1.8rem}
 /* ==== شاشة التلاوة (16.9): عودة تصميم البطاقة (سورة/بسملة/آيات) — صفحات المصحح بخطوط المجمّع أُزيلت لثقلها ==== */
 .qnum[data-sa]{cursor:pointer}
 .mis-page .qnum.qa-cur{color:#2e8b74}
