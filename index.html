@@ -4092,7 +4092,7 @@ function cloudViewSig(){
 }
 function cloudRerender(){
   try{
-    /* (17.1) خدمة المراسلات المفتوحة تُحدَّث في مكانها فور وصول رسالة */
+    /* (17.1) خدمة الرسائل المفتوحة تُحدَّث في مكانها فور وصول رسالة */
     try{ if(document.getElementById('mh-root')&&typeof mhRender==='function') mhRender(true); }catch(e0){}
     if(cloudModalOpen()){ _cloudPending=true; return; }   /* بطاقة التقييم وكل النوافذ: تُؤجَّل حتى الإغلاق */
     if(typeof STATE!=='undefined' && STATE.user){
@@ -5041,7 +5041,7 @@ function renderDash(){
         function dot(ch,who){ var u=_id?msgUnread(_id,ch,who):0; return u>0?'<div class="msg-dot">'+u+'</div>':''; }
         function msgCard(cls,badge,ch,who,label){ return '<div class="menu-card '+cls+'" onclick="showMsgInbox(\''+ch+'\')">'+dot(ch,who)+'<div class="mc-icon">'+msgSVG+'</div><div class="mc-accent"></div><div class="mc-label">'+label+'</div></div>'; }
         function credCard(badge){ return '<div class="menu-card mc-7" onclick="showChangeCredentials()"><div class="mc-icon">'+lockSVG+'</div><div class="mc-accent"></div><div class="mc-label">تغيير اسم المستخدم وكلمة المرور</div></div>'; }
-        /* (17.1) عادت الرسائل بطاقةً واحدة «خدمة المراسلات» */
+        /* (17.1) عادت الرسائل بطاقةً واحدة «خدمة الرسائل» */
         return mhCardHtml(false)+credCard(8);
       })()}
     </div>`;
@@ -8551,9 +8551,9 @@ function trTodayTargets(sid){
 }
 function showTodayRecitation(){
   var _k=evDateKey();
-  /* (17.1) الحاضرون فقط (حاضر/متأخر/تسميع عن بعد) */
-  var studs=(DB.students||[]).filter(function(s){ return !isDiscontinued(s)&&evPresentVal((evDayRec(s.id,_k)||{}).attend); });
-  if(!studs.length){ openModal('تسميع اليوم','<div class="empty-state"><div class="empty-state-icon">📖</div>لا حاضرون بعد — حضّر الطلاب أولاً من بطاقة «تحضير الطلاب»</div>'); return; }
+  /* (17.7) كل الطلاب من بداية اليوم، ومن سُجّل غائباً يختفي */
+  var studs=(DB.students||[]).filter(function(s){ return !isDiscontinued(s)&&evStuOnDay(s,_k)&&!evIsAbsentVal((evDayRec(s.id,_k)||{}).attend); });
+  if(!studs.length){ openModal('تسميعات اليوم','<div class="empty-state"><div class="empty-state-icon">📖</div>لا يوجد طلاب للتسميع في هذا اليوم</div>'); return; }
   studs=studs.slice().sort(function(a,b){ return String(a.name||'').trim().localeCompare(String(b.name||'').trim(),'ar'); });
   /* بطاقة اطّلاع فقط: سطر للاسم وسطر للدرس والمراجعة، بلون واحد، بلا تقييم ولا حالات */
   var rows=studs.map(function(s,i){
@@ -8565,7 +8565,7 @@ function showTodayRecitation(){
         '<div class="trd-chip"><span class="trd-chip-l">المراجعة</span><span class="trd-chip-t">'+hqEsc(t.tR||'—')+'</span></div>'+
       '</div></div>';
   }).join('');
-  openModal('تسميع اليوم','<div class="trd-list">'+rows+'</div>');
+  openModal('تسميعات اليوم','<div class="trd-list">'+rows+'</div>');
   hqModalTall();
 }
 
@@ -8690,16 +8690,17 @@ function hqPlanJoin(type){
     var mine=(p&&p.approved&&p.type===type);
     var other=(p&&p.approved&&p.type!==type);
     var sub=mine?((type==='fr')?(p.lFrom?(hqSurName(p.lFrom.s)+' ← '+hqSurName(p.lTo.s)):''):('الجزء '+arNum(p.start))):(other?((hqPlanType(p.type)||{}).n||''):'');
-    g+='<button type="button" class="hqp-stu'+(mine?' on':'')+(other?' busy':'')+'" '+
+    g+='<button type="button" class="hqp-srow'+(mine?' on':'')+(other?' busy':'')+'" style="--i:'+i+'" '+
        'onclick="'+((type==='tj')?('hqTjGrid(\''+s.id+'\')'):((type==='fr')?('hqPlanRangeOpen(\'fr\',\''+s.id+'\',0)'):('hqPlanJuzGrid(\''+type+'\',\''+s.id+'\')')))+'">'+
-       '<span class="hqp-stu-n">'+hqEsc(s.name)+'</span>'+
-       (sub?('<span class="hqp-stu-s">'+hqEsc(sub)+'</span>'):'')+'</button>';
+       '<span class="hqp-sn">'+arNum(i+1)+'</span>'+
+       '<span class="hqp-sm"><b>'+hqEsc(s.name)+'</b>'+(sub?('<small>'+hqEsc(sub)+'</small>'):'')+'</span>'+
+       '<span class="hqp-sar">‹</span></button>';
   }
   if(!studs.length) g='<div class="empty-state"><div class="empty-state-icon">👥</div>لا يوجد طلاب في الحلقة</div>';
   openModal('الانضمام إلى '+t.n,
     '<div class="mp-info" style="margin-bottom:10px"><div class="mp-info-s">'+
       ((type==='tj')?'اختر الطالب ثم حدّد المقاطع':((type==='fr')?'اختر الطالب ثم حدّد اتجاه الدرس ونوعه وكميّته وبدايته، ثم مدى المراجعة':'اختر الطالب ثم حدّد الجزء'))+'</div></div>'+
-    '<div class="hqp-stu-grid">'+g+'</div>'+
+    '<div class="hqp-slist">'+g+'</div>'+
     ((type==='tj'||type==='fr')?'':('<button type="button" class="tl-fetch" onclick="hqPlanTypeView(\''+type+'\')">أظهر مسار الخطة</button>')));
   hqBackTitle(hqPlanTypesHome);
 }
@@ -9402,16 +9403,13 @@ function showTeacherReports(){
   '<div class="rp-pop" id="rp-pop-att">'+
     '<div class="rp-pop-t">تقرير الحضور — حدّد المدى ثم اطبع</div>'+
     '<input type="hidden" id="dq-halqa" value="'+hqEsc(h.id)+'">'+
-    ksFld('اختر نوع الإحصائية','dq-kind','<option value="">— اختر نوع الإحصائية —</option>'+
-      KS_KINDS.map(function(x){ return '<option value="'+x.k+'">'+x.n+'</option>'; }).join(''),'dqFillRange()')+
-    '<div id="dq-range"></div><div id="dq-result" style="display:none"></div>'+
+    '<div id="dq-range">'+hqDateRangeFld('dq')+'</div><div id="dq-result" style="display:none"></div>'+
     '<button class="tl-fetch" onclick="rpPrintPeriod()">طباعة التقرير PDF</button>'+
   '</div>'+
   '<div class="rp-pop" id="rp-pop-ks">'+
     '<div class="rp-pop-t">كشف مستوى الطالب — حدّد الطالب والمدى ثم اطبع</div>'+
     ksFld('اختر الطالب','ks-stu',so,'ksClear()')+
-    ksFld('اختر نوع الكشف','ks-kind',ko,'ksFillRange()')+
-    '<div id="ks-range"></div><div id="ks-result" style="display:none"></div>'+
+    '<div id="ks-range">'+hqDateRangeFld('ks')+'</div><div id="ks-result" style="display:none"></div>'+
     '<button class="tl-fetch" onclick="trPrintKs()">طباعة الكشف PDF</button>'+
   '</div></div>';
   openModal('تقارير '+(h.name?('حلقة '+h.name).replace('حلقة حلقة','حلقة'):'الحلقة'), body);
@@ -9425,9 +9423,9 @@ function trTogglePop(id,cardId){
     if(open){ try{ p.scrollIntoView({block:'nearest'}); }catch(e){} } });
 }
 async function trPrintKs(){
-  var sid=(document.getElementById('ks-stu')||{}).value||'', kind=(document.getElementById('ks-kind')||{}).value||'';
+  var sid=(document.getElementById('ks-stu')||{}).value||'', kind='range';
   if(!sid){ showToast('اختر الطالب','error'); return; }
-  if(!kind){ showToast('اختر نوع الكشف','error'); return; }
+  if(!hqDateRangeRead('ks')) return;
   if(sid!=='all'){ var R=await ksCompute(sid,kind); if(!R) return; window._ksLast=R; ksPrint(); return; }
   /* جميع الطلاب: كشف كل طالب في قسم مستقل داخل ملف واحد */
   showToast('جارٍ تجهيز الكشوف…','info');
@@ -9440,7 +9438,7 @@ async function trPrintKs(){
     n++;
   }
   if(!n) return;
-  var meta=[['الحلقة',hi.name||'—'],['معلّم الحلقة',hi.teacher||'—'],['نوع الكشف',ksKindName(kind)],['المدى',first.meta[4][1]||'—'],['الطلاب',arNum(n)]];
+  var meta=[['الحلقة',hi.name||'—'],['معلّم الحلقة',hi.teacher||'—'],['المدى',first.meta[3][1]||'—'],['الطلاب',arNum(n)]];
   hqPrintDoc('كشف مستوى الطلاب - '+(hi.name||''),
     '<div class="pr-meta">'+meta.map(function(m){ return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>'; }).join('')+'</div>'+inner);
 }
@@ -11117,7 +11115,7 @@ function tmsgInbox(){
 }
 
 /* =====================================================================
-   (17.1) خدمة المراسلات — مركز واحد لكل الرسائل:
+   (17.1) خدمة الرسائل — مركز واحد لكل الرسائل:
    المعلّم ↔ ولي الأمر والطالب (قناتا فايربيس messages/<sid>/par|stu كما كانت)،
    والمعلّم ↔ المشرف والشؤون التعليمية (DB.tmsgs[tid]: الرسالة تحمل from وto، وتُقرأ بعلم read).
    ===================================================================== */
@@ -11167,7 +11165,7 @@ function mhTeachers(){
 function mhCardHtml(wide){
   var n=0; try{ n=mhUnreadAll(); }catch(e){}
   return '<div class="menu-card mc-msg'+(wide?' mc-wide':'')+'" onclick="mhOpen()">'+(n>0?('<div class="msg-dot">'+arNum(n)+'</div>'):'')+
-    '<div class="mc-icon">'+MH_SVG+'</div><div class="mc-accent"></div><div class="mc-label">خدمة المراسلات</div></div>';
+    '<div class="mc-icon">'+MH_SVG+'</div><div class="mc-accent"></div><div class="mc-label">خدمة الرسائل</div></div>';
 }
 function mhOpen(tab){
   var tabs=mhTabs(); if(!tabs.length) return;
@@ -11177,7 +11175,7 @@ function mhOpen(tab){
   /* الطالب وولي الأمر: محادثة واحدة مع المعلّم مباشرة */
   if(r==='student'||r==='parent'){ MH.id=msgMyStudentId(); }
   if(r==='teacher'&&(MH.tab==='sup'||MH.tab==='adm')) MH.id=(STATE.user||{}).tid||'';
-  openModal('خدمة المراسلات','<div class="mh" id="mh-root"></div>');
+  openModal('خدمة الرسائل','<div class="mh" id="mh-root"></div>');
   hqModalTall();
   mhRender();
 }
@@ -11242,6 +11240,14 @@ function mhMarkRead(){
     if(ch){ save(); }
   }catch(e){}
 }
+/* (17.7) أيقونة رأس المحادثة: مربع ذهبي بنمط بطاقات التقييم */
+function mhThIcon(){
+  var k=MH.tab, r=STATE.role, svg;
+  if(k==='adm'||r==='admin') svg='<path d="M4 20h16M6 20V10M10 20V10M14 20V10M18 20V10M3 10l9-6 9 6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>';
+  else if(k==='sup'||r==='supervisor') svg='<circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17.5 4.5l1 1.6 1.8.3-1.3 1.3.3 1.8-1.8-.9" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>';
+  else svg='<circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>';
+  return '<div class="mh-th-ic"><svg viewBox="0 0 24 24" fill="none">'+svg+'</svg></div>';
+}
 function mhThreadTitle(){
   var r=STATE.role, k=MH.tab, id=MH.id;
   if(r==='teacher'){
@@ -11279,7 +11285,7 @@ function mhRender(keep){
     var backBtn=(r==='teacher'&&(MH.tab==='par'||MH.tab==='stu'))||r==='supervisor'||r==='admin';
     var stat=((MH.tab==='par'||MH.tab==='stu')&&!window.MSG_READY)?'<div class="mh-off">دون اتصال — تصل الرسالة عند عودة الشبكة</div>':'';
     body='<div class="mh-th">'+
-      '<div class="mh-th-hd">'+(backBtn?'<button type="button" class="mh-back" onclick="mhBack()">‹</button>':'')+mhAvatar(tt.av||tt.name,MH.id+MH.tab)+'<div class="mh-th-n"><b>'+hqEsc(tt.name)+'</b><span>'+hqEsc(tt.sub||'')+'</span></div></div>'+
+      '<div class="mh-th-hd">'+(backBtn?'<button type="button" class="mh-back" onclick="mhBack()">‹</button>':'')+mhThIcon()+'<div class="mh-th-n"><b>'+hqEsc(tt.name)+'</b><span>'+hqEsc(tt.sub||'')+'</span></div></div>'+
       '<div class="mh-msgs" id="mh-msgs">'+bub+'</div>'+stat+
       '<div class="mh-compose"><textarea id="mh-ta" rows="1" placeholder="اكتب رسالة…" oninput="mhGrow(this)" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)"></textarea>'+
         '<button type="button" class="mh-send" onclick="mhSend()" aria-label="إرسال">'+MH_SEND+'</button></div>'+
@@ -11828,7 +11834,7 @@ var HQ_TDASH_SUB2={'إضافة مشرف':'تسجيل مشرف جديد','إضا�
   'عرض الخطة':'المراحل والدروس والمراجعات','تغيير كلمة المرور':'بيانات الدخول إلى الحساب'};
 var HQ_TDASH_SUB={'تقييم الطلاب':'التحضير والتسميع وتقييم الحاضرين','إضافة طالب':'تسجيل طالب جديد في الحلقة','بيانات الطلاب':'الملفات والخطط والانقطاع',
   'تحديد خطة الطالب':'المنهج والدرس والمراجعة','ترتيب الطلاب':'لوحة الشرف والنقاط','اختبارات الجمعية':'الاختبارات الثلاثة ودرجاتها',
-  'تحميل البيانات':'العمل بلا إنترنت','خدمة المراسلات':'أولياء الأمور والطلاب والمشرف والشؤون','الخط الزمني':'أسابيع الفصل والإجازات','تقارير الحلقة':'الحضور والكشوف والمتابعة PDF'};
+  'تحميل البيانات':'العمل بلا إنترنت','خدمة الرسائل':'أولياء الأمور والطلاب والمشرف والشؤون','الخط الزمني':'أسابيع الفصل والإجازات','تقارير الحلقة':'الحضور والكشوف والمتابعة PDF'};
 function hqTdashDecor(w){
   var cards=w.querySelectorAll('.tdash .menu-card');
   for(var i=0;i<cards.length;i++){
@@ -12604,8 +12610,7 @@ async function hqStuShow(){
     (days||[]).forEach(function(d){
       if(!d) return;
       pl+=parseFloat(d.plus)||0; pn+=parseFloat(d.minus)||0;
-      if(d.plusWhy) pw.push(d.plusWhy);
-      if(d.minusWhy) mw.push(d.minusWhy);
+      pw=pw.concat(evPMList(d,'plus')); mw=mw.concat(evPMList(d,'minus'));
     });
     return { st:hqDaysStats(days),
              lp:await hqStuPages(sid,'lesson',days),
@@ -12621,9 +12626,9 @@ async function hqStuShow(){
     hqAccRow('صفحات الدرس', arNum(lp)+' صفحة')+
     hqAccRow('صفحات المراجعة', arNum(rp)+' صفحة')+
     hqAccRow('المشاركات', arNum(_o.pl||0))+
-    (_o.pw&&_o.pw.length?hqAccRow('أسباب المشاركات', hqEsc(_o.pw.join('، '))):'')+
+    (_o.pw&&_o.pw.length?hqAccRow('أسباب المشاركات', evPMText(_o.pw,'plus')):'')+
     hqAccRow('العقوبات', arNum(_o.pn||0))+
-    (_o.mw&&_o.mw.length?hqAccRow('أسباب العقوبات', hqEsc(_o.mw.join('، '))):'')+
+    (_o.mw&&_o.mw.length?hqAccRow('أسباب العقوبات', evPMText(_o.mw,'minus')):'')+
     '<div class="hqacc-acts" style="justify-content:center">'+
       '<button class="hq-mini-btn view" onclick="hqPrintStudent()">طباعة التقرير PDF</button>'+
     '</div>'+
@@ -12639,6 +12644,25 @@ var KS_KINDS=[{k:'month',n:'بالشهور'},{k:'week',n:'بالأسابيع'},{
 function ksKindName(k){ if(k==='term') return 'بالفصل كامل'; for(var i=0;i<KS_KINDS.length;i++){ if(KS_KINDS[i].k===k) return KS_KINDS[i].n; } return '—'; }
 /* ترتيب أبجدي بالاسم كاملاً (نسخة جديدة لا تمسّ الأصل) */
 function hqSortByName(arr){ return (arr||[]).slice().sort(function(a,b){ return String((a&&a.name)||'').trim().localeCompare(String((b&&b.name)||'').trim(),'ar'); }); }
+/* (17.7) مدى التقارير بتاريخين: من ... إلى (بدل الأيام والأسابيع والشهور والفصل) */
+function hqDateRangeFld(pfx){
+  var t={y:1448,m:1,d:1}; try{ t=tlJ2H(ksJdToday()); }catch(e){}
+  var f=t; try{ var td=hqPlanTermDays(); if(td&&td.real&&td.list&&td.list.length&&td.list[0]<=ksJdToday()) f=tlJ2H(td.list[0]); }catch(e){}
+  return '<div class="hq-rng">'+
+    '<div class="hqfld hq-rng-i"><label class="hqacc-lbl">من تاريخ</label>'+tlDatePicker(pfx+'-f',{d:f.d,m:f.m,y:f.y})+'</div>'+
+    '<div class="hqfld hq-rng-i"><label class="hqacc-lbl">إلى تاريخ</label>'+tlDatePicker(pfx+'-t',{d:t.d,m:t.m,y:t.y})+'</div>'+
+  '</div>';
+}
+function hqDateRangeRead(pfx){
+  function g(s){ return parseInt((document.getElementById(pfx+s)||{}).value,10)||0; }
+  var fd=g('-fd'),fm=g('-fm'),fy=g('-fy'),td=g('-td'),tm=g('-tm'),ty=g('-ty');
+  if(!fd||!fm||!fy||!td||!tm||!ty){ showToast('حدّد تاريخ البداية وتاريخ النهاية','error'); return null; }
+  var lo=tlH2J(fy,fm,fd), hi=tlH2J(ty,tm,td);
+  if(!isFinite(lo)||!isFinite(hi)){ showToast('تاريخ غير صالح','error'); return null; }
+  if(lo>hi){ showToast('تاريخ البداية بعد تاريخ النهاية','error'); return null; }
+  var day=(lo===hi);
+  return {lo:lo, hi:hi, day:day, span:day?tlDateStr(fd,fm,fy):('من '+tlShort({d:fd,m:fm,y:fy})+' إلى '+tlShort({d:td,m:tm,y:ty}))};
+}
 function ksFld(lbl,id,opts,on){
   return '<div class="hqfld"><label class="hqacc-lbl">'+lbl+'</label>'+
     '<select class="hqsel" id="'+id+'"'+(on?(' onchange="'+on+'"'):'')+'>'+opts+'</select></div>';
@@ -12651,8 +12675,7 @@ function ksSection(studs){
   return hqFoldSec('كشف مستوى الطالب',
     '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+
       ksFld('اختر الطالب','ks-stu',so,'ksClear()')+
-      ksFld('اختر نوع الكشف','ks-kind',ko,'ksFillRange()')+
-      '<div id="ks-range"></div>'+
+      '<div id="ks-range">'+hqDateRangeFld('ks')+'</div>'+
       '<button class="tl-fetch" onclick="ksShow()">جلب الكشف</button>'+
       '<div id="ks-result"></div>'+
     '</div></div>');
@@ -12717,9 +12740,8 @@ function ksExTxt(v){ return (v==null)?'—':evFmt(v); }
 async function ksShow(){
   var box=document.getElementById('ks-result'); if(!box) return;
   var sid=(document.getElementById('ks-stu')||{}).value||'';
-  var kind=(document.getElementById('ks-kind')||{}).value||'';
+  var kind='range';
   if(!sid){ showToast('اختر الطالب','error'); return; }
-  if(!kind){ showToast('اختر نوع الكشف','error'); return; }
   box.innerHTML='<div class="hqacc-load">جارٍ الحساب…</div>';
   var R=await ksCompute(sid,kind);
   if(!R){ box.innerHTML=''; return; }
@@ -12736,15 +12758,11 @@ async function ksCompute(sid,kind){
   var stu=(DB.students||[]).find(function(x){ return x.id===sid; });
   var hi=hqInfoOf(hqActiveHalqa());
   var rows=[], chart=[], span='';
+  var RG=hqDateRangeRead('ks'); if(!RG) return null;
 
-  if(kind==='day'){
-    var dd=parseInt((document.getElementById('ks-dtd')||{}).value,10)||0;
-    var mm=parseInt((document.getElementById('ks-dtm')||{}).value,10)||0;
-    var yy=parseInt((document.getElementById('ks-dty')||{}).value,10)||0;
-    if(!dd||!mm||!yy){ showToast('اختر اليوم والشهر والسنة','error'); return null; }
-    var jd=tlH2J(yy,mm,dd);
-    if(!isFinite(jd)){ showToast('تاريخ غير صالح','error'); return null; }
-    span=tlDateStr(dd,mm,yy);
+  if(RG.day){
+    var jd=RG.lo;
+    span=RG.span;
     var ent=null, list=evEntryList(sid);
     for(var i=0;i<list.length;i++){ if(list[i].jd===jd){ ent=list[i]; break; } }
     rows.push(['التاريخ', span]);
@@ -12758,15 +12776,13 @@ async function ksCompute(sid,kind){
       rows.push(['المراجعة المُنجزة', rn?ksDayText(sid,'review',rn,d):'لم تُنجز']);
       rows.push(['عدد الأخطاء', arNum(ksMistakes(sid,ent.k))]);
       rows.push(['الحضور', d.attend||'—']);
-      rows.push(['المشاركة', pls>0?('شارك · '+arNum(pls)+(d.plusWhy?(' - '+String(d.plusWhy)):'')):'لم يشارك']);
-      rows.push(['العقوبة', mns>0?('عليه عقوبة · '+arNum(mns)+(d.minusWhy?(' - '+String(d.minusWhy)):'')):'بلا عقوبة']);
+      rows.push(['المشاركة', evPMText(evPMList(d,'plus'),'plus')]);
+      rows.push(['العقوبة', evPMText(evPMList(d,'minus'),'minus')]);
       if(d.tajweed) rows.push(['مستوى الحفظ', String(d.tajweed)]);
     }
   } else {
-    var idx=parseInt((document.getElementById('ks-idx')||{}).value,10)||0;
-    if(!idx){ showToast(kind==='week'?'اختر الأسبوع':'اختر الشهر','error'); return null; }
-    span=ksSpanText(kind,idx);
-    var days=hqStuDays(sid,kind,idx)||[];
+    span=RG.span;
+    var days=evEntryList(sid).filter(function(e){ return isFinite(e.jd)&&e.jd>=RG.lo&&e.jd<=RG.hi; }).map(function(e){ return e.d; });
     var st=hqDaysStats(days);
     var fl=hsFirstLast(days,'lesson'), fr=hsFirstLast(days,'review');
     var lp=0, rp=0;
@@ -12781,12 +12797,11 @@ async function ksCompute(sid,kind){
     days.forEach(function(x){
       if(!x) return;
       pl+=parseFloat(x.plus)||0; pn+=parseFloat(x.minus)||0;
-      if(x.plusWhy) pw.push(String(x.plusWhy));
-      if(x.minusWhy) mw.push(String(x.minusWhy));
+      pw=pw.concat(evPMList(x,'plus')); mw=mw.concat(evPMList(x,'minus'));
     });
     var cs=evCurrentScore(sid), tIdx=Math.min(cs.term,EX_TERMS)||1;
     var e1=exSum(exGet(sid,tIdx,1)), e2=exSum(exGet(sid,tIdx,2)), e3=exSum(exGet(sid,tIdx,3));
-    if(span) rows.push([(kind==='week'?'مدى الأسبوع':'مدى الشهر'), span]);
+    if(span) rows.push(['المدى', span]);
     rows.push(['بداية الدرس', ksEdgeTxt(eLs)]);
     rows.push(['نهاية الدرس', ksEdgeTxt(eLe)]);
     rows.push(['بداية المراجعة', ksEdgeTxt(eRs)]);
@@ -12795,8 +12810,8 @@ async function ksCompute(sid,kind){
     rows.push(['عدد صفحات المراجعة', arNum(rp)+' صفحة']);
     rows.push(['عدد أيام الحضور', arNum(st.present)+' يوم']);
     rows.push(['عدد أيام الغياب', arNum(st.absent)+' يوم']);
-    rows.push(['المشاركة', pl>0?('شارك · '+arNum(pl)+(pw.length?(' - '+pw.join('، ')):'')):'لم يشارك']);
-    rows.push(['العقوبات', pn>0?('عليه عقوبة · '+arNum(pn)+(mw.length?(' - '+mw.join('، ')):'')):'بلا عقوبة']);
+    rows.push(['المشاركة', evPMText(pw,'plus')]);
+    rows.push(['العقوبات', evPMText(mw,'minus')]);
     rows.push(['مستوى الحفظ', hqTajWord(st.tajSum,st.tajCnt)]);
     rows.push(['درجات اختبارات الجمعية (الفصل)', 'الأول: '+ksExTxt(e1)+' · الثاني: '+ksExTxt(e2)+' · الثالث: '+ksExTxt(e3)]);
     chart=[{l:'أيام الحضور',v:st.present},{l:'أيام الغياب',v:st.absent},
@@ -12805,7 +12820,7 @@ async function ksCompute(sid,kind){
 
   return {
     meta:[['الطالب',(stu&&stu.name)||'—'],['الحلقة',hi.name||'—'],
-          ['معلّم الحلقة',hi.teacher||'—'],['نوع الكشف',ksKindName(kind)],
+          ['معلّم الحلقة',hi.teacher||'—'],
           ['المدى',span||'—']],
     rows:rows, chart:chart, name:(stu&&stu.name)||'—'
   };
@@ -12925,30 +12940,14 @@ function dqExpDays(lo,hi){
 /* حساب الإحصائية المطلوبة (يوم/أسبوع/شهر — حلقة أو الجميع) — تُعيد كائن الطباعة أو null */
 async function dqBuild(){
   var hid=(document.getElementById('dq-halqa')||{}).value||'';
-  var kind=(document.getElementById('dq-kind')||{}).value||'';
   if(!hid){ showToast('اختر الحلقة','error'); return null; }
-  if(!kind){ showToast('اختر نوع الإحصائية','error'); return null; }
-  var lo, hi, span='', isDay=(kind==='day');
-  if(isDay){
-    var dd=parseInt((document.getElementById('dq-dtd')||{}).value,10)||0;
-    var mm=parseInt((document.getElementById('dq-dtm')||{}).value,10)||0;
-    var yy=parseInt((document.getElementById('dq-dty')||{}).value,10)||0;
-    if(!dd||!mm||!yy){ showToast('اختر اليوم والشهر والسنة','error'); return null; }
-    var jd=tlH2J(yy,mm,dd);
-    if(!isFinite(jd)){ showToast('تاريخ غير صالح','error'); return null; }
-    lo=hi=jd; span=tlDateStr(dd,mm,yy);
-  } else {
-    var idx=parseInt((document.getElementById('dq-idx')||{}).value,10)||0;
-    if(!idx){ showToast(kind==='week'?'اختر الأسبوع':'اختر الشهر','error'); return null; }
-    var sj=dqSpanJD(kind,idx);
-    if(!sj){ showToast('لا يوجد خط زمني معتمَد لهذا الفصل','error'); return null; }
-    lo=sj.lo; hi=sj.hi; span=ksSpanText(kind,idx);
-  }
+  var RG=hqDateRangeRead('dq'); if(!RG) return null;
+  var lo=RG.lo, hi=RG.hi, span=RG.span, isDay=RG.day, kind=isDay?'day':'range';
   var all=(window._hqStatsHalqat||DB.halqat||[]);
   var list=(hid==='all')?all:all.filter(function(x){ return x.id===hid; });
   if(!list.length){ showToast('لم تُوجد الحلقة','error'); return null; }
-  var kindN=ksKindName(kind), spanLbl=isDay?'التاريخ':(kind==='week'?'مدى الأسبوع':'مدى الشهر');
-  var ttl={day:'إحصائية اليوم',week:'إحصائية الأسبوع',month:'إحصائية الشهر'}[kind]||'الإحصائية';
+  var kindN=isDay?'يوم واحد':'بالتاريخ', spanLbl=isDay?'التاريخ':'المدى';
+  var ttl=isDay?'إحصائية اليوم':'إحصائية الفترة';
   var todayJD=ksJdToday(), nExp=isDay?1:dqExpDays(lo,hi);
   /* بطاقات النسب: [العنوان، النسبة، التفصيل] */
   function pc(l,a,b,unit){ return [l, arNum(rpPct(a,b))+'٪', arNum(a)+' من '+arNum(b)+(unit?(' '+unit):'')]; }
@@ -13155,9 +13154,7 @@ function showAllHalqatStats(scope,ttl){
     ksFld('اختر الحلقة','dq-halqa','<option value="">— اختر الحلقة —</option>'+
       '<option value="all">جميع الحلقات</option>'+
       halqat.map(function(h){ return '<option value="'+hqEsc(h.id)+'">'+hqEsc(h.name||'')+'</option>'; }).join(''),'hqDayClear()')+
-    ksFld('اختر نوع الإحصائية','dq-kind','<option value="">— اختر نوع الإحصائية —</option>'+
-      KS_KINDS.map(function(x){ return '<option value="'+x.k+'">'+x.n+'</option>'; }).join(''),'dqFillRange()')+
-    '<div id="dq-range"></div>'+
+    '<div id="dq-range">'+hqDateRangeFld('dq')+'</div>'+
     '<div id="dq-result" style="display:none"></div>'+
     '<button class="tl-fetch" onclick="rpPrintPeriod()">طباعة التقرير PDF</button>'+
   '</div></div>';
@@ -13192,8 +13189,7 @@ function rsKindChanged(){
   if(k==='att'){
     box.innerHTML=ksFld('حدّد عدد أفضل الحضور','rs-top','<option value="3">أفضل ثلاثة حضوراً</option><option value="10">أفضل عشرة حضوراً</option><option value="20">أفضل عشرين حضوراً</option><option value="50">أفضل خمسين حضوراً</option>','');
   } else if(k==='best'){
-    box.innerHTML=ksFld('اختر نوع الإحصائية','rb-kind','<option value="">— اختر نوع الإحصائية —</option><option value="term">بالفصل كامل</option>'+
-      KS_KINDS.filter(function(x){ return x.k!=='day'; }).map(function(x){ return '<option value="'+x.k+'">'+x.n+'</option>'; }).join(''),'rsBestFill()')+'<div id="rb-range"></div>';
+    box.innerHTML='<div id="rb-range">'+hqDateRangeFld('rb')+'</div>';
   } else if(k==='stu'){
     /* كشف بيانات طالب: الحلقة ثم الطالب */
     var hs=rpScope().slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''),'ar'); });
@@ -13229,6 +13225,8 @@ function rsBestFill(){
   } else box.innerHTML='';
 }
 function rsBestRange(){
+  var RG=hqDateRangeRead('rb'); if(!RG) return null;
+  return {lo:RG.lo, hi:RG.hi, span:RG.span, kind:RG.day?'day':'range'};
   var kind=(document.getElementById('rb-kind')||{}).value||'';
   if(!kind){ showToast('اختر نوع الإحصائية','error'); return null; }
   if(kind==='term'){
@@ -13299,7 +13297,7 @@ async function rsPrintBest(){
     }
     /* الترتيب بالنسبة من الأعلى إلى الأدنى (الحلقات بلا تقييم آخراً) */
     ents.sort(function(a,b){ return b.score-a.score; }); rows=ents.map(function(e){ return e.row; });
-    var meta=[['المدى',R.span],['نوع الإحصائية',ksKindName(R.kind)],['الحلقات',arNum(halqat.length)],['أساس الحساب','أيام انعقاد الحلقة']];
+    var meta=[['المدى',R.span],['الحلقات',arNum(halqat.length)],['أساس الحساب','أيام انعقاد الحلقة']];
     var inner='<div class="pr-meta">'+meta.map(function(m){ return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>'; }).join('')+'</div>'+
       (hero?(rpSec('أفضل طالب على مستوى '+rpScopeTitle())+rpGrid([rpNumCard(hero.o.s.name||'—','الطالب','hero sm'), rpNumCard(hero.h.name||'—','الحلقة','hero sm'), rpNumCard(arNum(hero.o.pct)+'٪','نسبة التميّز','hero sm'), rpNumCard(hero.o.tjn?hqTajWord(hero.o.tj,hero.o.tjn):'—','مستوى الحفظ','hero sm')])):'')+
       rpSec('أفضل طالب من كل حلقة - '+R.span)+
@@ -13369,8 +13367,8 @@ async function rsStudentData(h,sid){
     if(ksNumOf(d,'lesson')) ld++; if(ksNumOf(d,'review')) rd++;
     var p1=parseFloat(d.plus)||0, m1=parseFloat(d.minus)||0;
     pl+=p1; pn+=m1;
-    if(p1>0) pmRows.push([rsKeyHijri(e.k),'مشاركة',arNum(p1),String(d.plusWhy||'—')]);
-    if(m1>0) pmRows.push([rsKeyHijri(e.k),'عقوبة',arNum(m1),String(d.minusWhy||'—')]);
+    evPMList(d,'plus').forEach(function(w){ pmRows.push([rsKeyHijri(e.k),'مشاركة',arNum(1),w||'بلا سبب']); });
+    evPMList(d,'minus').forEach(function(w){ pmRows.push([rsKeyHijri(e.k),'عقوبة',arNum(1),w||'بلا سبب']); });
   });
   var attPct=(at+ab)?Math.round(at/(at+ab)*100):0;
   /* الدرس والمراجعة */
@@ -13870,13 +13868,14 @@ function hqStatsOverview(halqat, title, extraTop, extraBottom){
 function hqModalTall(){ var sh=document.getElementById('modalSheet'); if(sh) sh.classList.add('tall'); }
 function openModal(title, body){
   window._modalBack = null;
-  try{ var _sh0=document.getElementById('modalSheet'); if(_sh0) _sh0.classList.remove('tall'); }catch(e){}
+  try{ var _sh0=document.getElementById('modalSheet'); if(_sh0){ _sh0.classList.remove('tall'); _sh0.classList.remove('hero'); _sh0.style.transform=''; _sh0.style.transition=''; _sh0.style.opacity=''; } }catch(e){}
   var bg    = document.getElementById('modalBg');
   var sheet = document.getElementById('modalSheet');
   var ttl   = document.getElementById('modalTitle');
   var bd    = document.getElementById('modalBody');
   if(!bg || !ttl || !bd) return;
   ttl.textContent = title;
+  ttl.classList.remove('modal-back-title'); ttl.onclick=null;   /* (17.7) لا يبقى عنوان «عودة» ولا نقرته من نافذة سابقة */
   bd.innerHTML    = body;
   var _slot=document.getElementById('modalHdrSlot'); if(_slot){ _slot.innerHTML=''; _slot.style.display='none'; }
   bg.style.display    = 'flex';
@@ -13887,6 +13886,48 @@ function openModal(title, body){
     if(bg)    bg.classList.add('open');
     if(sheet) sheet.classList.add('open');
   }, 10);
+}
+/* (17.7) رأس نافذة مميّز: عنوان في الوسط وشارة رقم، والخروج بسحب الشاشة جانباً (بلا زرّ إغلاق) */
+function hqModalHero(title,lbl,num,ico){
+  var sh=document.getElementById('modalSheet'), ttl=document.getElementById('modalTitle'); if(!sh||!ttl) return;
+  sh.classList.add('hero');
+  ttl.innerHTML='<div class="mhero">'+
+    '<div class="mhero-glow"></div>'+
+    '<div class="mhero-row">'+(ico?('<span class="mhero-ic">'+ico+'</span>'):'')+'<span class="mhero-t">'+hqEsc(title)+'</span></div>'+
+    (lbl?('<div class="mhero-chip"><span>'+hqEsc(lbl)+'</span><b>'+arNum(num)+'</b></div>'):'')+
+    '<div class="mhero-hint"><i>‹</i>اسحب الشاشة جانباً للخروج<i>›</i></div>'+
+    '<div class="mhero-line"><span></span></div>'+
+  '</div>';
+  hqSwipeBind();
+}
+function hqSwipeBind(){
+  var sh=document.getElementById('modalSheet'); if(!sh||sh._swipe) return; sh._swipe=1;
+  var s=null;
+  sh.addEventListener('touchstart',function(e){
+    if(!sh.classList.contains('hero')||e.touches.length!==1){ s=null; return; }
+    s={x:e.touches[0].clientX,y:e.touches[0].clientY,dx:0,on:false,dead:false};
+  },{passive:true});
+  sh.addEventListener('touchmove',function(e){
+    if(!s||s.dead) return;
+    var dx=e.touches[0].clientX-s.x, dy=e.touches[0].clientY-s.y;
+    if(!s.on){
+      if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)){ s.dead=true; return; }   /* تمرير رأسيّ */
+      if(Math.abs(dx)>14&&Math.abs(dx)>Math.abs(dy)*1.3){ s.on=true; sh.style.transition='none'; }
+      else return;
+    }
+    s.dx=dx;
+    sh.style.transform='translateX('+dx+'px) rotate('+(dx/60).toFixed(2)+'deg)';
+    sh.style.opacity=String(Math.max(.35,1-Math.abs(dx)/520));
+    if(e.cancelable) e.preventDefault();
+  },{passive:false});
+  sh.addEventListener('touchend',function(){
+    if(!s) return; var S=s; s=null; if(!S.on) return;
+    sh.style.transition='transform .28s cubic-bezier(.32,.72,0,1),opacity .28s';
+    if(Math.abs(S.dx)>90){
+      sh.style.transform='translateX('+(S.dx<0?-110:110)+'%) rotate('+(S.dx<0?-6:6)+'deg)'; sh.style.opacity='0';
+      setTimeout(function(){ closeModal(); setTimeout(function(){ sh.style.transform=''; sh.style.transition=''; sh.style.opacity=''; },340); },230);
+    } else { sh.style.transform=''; sh.style.opacity=''; setTimeout(function(){ sh.style.transition=''; },300); }
+  },{passive:true});
 }
 function modalBack(){
   var fn = window._modalBack;
@@ -14177,6 +14218,20 @@ function evDayPM(sid,fld){
   var v=parseFloat(d[fld]); return isNaN(v)?0:v;
 }
 function evTodayPart(sid){ return evDayPM(sid,'plus'); }
+/* (17.7) أسباب يوم واحد بعدد العقوبات/المشاركات — القديم (سبب واحد لليوم) يتكرّر لكل واحدة */
+function evPMList(d,fld){
+  var n=Math.round(parseFloat(d&&d[fld])||0); if(n<=0) return [];
+  var L=(d[fld+'L']&&d[fld+'L'].slice)?d[fld+'L'].slice(0,n):[];
+  var w=String(d[fld+'Why']||'');
+  while(L.length<n) L.push(w);
+  return L.map(function(x){ return String(x||''); });
+}
+function evPMText(list,fld){
+  var n=list.length, neg=(fld==='minus');
+  if(!n) return neg?'بلا عقوبة':'لم يشارك';
+  var w=neg?(n===1?'عقوبة واحدة':(n===2?'عقوبتان':(arNum(n)+(n<=10?' عقوبات':' عقوبة')))):(n===1?'مشاركة واحدة':(n===2?'مشاركتان':(arNum(n)+(n<=10?' مشاركات':' مشاركة'))));
+  return (neg?'عليه ':'شارك ')+w+':\n'+list.map(function(x,i){ return arNum(i+1)+') '+(x||'بلا سبب'); }).join('\n');
+}
 function evTodayPen(sid){ return evDayPM(sid,'minus'); }
 /* مجموع الفصل: جمع أيام الفصل + رصيد قديم تراكمي إن وُجد */
 function evPartPoints(sid){
@@ -14257,21 +14312,20 @@ function exOpenExam(term,idx){
     var so=function(sel){ var o='<option value="0">— اختر —</option>'; for(var q=0;q<MIS_SURAHS.length;q++){ var sn=MIS_SURAHS[q]; o+='<option value="'+sn[0]+'"'+(sel===sn[0]?' selected':'')+'>'+sn[0]+'. '+sn[1]+'</option>'; } return o; };
     var ao=function(sur,sel){ var n=misAyahCount(sur)||0; if(!n) return '<option value="0">\u2014</option>'; var o=''; for(var q=1;q<=n;q++){ o+='<option value="'+q+'"'+(sel===q?' selected':'')+'>'+arNum(q)+'</option>'; } return o; };
     var mFromA=meta.fromA||1, mToA=meta.toA||(mTo?misAyahCount(mTo):1);
-    body+='<div class="ex-scope"><label>\u0645\u0642\u0631\u0631 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631 (\u0645\u0646 \u0633\u0648\u0631\u0629 \u0648\u0622\u064a\u0629 \u0625\u0644\u0649 \u0633\u0648\u0631\u0629 \u0648\u0622\u064a\u0629)</label>'
+    body+='<div class="ex-scope ex-scope2">'
       +'<div class="ex-scope-row">'
         +'<div class="ex-scope-side">'
           +'<select class="ex-sur-sel" id="ex-from" onchange="exScopeSurChange(\'from\','+term+','+idx+')">'+so(mFrom)+'</select>'
-          +'<div class="ex-ayah-wrap"><span class="ex-ayah-lbl">\u0627\u0644\u0622\u064a\u0629</span>'
+          +'<div class="ex-ayah-wrap">'
           +'<select class="ex-sur-sel ex-ayah-sel" id="ex-from-a" onchange="exSaveScope2('+term+','+idx+')">'+ao(mFrom,mFromA)+'</select></div>'
         +'</div>'
         +'<span class="ex-scope-arrow">\u2190</span>'
         +'<div class="ex-scope-side">'
           +'<select class="ex-sur-sel" id="ex-to" onchange="exScopeSurChange(\'to\','+term+','+idx+')">'+so(mTo)+'</select>'
-          +'<div class="ex-ayah-wrap"><span class="ex-ayah-lbl">\u0627\u0644\u0622\u064a\u0629</span>'
+          +'<div class="ex-ayah-wrap">'
           +'<select class="ex-sur-sel ex-ayah-sel" id="ex-to-a" onchange="exSaveScope2('+term+','+idx+')">'+ao(mTo,mToA)+'</select></div>'
         +'</div>'
       +'</div></div>';
-    if(mFrom&&mTo){ body+='<div class="ex-scope-hint">اختر الطالب لعرض الأسئلة مع التقييم في صفحة واحدة</div>'; }
   } else if(scope){
     body+='<div class="ex-scope-view">المقرر: '+scope+'</div>';
   }
@@ -14524,11 +14578,15 @@ function exPickQuestions(verses){
   idxs.sort(function(a,b){return a-b;});
   return idxs;
 }
-function exToggleAns(btn){
-  var a=btn.nextElementSibling; if(!a) return;
+function exToggleAns(el){
+  var q=el&&el.closest?el.closest('.ex-q'):null; if(!q) return;
+  var a=q.querySelector('.ex-q-ans'), inc=q.querySelector('.ex-q-incipit'), btn=q.querySelector('.ex-q-toggle'); if(!a) return;
   var open=(a.style.display!=='none');
+  /* (17.7) عند الإظهار تختفي بداية الآية والزرّ (لا تكرار)، ولمسة على الآيات تُعيدهما */
   a.style.display=open?'none':'block';
-  btn.textContent=open?'إظهار الإجابة':'إخفاء الإجابة';
+  if(inc) inc.style.display=open?'':'none';
+  if(btn){ btn.style.display=open?'':'none'; btn.textContent='إظهار الإجابة'; }
+  if(!open){ try{ q.classList.remove('ans-in'); void q.offsetWidth; q.classList.add('ans-in'); }catch(e){} }
 }
 function exQCard(no,locHTML,verses,i,withGrade){
   return '<div class="ex-q">'
@@ -14536,7 +14594,7 @@ function exQCard(no,locHTML,verses,i,withGrade){
     +'<div class="ex-q-stem">اقرأ من قوله تعالى:</div>'
     +'<div class="ex-q-incipit">( '+exWrapWords(exIncipit(verses,i))+' … )</div>'
     +'<button type="button" class="ex-q-toggle" onclick="exToggleAns(this)">إظهار الإجابة</button>'
-    +'<div class="ex-q-ans" style="display:none"><div class="ex-ans-ayat">'+exAnswerHTML(verses,i)+'</div>'+(withGrade?exGradeMini():'')+'</div>'
+    +'<div class="ex-q-ans" style="display:none"><div class="ex-ans-ayat" onclick="exToggleAns(this)">'+exAnswerHTML(verses,i)+'</div>'+(withGrade?exGradeMini():'')+'</div>'
   +'</div>';
 }
 var EX_QV=null;
@@ -14751,7 +14809,8 @@ function renderGrades(){
   var _isT2=(STATE.role==='teacher');
   /* (17.1) في حساب المعلّم: لا يُعرض للتقييم إلا الحاضرون (حاضر/متأخر/تسميع عن بعد) — التحضير من بطاقته */
   var base=list.filter(function(s){ return !isDiscontinued(s); });
-  var evalList=_isT2?base.filter(function(s){ return evPresentVal((evDayRec(s.id,key)||{}).attend); }):list;
+  /* (17.7) القائمة كاملة من بداية اليوم، ومن سُجّل غائباً (بعذر أو بدونه) يختفي منها */
+  var evalList=_isT2?base.filter(function(s){ return !evIsAbsentVal((evDayRec(s.id,key)||{}).attend); }):list;
   /* المقيَّمون (تقييم مكتمل) في أعلى القائمة أبجدياً، ثم الباقون أبجدياً، والمنقطعون في آخرها */
   var _rank={}; evalList.forEach(function(s){
     var _dy=evDayRec(s.id,key);
@@ -14788,7 +14847,7 @@ function renderGrades(){
   if(_isT2){
     var nAtt=0, nPres=0;
     base.forEach(function(s){ var d=evDayRec(s.id,key); if(d&&d.attend) nAtt++; if(d&&evPresentVal(d.attend)) nPres++; });
-    if(!cards) cards='<div class="evh-empty">'+(nAtt?'لا حاضرون في هذا اليوم':'ابدأ بتحضير الطلاب من البطاقة أعلاه — يظهر هنا الحاضرون للتقييم')+'</div>';
+    if(!cards) cards='<div class="evh-empty">'+(nAtt?'كل الطلاب غائبون في هذا اليوم':'لا يوجد طلاب')+'</div>';
     body='<div class="evh-grid">'+
       '<button type="button" class="evh-card evh-att" onclick="evhPress(this);evAttendOpen()"><span class="evh-ring"></span><div class="evh-in">'+
         '<div class="evh-ic"><svg viewBox="0 0 48 48" fill="none"><rect x="10" y="8" width="28" height="34" rx="5" stroke="currentColor" stroke-width="2.4"/><path d="M18 8V6a3 3 0 013-3h6a3 3 0 013 3v2" stroke="currentColor" stroke-width="2.4"/><path d="M17 24l5 5 10-11" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 34h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></div>'+
@@ -14797,7 +14856,7 @@ function renderGrades(){
       '</div></button>'+
       '<button type="button" class="evh-card evh-rec" onclick="evhPress(this);showTodayRecitation()"><span class="evh-ring"></span><div class="evh-in">'+
         '<div class="evh-ic"><svg viewBox="0 0 48 48" fill="none"><path d="M24 12c-5-4-12-5-18-3v28c6-2 13-1 18 3 5-4 12-5 18-3V9c-6-2-13-1-18 3z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M24 12v28" stroke="currentColor" stroke-width="2.2"/><path d="M11 18h8M11 24h8M29 18h8M29 24h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></div>'+
-        '<div class="evh-t">تسميع اليوم</div>'+
+        '<div class="evh-t">تسميعات اليوم</div>'+
         '<div class="evh-s"><b>'+arNum(nPres)+'</b> من '+arNum(base.length)+'<span class="evh-pulse"></span>'+'</div>'+
       '</div></button>'+
       '<div class="evh-card evh-wide evh-eval"><span class="evh-ring"></span><div class="evh-in">'+
@@ -14845,6 +14904,8 @@ function evAttendOpen(){
     '</div>');
   hqModalTall();
   evAttendBind();
+  /* (17.7) الملخّص يلتصق تحت رأس النافذة فلا يختفي عند النزول */
+  try{ var _hd=document.querySelector('#modalSheet .modal-hdr'), _sm=document.getElementById('att-sum'); if(_hd&&_sm) _sm.style.top=Math.max(0,_hd.offsetHeight-1)+'px'; }catch(e){}
 }
 /* (17.2) لمسة واحدة تكفي: الاستجابة عند رفع الإصبع مباشرة (بلا انتظار نقرة سفاري المزدوجة)، ونقرة الفأرة احتياطاً */
 function evAttendBind(){
@@ -14914,7 +14975,7 @@ function evAttendSet(sid,val){
     var row=document.getElementById('att-'+sid);
     if(row){
       var kk=val?(EV_ATT_CLS[val]||'p'):'n';
-      row.className='atx-row k-'+kk+' pop';
+      row.className='atx-row k-'+kk; void row.offsetWidth; row.classList.add('pop');
       var st=row.querySelector('.att-state'); if(st){ st.className='att-state atx-state k-'+kk; st.textContent=val||'لم يُحضَّر'; }
       var ch=row.querySelectorAll('.att-chip'); for(var i=0;i<ch.length;i++) ch[i].classList.toggle('sel', ch[i].textContent===val);
     }
@@ -15602,6 +15663,10 @@ function evAdjustPart(sid,delta){
     var _wi=document.getElementById(delta<0?'ev-pen-why':'ev-part-why');
     var _wy=_wi?String(_wi.value||'').trim():'';
     var _wf=(delta<0)?'minusWhy':'plusWhy';
+    /* (17.7) سبب مستقل لكل ضغطة: قائمة أسباب بعدد العقوبات/المشاركات */
+    var _L=(_d[fld+'L']&&_d[fld+'L'].slice)?_d[fld+'L'].slice():[];
+    while(_L.length<Math.round(cur)) _L.push(String(_d[_wf]||''));
+    _L.push(_wy); _d[fld+'L']=_L;
     if(_wy) _d[_wf]=_wy; else delete _d[_wf];   /* السبب كما هو في الخانة (يبقى ظاهراً ويُعدَّل متى شاء) */
     rec.days[_dk]=_d;
     DB.evals[sid]=rec; save();
@@ -15622,8 +15687,10 @@ function evWhySave(sid,fld){
     var _dk=evDateKey(), _d=rec.days[_dk]; if(!_d) return;
     var el=document.getElementById(fld==='minus'?'ev-pen-why':'ev-part-why'); if(!el) return;
     var v=String(el.value||'').trim(), wf=(fld==='minus')?'minusWhy':'plusWhy';
-    if((_d[wf]||'')===v) return;
+    var _L=(_d[fld+'L']&&_d[fld+'L'].slice)?_d[fld+'L'].slice():null;
+    if((_d[wf]||'')===v && !(_L&&_L.length&&_L[_L.length-1]!==v)) return;
     if(v) _d[wf]=v; else delete _d[wf];
+    if(_L&&_L.length){ _L[_L.length-1]=v; _d[fld+'L']=_L; }   /* تعديل السبب يخصّ آخر ضغطة */
     save();
   }catch(e){}
 }
@@ -15633,7 +15700,7 @@ function evPartClear(sid,fld){
     var rec=(DB.evals||{})[sid]; if(!rec||!rec.days) return;
     var _dk=evDateKey(), _d=rec.days[_dk]; if(!_d) return;
     var wf=(fld==='minus')?'minusWhy':'plusWhy';
-    delete _d[fld]; delete _d[wf];
+    delete _d[fld]; delete _d[wf]; delete _d[fld+'L'];
     save();
     var el=document.getElementById(fld==='minus'?'ev-pen-val':'ev-part-val'); if(el) el.textContent=(fld==='minus'?'−':'+')+evFmt(0);
     var wi=document.getElementById(fld==='minus'?'ev-pen-why':'ev-part-why'); if(wi) wi.value='';
@@ -15650,7 +15717,6 @@ function evPartClear(sid,fld){
    والانتقال بعد كل خطوة تلقائيّ، والغائب يقفز من الحضور إلى الاعتماد مباشرة.
    وبعد إتمام الخطوات كلها يصير التنقّل يدويّاً حرّاً للتعديل */
 var EVT_TABS=[
-  {k:'attend', n:'الحضور'},
   {k:'lesson', n:'الدرس والمراجعة'},
   {k:'level',  n:'المستوى'},
   {k:'done',   n:'اعتمد'}
@@ -15890,8 +15956,8 @@ function openStudentEval(sid){
   var recCell=evRecCell('lesson',reqL,today.lesson,sid);
   var reviewCell=evRecCell('review',reqR,today.review,sid);
   function cell(lbl,inner){ return '<div class="ev-cell ev-cell-gold"><div class="ev-lbl">'+lbl+'</div>'+inner+'</div>'; }
-  var _isT=(typeof STATE!=='undefined'&&STATE.role==='teacher');
-  var attendCell=cell('\u0627\u0644\u062d\u0636\u0648\u0631', evOptSelect('attend',['\u062d\u0627\u0636\u0631','\u0645\u062a\u0623\u062e\u0631','\u063a\u0627\u0626\u0628','\u063a\u0627\u0626\u0628 \u0628\u0639\u0630\u0631','\u062a\u0633\u0645\u064a\u0639 \u0639\u0646 \u0628\u0639\u062f'],today.attend));
+  var _isT=(typeof STATE!=='undefined'&&STATE.role==='teacher'), _isT0=_isT;
+  var attendCell=cell('\u0627\u0644\u062d\u0636\u0648\u0631', evOptSelect('attend',['\u062d\u0627\u0636\u0631','\u0645\u062a\u0623\u062e\u0631','\u063a\u0627\u0626\u0628','\u063a\u0627\u0626\u0628 \u0628\u0639\u0630\u0631','\u062a\u0633\u0645\u064a\u0639 \u0639\u0646 \u0628\u0639\u062f'],today.attend||(_isT0?'\u062d\u0627\u0636\u0631':'')));
   var tajweedCell=cell('مستوى الحفظ', evOptSelect('tajweed',['حفظ مُتقن','حفظ متوسط','حفظ ضعيف'],today.tajweed));
   var _partVal=(typeof evTodayPart==='function')?evTodayPart(sid):0;   /* اليوم فقط */
   var _penVal =(typeof evTodayPen ==='function')?evTodayPen(sid) :0;
@@ -15942,7 +16008,7 @@ function openStudentEval(sid){
   _evtSid=sid;
   var _eval=_isT?(evtTabsHtml()
     +'<div class="evt-panes" id="evt-panes">'
-      +'<div class="evt-pane" data-t="attend">'+attendCell+'</div>'
+      +'<div class="evt-pane evt-hide" data-t="attend">'+attendCell+'</div>'
       +'<div class="evt-pane" data-t="lesson">'+recCell+reviewCell+'</div>'
       +'<div class="evt-pane" data-t="level">'+tajweedCell+partCell+penCell+_startToggle+'</div>'
       +'<div class="evt-pane" data-t="done"><div class="evt-done-row">'
@@ -16488,12 +16554,10 @@ function showStudentsData(){
   if(!rows) rows='<div class="empty-state"><div class="empty-state-icon">👥</div>\u0644\u0627 \u064a\u0648\u062c\u062f \u0637\u0644\u0627\u0628</div>';
   var body=
     '<div class="stu-list-wrap">'+
-      '<div class="stu-list-header">'+
-        '<span class="stu-list-count">\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0637\u0644\u0627\u0628: <span>'+count+'</span></span>'+
-      '</div>'+
       '<div class="stul-list">'+rows+'</div>'+
     '</div>';
-  openModal('👥 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0637\u0644\u0627\u0628',body);
+  openModal('بيانات الطلاب',body);
+  hqModalHero('بيانات الطلاب','إجمالي الطلاب',count,'<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M3 19.5c.7-3.4 3.1-5.4 6-5.4s5.3 2 6 5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="9" r="2.6" stroke="currentColor" stroke-width="1.6"/><path d="M16.5 14.2c2.4.2 4 1.9 4.5 4.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>');
 }
 function toggleStuItem(el){ el.parentNode.classList.toggle('open'); }
 
@@ -16690,7 +16754,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 17.6';
+  window.HQ_BUILD='2026 - 17.7';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -17472,7 +17536,7 @@ body.mis-reading .mis-wrap{padding-top:112px;padding-bottom:92px}
 .evh-susp.on{border-color:rgba(95,227,161,.5);background:linear-gradient(120deg,#0f4a3c,#0b3a30)}
 .evh-susp.on .evh-susp-ic{color:#7cf0b9;background:rgba(95,227,161,.12);border-color:rgba(95,227,161,.4)}
 .evh-susp.on .evh-susp-t b{color:#a7f3d0}
-/* ===== (17.1) خدمة المراسلات ===== */
+/* ===== (17.1) خدمة الرسائل ===== */
 .menu-card.mc-msg{background:linear-gradient(145deg,#1d5a52 0%,#113f3a 55%,#0b2f2b 100%)}
 .menu-card.mc-msg .msg-dot{left:auto;right:12px;top:12px}
 .mh{direction:rtl;display:flex;flex-direction:column;gap:10px;min-height:52vh}
@@ -18168,6 +18232,132 @@ html,body{background:#051e1c}
 .hdr-actions{display:flex;flex-direction:column;align-items:stretch;gap:6px}
 .hdr-sync-pill{align-items:center;justify-content:center;gap:7px;padding:5px 12px;border-radius:999px;font:600 .72rem 'Cairo','Noto Sans Arabic',sans-serif;color:#dbf2f0;background:rgba(10,45,42,.86);border:1px solid rgba(255,255,255,.16);box-shadow:0 3px 12px rgba(0,0,0,.3);cursor:pointer;user-select:none;white-space:nowrap}
 .hdr-actions .hdr-logout-btn{justify-content:center}
+/* ===== (17.7) نمط البطاقة المتوهّجة الثابت (إطار متدرّج بلا حركة دائمة) ===== */
+.hqp-grid .menu-card,.ev-eval .evt-tabs,.ev-eval .ev-act,.ev-eval .ev-cell-gold,.mh-th-hd,.hqp-srow{
+  border:1.5px solid transparent !important;
+  background:radial-gradient(150px 80px at 50% 0%,rgba(240,208,96,.15),transparent 70%) padding-box,
+    linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(160deg,rgba(240,208,96,.62),rgba(240,208,96,.12) 45%,rgba(95,227,161,.38)) border-box !important;
+  box-shadow:0 10px 24px rgba(0,0,0,.28) !important}
+
+/* (2) بطاقات خطط الحفظ */
+.hqp-grid .menu-card{min-height:150px !important;padding:16px 10px 14px !important;border-radius:20px !important;
+  display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:6px;text-align:center;
+  transition:transform .18s cubic-bezier(.2,.9,.3,1.3) !important}
+.hqp-grid .menu-card:hover{transform:none !important}
+.hqp-grid .menu-card:active{transform:scale(.965) !important}
+.hqp-grid .menu-card::before,.hqp-grid .menu-card::after,.hqp-grid .menu-card .mc-accent{display:none !important}
+.hqp-grid .menu-card .mc-icon{position:static !important;width:52px !important;height:52px !important;border-radius:16px;margin:0 auto 4px;opacity:1 !important;
+  background:rgba(240,208,96,.12);border:1px solid rgba(240,208,96,.38);box-shadow:0 0 18px rgba(240,208,96,.22);animation:none !important;filter:none !important}
+.hqp-grid .menu-card .mc-icon img,.hqp-grid .menu-card .mc-icon svg{width:30px !important;height:30px !important;
+  filter:brightness(0) saturate(100%) invert(86%) sepia(38%) saturate(760%) hue-rotate(338deg) brightness(102%) !important}
+.hqp-grid .menu-card .mc-label{position:static !important;text-align:center !important;font-size:.9rem !important;font-weight:900 !important;color:#fff !important;line-height:1.35;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.hqp-grid .hqp-desc{color:#b9d6d2 !important;font-size:.64rem !important;text-shadow:none !important;margin-top:4px}
+.hqp-grid .hqp-cnt{background:linear-gradient(135deg,#ffe99b,#f2c74a 60%,#c9a227) !important;color:#0b3a36 !important;font-weight:900 !important;box-shadow:0 3px 10px rgba(201,162,39,.3)}
+.hqp-grid .menu-card.mc-free{background:radial-gradient(150px 80px at 50% 0%,rgba(95,227,161,.16),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,linear-gradient(160deg,rgba(95,227,161,.7),rgba(95,227,161,.12) 45%,rgba(240,208,96,.45)) border-box !important}
+.hqp-grid .menu-card.mc-free .mc-icon{background:rgba(95,227,161,.1);border-color:rgba(95,227,161,.4);box-shadow:0 0 18px rgba(95,227,161,.22)}
+
+/* (3) قائمة الطلاب في الانضمام للخطة (بهيئة «بيانات الطلاب») */
+.hqp-slist{display:flex;flex-direction:column;gap:9px}
+.hqp-srow{width:100%;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:20px !important;color:#fff;font-family:inherit;text-align:right;cursor:pointer;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .16s cubic-bezier(.2,.9,.3,1.3);animation:hqStaggerIn .4s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(min(var(--i,0),14) * .03s)}
+.hqp-srow:active{transform:scale(.975)}
+.hqp-sn{flex:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.92rem;color:#fff3c4;
+  background:linear-gradient(145deg,#1f7a70,#0e4c46);box-shadow:0 0 0 2px rgba(240,208,96,.42),0 0 14px rgba(240,208,96,.2)}
+.hqp-sm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hqp-sm b{font-size:.9rem;font-weight:900;color:#f7e3a3;line-height:1.35}
+.hqp-sm small{font-size:.7rem;font-weight:800;color:#9fd4d0}
+.hqp-sar{flex:none;color:#f7d774;font-size:1.25rem;font-weight:900}
+.hqp-srow.on{background:radial-gradient(150px 80px at 50% 0%,rgba(95,227,161,.15),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,linear-gradient(160deg,rgba(95,227,161,.85),rgba(95,227,161,.15) 45%,rgba(240,208,96,.4)) border-box !important}
+.hqp-srow.on .hqp-sn{background:linear-gradient(150deg,#a7f3d0 0%,#34d399 55%,#0e7a55 100%);color:#04261c;box-shadow:0 0 0 2px rgba(209,250,229,.6),0 0 14px rgba(52,211,153,.35)}
+.hqp-srow.on .hqp-sm small{color:#7cf0b9}
+.hqp-srow.busy .hqp-sm small{color:#c9b98a}
+
+/* (5) بطاقة التقييم: التبويبات والاعتماد بنمط البطاقة المتوهّجة */
+.evt-pane.evt-hide{display:none !important}
+.ev-eval .evt-tabs{padding:6px !important;border-radius:18px !important;gap:6px !important}
+.ev-eval .evt-tab{border-radius:13px !important;padding:12px 4px !important;font-size:12px !important;background:rgba(0,0,0,.22) !important;border:1px solid rgba(240,208,96,.16) !important;color:#dfeeec !important;animation:none !important}
+.ev-eval .evt-tab.ok{color:#7cf0b9 !important;border-color:rgba(95,227,161,.4) !important}
+.ev-eval .evt-tab.cur{background:linear-gradient(135deg,#ffe99b,#f2c74a 60%,#c9a227) !important;color:#0b3a36 !important;border-color:transparent !important;box-shadow:0 4px 14px rgba(201,162,39,.38) !important}
+.ev-eval .evt-tab.ok.cur{background:linear-gradient(135deg,#7cf0b9,#34d399) !important;color:#062a26 !important;box-shadow:0 4px 14px rgba(52,211,153,.4) !important}
+.ev-eval .evt-tab[data-t="lesson"]{flex:1.7 1 0 !important}
+.ev-eval .ev-cell-gold{border-radius:18px !important}
+.ev-eval .evt-done-row{gap:10px}
+.ev-eval .ev-act{min-height:132px !important;border-radius:20px !important;color:#fff !important;animation:none !important;gap:6px !important}
+.ev-eval .ev-act-ico{width:48px !important;height:48px !important;border-radius:15px !important;background:rgba(240,208,96,.12) !important;border:1px solid rgba(240,208,96,.38);color:#f7d774 !important;box-shadow:0 0 18px rgba(240,208,96,.22)}
+.ev-eval .ev-act-ico svg{width:26px !important;height:26px !important}
+.ev-eval .ev-act-t{font-size:1rem !important;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.ev-eval .ev-act-s{color:#b9d6d2;opacity:1 !important;font-size:.68rem !important;font-weight:700 !important}
+.ev-eval .ev-act-save .ev-act-t{color:#ffe79a}
+.ev-eval .ev-act-reset{background:radial-gradient(150px 80px at 50% 0%,rgba(248,113,113,.14),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,linear-gradient(160deg,rgba(248,113,113,.7),rgba(248,113,113,.12) 45%,rgba(240,208,96,.3)) border-box !important}
+.ev-eval .ev-act-reset .ev-act-ico{background:rgba(248,113,113,.12) !important;border-color:rgba(248,113,113,.42);color:#fca5a5 !important;box-shadow:0 0 18px rgba(248,113,113,.2)}
+.ev-eval .ev-act-reset .ev-act-t{color:#ffd7d7}
+.ev-eval .ev-act:active{transform:scale(.96)}
+
+/* (6) المربع الرقمي في التحضير: أصغر وتفاعلي */
+.atx-av{width:34px !important;height:34px !important;border-radius:11px !important;transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .3s,background .3s}
+.atx-av span{font-size:.92rem !important}
+.atx-row:active .atx-av{transform:scale(.86) rotate(-6deg)}
+.atx-row.pop .atx-av{animation:atxAvPop .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes atxAvPop{0%{transform:scale(1)}30%{transform:scale(1.28) rotate(8deg)}60%{transform:scale(.92) rotate(-4deg)}100%{transform:scale(1) rotate(0)}}
+.atx-row.k-p .atx-av,.atx-row.k-l .atx-av,.atx-row.k-a .atx-av,.atx-row.k-e .atx-av,.atx-row.k-r .atx-av{box-shadow:0 0 0 1.5px rgba(209,250,229,.7),0 0 16px rgba(52,211,153,.5),inset 0 1px 0 rgba(255,255,255,.5) !important}
+/* (7) ملخّص التحضير ثابت أعلى القائمة */
+.atx-sum{position:sticky !important;z-index:6 !important;background:linear-gradient(165deg,#0f4a44 0%,#0a3531 70%,#082b28 100%) !important;box-shadow:0 12px 22px rgba(4,30,28,.55) !important}
+
+/* (12)(13) رأس المحادثة */
+.mh-th-hd{padding:12px 12px !important;border-radius:18px !important;margin-bottom:10px;gap:12px !important}
+.mh-th-ic{flex:none;width:46px;height:46px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:#f7d774;background:rgba(240,208,96,.12);border:1px solid rgba(240,208,96,.38);box-shadow:0 0 18px rgba(240,208,96,.22)}
+.mh-th-ic svg{width:26px;height:26px}
+.mh-th-n b{font-size:.98rem !important;font-weight:900;color:#ffe79a !important}
+.mh-th-n span{font-size:.7rem !important;color:#b9d6d2 !important;font-weight:700}
+
+/* (14) صفحة الاختبار: الآية تحت السورة في الوسط */
+.ex-scope2 .ex-ayah-wrap{display:block !important}
+.ex-scope2 .ex-ayah-sel{width:100% !important}
+.ex-scope2 .ex-scope-row{align-items:flex-start}
+.ex-scope2 .ex-scope-arrow{align-self:center}
+/* (15) ظهور الإجابة */
+.ex-q.ans-in .ex-q-ans{animation:evtIn .3s cubic-bezier(.22,.9,.3,1) both}
+.ex-ans-ayat{cursor:pointer}
+
+/* (10) أسطر الأسباب في الكشوف */
+#pdfReport .pr-tbl td,.hqacc-val{white-space:pre-line}
+
+/* (9) منتقيا التاريخ: من ... إلى */
+.hq-rng{display:grid;grid-template-columns:1fr;gap:4px}
+.hq-rng-i .hqacc-lbl{color:#f7d774 !important;font-weight:800}
+
+/* (16)(17) رأس النافذة المميّز */
+.modal-sheet.hero .modal-close-btn{display:none !important}
+.modal-sheet.hero .modal-hdr{justify-content:center;padding:4px 16px 0;border-bottom:0;overflow:hidden;
+  background:#0f4540 !important;background-image:none !important;box-shadow:0 10px 18px -6px rgba(4,30,28,.55)}
+.modal-sheet.hero .modal-title{width:100%}
+.mhero{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0 0;text-align:center}
+.mhero-glow{position:absolute;left:50%;top:-40px;width:260px;height:150px;transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(closest-side,rgba(247,215,116,.26),rgba(247,215,116,.06) 60%,transparent)}
+.mhero-row{position:relative;display:flex;align-items:center;justify-content:center;gap:10px}
+.mhero-ic{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#0b3a36;
+  background:linear-gradient(145deg,#fff1b8,#f2c74a 55%,#b8912a);box-shadow:0 6px 18px rgba(201,162,39,.4),inset 0 1px 0 rgba(255,255,255,.6);animation:mheroIn .6s cubic-bezier(.34,1.56,.64,1) both}
+.mhero-ic svg{width:25px;height:25px}
+.mhero-t{font-size:1.45rem;font-weight:900;letter-spacing:.2px;line-height:1.2;
+  background:linear-gradient(100deg,#fff3c4 0%,#f7d774 40%,#fffbe6 50%,#f7d774 60%,#e2b13c 100%);background-size:220% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:mheroShine 1.6s ease-out .2s both;filter:drop-shadow(0 2px 10px rgba(247,215,116,.25))}
+@keyframes mheroShine{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes mheroIn{from{opacity:0;transform:scale(.6) rotate(-12deg)}to{opacity:1;transform:none}}
+.mhero-chip{position:relative;display:inline-flex;align-items:center;gap:10px;padding:5px 6px 5px 14px;border-radius:999px;
+  border:1px solid rgba(240,208,96,.4);background:linear-gradient(135deg,rgba(240,208,96,.14),rgba(255,255,255,.03));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 16px rgba(0,0,0,.2);animation:mheroUp .5s cubic-bezier(.22,.9,.3,1) .15s both}
+.mhero-chip span{font-size:.8rem;font-weight:800;color:#d6ece9}
+.mhero-chip b{min-width:34px;height:28px;padding:0 9px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:.98rem;font-weight:900;color:#0b3a36;
+  background:linear-gradient(135deg,#ffe99b,#f2c74a 60%,#c9a227);box-shadow:0 3px 10px rgba(201,162,39,.4)}
+@keyframes mheroUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.mhero-hint{display:flex;align-items:center;gap:7px;font-size:.62rem;font-weight:700;color:rgba(214,236,233,.55)}
+.mhero-hint i{font-style:normal;color:#f7d774;font-size:.85rem;opacity:.75}
+.mhero-line{position:relative;width:100%;height:14px;margin-top:2px}
+.mhero-line::before{content:'';position:absolute;left:4%;right:4%;top:50%;height:1px;background:linear-gradient(90deg,transparent,rgba(247,215,116,.65) 30%,rgba(255,243,196,.9) 50%,rgba(247,215,116,.65) 70%,transparent)}
+.mhero-line span{position:absolute;left:50%;top:50%;width:9px;height:9px;transform:translate(-50%,-50%) rotate(45deg);background:#f7d774;box-shadow:0 0 10px rgba(247,215,116,.85)}
+.modal-sheet.hero .stu-list-wrap{padding-top:4px}
 </style>
 <script>
 /* ===================================================================
@@ -18946,8 +19136,8 @@ async function showRecitationView(dk){
   var extra='';
   if(plus>0||minus>0){
     extra='<div class="rec-grades">'+
-      (plus>0?('<div class="rec-gcell"><span class="rec-glbl">مشاركة</span><b class="rec-gval">+'+evFmt(plus)+'</b>'+(day.plusWhy?('<span class="rec-gwhy">'+hqEsc(day.plusWhy)+'</span>'):'')+'</div>'):'')+
-      (minus>0?('<div class="rec-gcell"><span class="rec-glbl">عقوبة</span><b class="rec-gval" style="color:#f87171">−'+evFmt(minus)+'</b>'+(day.minusWhy?('<span class="rec-gwhy">'+hqEsc(day.minusWhy)+'</span>'):'')+'</div>'):'')+
+      (plus>0?('<div class="rec-gcell"><span class="rec-glbl">مشاركة</span><b class="rec-gval">+'+evFmt(plus)+'</b>'+(evPMList(day,'plus').filter(Boolean).length?('<span class="rec-gwhy">'+hqEsc(evPMList(day,'plus').map(function(x,i){ return arNum(i+1)+') '+(x||'بلا سبب'); }).join(' · '))+'</span>'):'')+'</div>'):'')+
+      (minus>0?('<div class="rec-gcell"><span class="rec-glbl">عقوبة</span><b class="rec-gval" style="color:#f87171">−'+evFmt(minus)+'</b>'+(evPMList(day,'minus').filter(Boolean).length?('<span class="rec-gwhy">'+hqEsc(evPMList(day,'minus').map(function(x,i){ return arNum(i+1)+') '+(x||'بلا سبب'); }).join(' · '))+'</span>'):'')+'</div>'):'')+
     '</div>';
   }
   openModal('عرض التقييم', tabs+'<div class="rec-wrap" id="recWrap"><div class="rec-loading">… يجري تحضير التقييم</div></div>');
