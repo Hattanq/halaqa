@@ -3643,7 +3643,23 @@ function hqRebindAfterMerge(){
   if(_hqSwapDepth>0 && _hqSwapId){ var sh=hqHalqaById(_hqSwapId); if(sh && typeof hqBindDB==='function') hqBindDB(sh); }
 }
 
-function save(){ if(DB.halqat){ lsSave('hq_halqat',DB.halqat); } lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_teachers',DB.teachers||[]); lsSave('hq_suspend',DB.suspend||{}); lsSave('hq_visits',DB.visits||[]); lsSave('hq_tmsgs',DB.tmsgs||{}); lsSave('hq_timeline',DB.timeline||{}); lsSave('hq_students',DB.students);lsSave('hq_sessions',DB.sessions);lsSave('hq_grades',DB.grades);lsSave('hq_plans',DB.plans);lsSave('hq_hplans',DB.hplans||{});lsSave('hq_attend',DB.attend);lsSave('hq_users',DB.users);lsSave('hq_recitation',DB.recitation);lsSave('hq_evals',DB.evals);lsSave('hq_mistakes',DB.mistakes);lsSave('hq_exams',DB.exams);
+/* (18.0) الحفظ على الجهاز مؤجَّل ومجمَّع: كل لمسة كانت تُسلسل قاعدة البيانات كاملة وتضغطها فوراً فتتأخّر الاستجابة؛
+   الآن تُعلَّم البيانات «متغيّرة» وتُكتب بعد لحظة واحدة لكل دفعة تعديلات، وتُكتب فوراً عند مغادرة التطبيق أو إخفائه */
+var _hqSaveT=null, _hqSaveDirty=false;
+function save(now){
+  _hqSaveDirty=true;
+  try{ if(typeof cloudViewSig==='function') _cloudSig=cloudViewSig(); }catch(e){}
+  if(now===true){ hqSaveFlush(); return; }
+  if(!_hqSaveT) _hqSaveT=setTimeout(hqSaveFlush,320);
+}
+function hqSaveFlush(){
+  if(_hqSaveT){ clearTimeout(_hqSaveT); _hqSaveT=null; }
+  if(!_hqSaveDirty) return;
+  _hqSaveDirty=false;
+  hqSaveNow();
+}
+function hqSaveCancel(){ if(_hqSaveT){ clearTimeout(_hqSaveT); _hqSaveT=null; } _hqSaveDirty=false; }
+function hqSaveNow(){ if(DB.halqat){ lsSave('hq_halqat',DB.halqat); } lsSave('hq_supervisors',DB.supervisors||[]); lsSave('hq_teachers',DB.teachers||[]); lsSave('hq_suspend',DB.suspend||{}); lsSave('hq_visits',DB.visits||[]); lsSave('hq_tmsgs',DB.tmsgs||{}); lsSave('hq_timeline',DB.timeline||{}); lsSave('hq_students',DB.students);lsSave('hq_sessions',DB.sessions);lsSave('hq_grades',DB.grades);lsSave('hq_plans',DB.plans);lsSave('hq_hplans',DB.hplans||{});lsSave('hq_attend',DB.attend);lsSave('hq_users',DB.users);lsSave('hq_recitation',DB.recitation);lsSave('hq_evals',DB.evals);lsSave('hq_mistakes',DB.mistakes);lsSave('hq_exams',DB.exams);
   var _ch=1; try{ _ch=hqStamp(); }catch(e){ _ch=1; }
   /* الطالب وولي الأمر لا يعدّلان شيئاً في العادة (دخولهما فقط): لا نرفع الكتلة كاملة (٦٦٧ ك.ب)
      على كل الأجهزة بلا تغيير. أما عند تغيير بياناتهما فالختم يرصد التغيير ويُرفع */
@@ -4145,9 +4161,11 @@ function cloudWake(){
 try{
   /* (17.1) مغادرة التطبيق إلى الخلفية (أو قفل الشاشة) وعندنا ما لم يُرفع: يبدأ الرفع فوراً قبل أن يجمّد النظام الصفحة —
      كان الرفع ينتظر مهلة التأخير ثم يموت مع الخلفية فلا يصل تقييم المعلّم إلا عند عودته */
-  var _hqFlush=function(){ try{ if(_cloudDirty&&_cloudReconciled){ if(_cloudTimer){ clearTimeout(_cloudTimer); _cloudTimer=null; } _cloudDoPush(); } }catch(e){} };
+  var _hqFlush=function(){ try{ if(typeof hqSaveFlush==='function') hqSaveFlush(); }catch(e){} try{ if(_cloudDirty&&_cloudReconciled){ if(_cloudTimer){ clearTimeout(_cloudTimer); _cloudTimer=null; } _cloudDoPush(); } }catch(e){} };
   document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') cloudWake(); else _hqFlush(); });
   window.addEventListener('pagehide',_hqFlush);
+  window.addEventListener('beforeunload',_hqFlush);
+  document.addEventListener('freeze',_hqFlush);
   window.addEventListener('pageshow',function(){ cloudWake(); });
   window.addEventListener('online',function(){ cloudWake(); });
   window.addEventListener('focus',function(){ cloudWake(); });
@@ -4267,6 +4285,7 @@ var HQ_LS_KEYS=['hq_halqat','hq_users','hq_supervisors','hq_teachers','hq_visits
   'hq_students','hq_sessions','hq_grades','hq_plans','hq_hplans','hq_attend','hq_recitation','hq_evals',
   'hq_mistakes','hq_exams','hq_suspend','hq_rev','hq_session','hq_lastuser'];
 function hqWipeLocal(stamp){
+  try{ hqSaveCancel(); }catch(e){}   /* لا يُعاد كتابة ما مُسح بحفظ مؤجَّل */
   try{
     HQ_LS_KEYS.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
     localStorage.setItem('hq_wipe', String(stamp||Date.now()));
@@ -4314,6 +4333,7 @@ function hqPwSave(k){
    =================================================================== */
 var HQ_BK_KEYS=['hq_halqat','hq_users','hq_supervisors','hq_teachers','hq_visits','hq_tmsgs','hq_timeline'];
 function hqBackupData(){
+  try{ hqSaveFlush(); }catch(e){}   /* النسخة الاحتياطية من آخر ما حُفظ */
   var o={app:'halaqat', v:(window.HQ_BUILD||''), at:Date.now(), seed:HQ_SEED_ID, data:{}};
   HQ_BK_KEYS.forEach(function(k){ try{ o.data[k]=lsGet(k,null); }catch(e){} });
   return o;
@@ -4750,6 +4770,7 @@ function doLogin(){
   launchApp();
 }
 function doLogout(){
+  try{ hqSaveFlush(); }catch(e){}
   try{ localStorage.removeItem('hq_sess'); }catch(e){}
   STATE.user=null; STATE.role=null;
   document.getElementById('mainApp').classList.remove('active');
@@ -4916,11 +4937,14 @@ function showPage(id){
   STATE.page=id;
   if(id!=='grades'&&id!=='mistakes') STATE.evDay=null;   /* شاشة التسميع تُفتح من بطاقة التقييم فتبقى على اليوم المختار */
   if(id!=='mistakes') document.body.classList.remove('mis-reading');
+  /* (18.0) صفحة التقييم عند المعلّم بلا رأس التطبيق — رأسها الخاص (تقييم الطلاب ويوم التقييم) ثابت في أعلاها */
+  document.body.classList.toggle('hq-grades', id==='grades' && typeof STATE!=='undefined' && STATE.role==='teacher');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg=document.getElementById('pg-'+id);
   if(pg) pg.classList.add('active');
   buildNav();
-  document.getElementById('pagesWrap').scrollTop=0;
+  /* (18.0) الانتقال بين الصفحات يبدأ من أعلى الصفحة فوراً (كان التمرير الناعم يؤخّر ظهورها) */
+  try{ var _pw=document.getElementById('pagesWrap'); _pw.style.scrollBehavior='auto'; _pw.scrollTop=0; _pw.style.scrollBehavior=''; }catch(e){ document.getElementById('pagesWrap').scrollTop=0; }
   renderPage(id);
   if(typeof cloudPillApply==='function') cloudPillApply();
 }
@@ -5057,7 +5081,7 @@ function showAddStudent(){
   for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'">'+hM[mo]+'</option>';
   for(var y=1400;y<=1448;y++) yOpts+='<option value="'+y+'"'+(y===1440?' selected':'')+'>'+y+'</option>';
 
-  var body='<div class="prof-form-wrap">'+
+  var body='<div class="prof-form-wrap pf-glow">'+
     '<div class="prof-form-grid">'+
 
     /* الاسم */
@@ -9818,7 +9842,7 @@ function showAddHalqa(){
         return '<label class="hqpick-row"><input type="checkbox" class="ah-day" value="'+hqEsc(d)+'"'+(i<5?' checked':'')+' onchange="hqPickSync(\'ah-days\')"><span>'+hqEsc(d)+'</span></label>';
       }).join('')+'</div>'+
     '</div></div>';
-  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+  var body='<div class="prof-form-wrap pf-glow"><div class="prof-form-grid">'+
     fld('اسم الحلقة','ah-name','مثال: حلقة أبي بكر الصدّيق')+
     sel('معلم الحلقة','ah-teacher',teachers.map(function(t){ return {v:t.id,n:t.name}; }),
       teachers.length?'اختر المعلم':'لا يوجد معلمون — أضِفهم أولاً')+
@@ -10127,7 +10151,7 @@ function showAddTeacher(){
   for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'">'+hM[mo]+'</option>';
   function fld(lbl,id,ph,tp){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label><input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" placeholder="'+ph+'"></div>'; }
   var yOpts=''; for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'">'+_y+'</option>';
-  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+  var body='<div class="prof-form-wrap pf-glow"><div class="prof-form-grid">'+
     fld('اسم المعلم','te-name','الاسم كاملاً')+
     fld('الهوية / الإقامة','te-nid','رقم الهوية أو الإقامة')+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الميلاد (هجري)</label>'+
@@ -10214,7 +10238,7 @@ function showAddSupervisor(){
   for(var mo=0;mo<12;mo++) mOpts+='<option value="'+(mo+1)+'">'+hM[mo]+'</option>';
   function fld(lbl,id,ph,tp){ return '<div class="prof-form-field"><label class="prof-form-lbl">'+lbl+'</label><input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" placeholder="'+ph+'"></div>'; }
   var yOpts=''; for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'">'+_y+'</option>';
-  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+  var body='<div class="prof-form-wrap pf-glow"><div class="prof-form-grid">'+
     fld('اسم مشرف الحلقات','sv-name','الاسم كاملاً')+
     fld('الهوية / الإقامة','sv-nid','رقم الهوية أو الإقامة')+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الميلاد (هجري)</label>'+
@@ -10567,7 +10591,7 @@ function teacherEditOpen(tid){
   var yOpts=''; for(var _y=1448;_y>=1360;_y--) yOpts+='<option value="'+_y+'"'+((''+_y)===(''+(t.bYear||''))?' selected':'')+'>'+_y+'</option>';
   var uk=hqTeacherUserKey(t.id,t.username);
   var un=(uk&&DB.users[uk]?DB.users[uk].username:t.username)||'';
-  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+  var body='<div class="prof-form-wrap pf-glow"><div class="prof-form-grid">'+
     fld('الاسم','te-e-name',t.name)+
     fld('الهوية / الإقامة','te-e-nid',t.nid)+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الميلاد (هجري)</label>'+
@@ -13922,6 +13946,7 @@ function openModal(title, body){
   bg.style.display    = 'flex';
   bg.style.opacity    = '';
   bg.style.pointerEvents = '';
+  document.body.classList.add('hq-modal-open');   /* (18.0) ما خلف النافذة (مطموس ومعتم) تتوقّف حركاته حتى تُغلق */
   if(typeof cloudPillApply==='function') cloudPillApply();
   setTimeout(function(){
     if(bg)    bg.classList.add('open');
@@ -13935,7 +13960,11 @@ function hqModalHeroDo(title,lbl,num,ico,sub){
   sh.classList.add('hero');
   var back=(typeof window._modalBack==='function');
   ttl.classList.remove('modal-back-title'); ttl.onclick=null;
-  ttl.innerHTML='<div class="mhero">'+
+  /* إعادة بناء النافذة نفسها (بعد كل حكم في بطاقة التقييم مثلاً): الرأس يبقى ساكناً بلا إعادة حركاته */
+  var _bg=document.getElementById('modalBg'), _sig=title+'|'+(sub||'')+'|'+(lbl||'')+'|'+(num==null?'':num);
+  var _same=(_bg&&_bg.classList.contains('open')&&ttl.getAttribute('data-hero')===_sig);
+  ttl.setAttribute('data-hero',_sig);
+  ttl.innerHTML='<div class="mhero'+(_same?' still':'')+'">'+
     '<div class="mhero-glow"></div>'+
     '<div class="mhero-row">'+'<span class="mhero-ic">'+(ico||hqHeroIcon(title))+'</span>'+'<span class="mhero-t">'+hqEsc(title)+'</span></div>'+
     (sub?('<div class="mhero-sub">'+hqEsc(sub)+'</div>'):'')+
@@ -13962,11 +13991,13 @@ var HQ_HERO_SVG={
   edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   school:'<path d="M3 9.5L12 4l9 5.5-9 5.5z"/><path d="M6.5 11.6V16c1.6 1.6 3.4 2.4 5.5 2.4s3.9-.8 5.5-2.4v-4.4"/>',
   key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>',
-  star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/>'
+  star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/>',
+  grade:'<rect x="4.5" y="4" width="15" height="17" rx="2.5"/><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4"/><path d="M15.5 14.5l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.2-2.4 1.2.5-2.6-1.9-1.8 2.6-.4z" fill="currentColor" stroke="none"/>'
 };
 function hqHeroIcon(t){
   t=String(t||''); var k='star';
-  if(/تحضير|الحضور اليومي|الغياب/.test(t)) k='clip';
+  if(/^تقييم الطالب/.test(t)) k='grade';
+  else if(/تحضير|الحضور اليومي|الغياب/.test(t)) k='clip';
   else if(/تعليق|الخط الزمني|التاريخ|زيار/.test(t)) k='cal';
   else if(/إضافة/.test(t)) k='add';
   else if(/تقارير|إحصائ|تشخيص/.test(t)) k='chart';
@@ -13989,7 +14020,7 @@ function hqHeroEligible(t){
   if(/^(تأكيد|حذف|نوع الخطأ|مسح|إلغاء|اليوم مُعلَّق|الغياب الجماعي|تعديل التاريخ|تقييم:|حسابات أُنشئت)/.test(t)) return false;
   if(STATE.role!=='teacher') return true;
   if(window._hqBackT) return true;   /* شاشات الخطط الداخلية */
-  return /^(إضافة طالب|بيانات الطلاب|تحضير الطلاب|تسميعات اليوم|تعليق الحضور|خطط الحفظ|خطط الطلاب|الانضمام إلى|خطة|المنهج|منهج|العمل بلا إنترنت|اختبارات الجمعية|ترتيب الطلاب|خدمة الرسائل|الخط الزمني|تقارير|تعديل بيانات الطالب|عودة)/.test(t);
+  return /^(إضافة طالب|بيانات الطلاب|تحضير الطلاب|تسميعات اليوم|تعليق الحضور|خطط الحفظ|خطط الطلاب|الانضمام إلى|خطة|المنهج|منهج|العمل بلا إنترنت|اختبارات الجمعية|ترتيب الطلاب|خدمة الرسائل|الخط الزمني|تقارير|تعديل بيانات الطالب|تعديل بيانات المعلم|عودة)/.test(t);
 }
 function hqHeroAuto(){
   try{
@@ -14074,7 +14105,7 @@ function closeModal(){
   var sheet = document.getElementById('modalSheet');
   if(bg)    bg.classList.remove('open');
   if(sheet) sheet.classList.remove('open');
-  setTimeout(function(){ if(bg) bg.style.display='none'; if(sheet&&!(bg&&bg.classList.contains('open'))) sheet.classList.remove('hero'); if(typeof cloudPillApply==='function') cloudPillApply(); if(typeof _cloudPending!=='undefined' && _cloudPending){ _cloudPending=false; if(typeof cloudRerender==='function') cloudRerender(); } }, 320);
+  setTimeout(function(){ if(bg) bg.style.display='none'; if(sheet&&!(bg&&bg.classList.contains('open'))) sheet.classList.remove('hero'); if(!(bg&&bg.classList.contains('open'))) document.body.classList.remove('hq-modal-open'); if(typeof cloudPillApply==='function') cloudPillApply(); if(typeof _cloudPending!=='undefined' && _cloudPending){ _cloudPending=false; if(typeof cloudRerender==='function') cloudRerender(); } }, 320);
 }
 function handleModalBgClick(e){
   if(e.target === document.getElementById('modalBg')) closeModal();
@@ -14992,6 +15023,8 @@ function evAbsWatch(sid){
   }catch(e){}
 }
 
+/* (18.1) أيقونة الإعجاب للطالب المقيَّم */
+var EV_THUMB_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9.5H4.2A1.2 1.2 0 013 18.8v-7.1a1.2 1.2 0 011.2-1.2H7z"/><path d="M7 10.5l3.6-6.8a1.9 1.9 0 013.4 1.5l-.8 3.8h5.4a2.2 2.2 0 012.2 2.6l-1.2 6.6a2.3 2.3 0 01-2.3 1.8H7"/></svg>';
 function renderGrades(){
   var wrap=document.getElementById('gr-content'); if(!wrap) return;
   if(!DB.evals) DB.evals={};
@@ -15028,7 +15061,7 @@ function renderGrades(){
       +'<div class="ev-stu-name">'+(s.name||'')+(_off?' <span class="ev-stu-disc">منقطع</span>':'')+'</div>'
       +(partial?'<span class="ev-stu-partial">غير مكتمل</span>':(_auto?'<span class="ev-stu-partial auto">غياب تلقائي</span>':''))
       +'<span class="ev-stu-score">'+evFmt(sc.total)+'</span>'
-      +(partial?'':('<span class="ev-stu-chevron">'+((done&&!_auto)?'✓':'›')+'</span>'))
+      +(partial?'':('<span class="ev-stu-chevron'+((done&&!_auto)?' ok':'')+'">'+((done&&!_auto)?EV_THUMB_SVG:'›')+'</span>'))
       +'</div>';
   }).join('');
   var _sus=evSuspToday();
@@ -15064,8 +15097,7 @@ function renderGrades(){
     if(!cards) cards='<div class="empty-state"><div class="empty-state-icon">📊</div>لا يوجد طلاب</div>';
     body='<div class="ev-stu-list">'+cards+'</div>';
   }
-  wrap.innerHTML='<div class="ev-wrap">'+hqPageHero('تقييم الطلاب',_isT2?'طلاب الحلقة':'',_isT2?base.length:0)
-    +(_isT2?evWeekStrip():'')
+  wrap.innerHTML='<div class="ev-wrap">'+(_isT2?('<div class="ev-sticky">'+hqPageHero('تقييم الطلاب','طلاب الحلقة',base.length)+evWeekStrip()+'</div>'):hqPageHero('تقييم الطلاب','',0))
     +(_sus?('<div class="ev-susp-bar">'+(evDayIsToday()?'حضور اليوم مُعلَّق':('حضور '+evDayLabel(key)+' مُعلَّق'))+' - '+hqEsc(_sus.reason)+(_sus.days>1?(' - '+arNum(_sus.days)+' أيام'):'')+'</div>'):'')
     +body
     +_bar+'</div>';
@@ -15289,7 +15321,13 @@ function evSyncManual(dd){
   }catch(e){}
 }
 /* بطاقة الدرس/المراجعة: صف الجزء+الرقم، ثم عرض التسميع، ثم أزرار المصير */
-function evRecCell(kind,curLinear,todayVal,sid){
+/* (18.0) لقطة يوم سابق: النصّ المحفوظ في سجل اليوم، وهل يخالف نصّ الخطة الحالية لهذا الرقم (خطة سابقة) */
+function evPastSnap(sid,kind,n,day){
+  var t=(day&&day[kind+'T'])?String(day[kind+'T']):''; if(!t) return null;
+  var cur=''; try{ cur=String(hqPlanDayText(sid,kind,n)||''); }catch(e){}
+  return {t:t, old:(cur!==t)};
+}
+function evRecCell(kind,curLinear,todayVal,sid,snap){
   var _pl=(typeof hqPlanActive==='function')?hqPlanActive(sid):null;
   var p=_pl?{juz:0,idx:curLinear}:upFromLinear(curLinear);
   var done=(todayVal && (String(todayVal).indexOf('n:')===0 || String(todayVal).indexOf('x:')===0 || String(todayVal).indexOf('z:')===0));
@@ -15303,9 +15341,9 @@ function evRecCell(kind,curLinear,todayVal,sid){
   return '<div class="ev-cell ev-cell-rec ev-jp ev-jp-wide'+(done?' done':'')+'" data-kind="'+kind+'" data-sid="'+sid+'">'
     +'<div class="ev-lbl">'+lbl+'</div>'
     +'<div class="ev-jp-sels">'
-      +(_pl?evJPDD('ev-'+kind+'-juz',kind,'juz',hqStageOfDay(_pl,curLinear),hqStageName(sid,curLinear)||'الخطة','',true,"evOpenPlan('"+sid+"')")
+      +(_pl?evJPDD('ev-'+kind+'-juz',kind,'juz',hqStageOfDay(_pl,curLinear),(snap&&snap.old)?'خطة سابقة':(hqStageName(sid,curLinear)||'الخطة'),'',true,"evOpenPlan('"+sid+"')")
            :evJPDD('ev-'+kind+'-juz',kind,'juz',p.juz,evJuzLabel(p.juz),'',true))
-      +(_pl?evJPDD('ev-'+kind+'-idx',kind,'idx',curLinear,arNum(curLinear)+' - '+hqPlanDayText(sid,kind,curLinear),'',true,"evOpenPlan('"+sid+"')")
+      +(_pl?evJPDD('ev-'+kind+'-idx',kind,'idx',curLinear,(snap?(snap.old?snap.t:(arNum(curLinear)+' - '+snap.t)):(arNum(curLinear)+' - '+hqPlanDayText(sid,kind,curLinear))),'',true,"evOpenPlan('"+sid+"')")
            :evJPDD('ev-'+kind+'-idx',kind,'idx',p.idx,evIdxLabel(kind,p.juz,p.idx),'',true))
     +'</div>'
     +viewBtn
@@ -15935,10 +15973,10 @@ function evPartClear(sid,fld){
    والانتقال بعد كل خطوة تلقائيّ، والغائب يقفز من الحضور إلى الاعتماد مباشرة.
    وبعد إتمام الخطوات كلها يصير التنقّل يدويّاً حرّاً للتعديل */
 var EVT_TABS=[
-  {k:'lesson', n:'الدرس والمراجعة'},
-  {k:'level',  n:'المستوى'},
-  {k:'pts',    n:'إضافة وخصم نقاط'},
-  {k:'done',   n:'اعتمد'}
+  {k:'lesson', n:'الدرس والمراجعة', h:'الدرس<br>والمراجعة'},
+  {k:'level',  n:'مستوى حفظ الدرس', h:'مستوى حفظ<br>الدرس'},
+  {k:'pts',    n:'إضافة وخصم نقاط', h:'إضافة وخصم<br>نقاط'},
+  {k:'done',   n:'اعتمد',           h:'اعتمد'}
 ];
 var _evtSid='', _evtCur='', _evtFree=false;
 /* ===== التغييب التلقائي: من لم يُقيَّم تقييماً كاملاً في يوم دراسي مضى يُسجَّل غائباً =====
@@ -16067,7 +16105,7 @@ function evtTabsHtml(){
   for(var i=0;i<EVT_TABS.length;i++){
     var t=EVT_TABS[i];
     h+='<button type="button" class="evt-tab" data-t="'+t.k+'" '+
-       'onclick="evtTapEv(event,\''+t.k+'\')" ontouchend="evtTapEv(event,\''+t.k+'\')"><span class="evt-tick">✓</span>'+t.n+'</button>';
+       'onclick="evtTapEv(event,\''+t.k+'\')" ontouchend="evtTapEv(event,\''+t.k+'\')"><span class="evt-tick">✓</span><span class="evt-tab-l">'+(t.h||t.n)+'</span></button>';
   }
   return h+'</div>';
 }
@@ -16174,15 +16212,17 @@ function openStudentEval(sid){
   var _mx=_plan?_plan.days.length:UNIFIED_MAXDAY;
   var reqL=Math.min(_mx,(prog.lesson||0)+1), reqR=Math.min(_mx,(prog.review||0)+1);
   /* (17.9) يوم سابق قُيّم وبعده أيام مقيَّمة: يُعرض ما سُجّل في ذلك اليوم نفسه، لا موضع الطالب الآن */
+  var _snapL=null, _snapR=null;
   (function(){
     var j0=hqJdOfKey(key), dd=rec.days||{};
     function num(k){ var m=String(today[k]||'').match(/^[nxz]:(\d+)/); return m?parseInt(m[1],10):0; }
     function later(k){ for(var kk in dd){ if(hqJdOfKey(kk)>j0 && /^[nxz]:/.test(String((dd[kk]||{})[k]||''))) return true; } return false; }
-    if(num('lesson')&&later('lesson')) reqL=num('lesson');
-    if(num('review')&&later('review')) reqR=num('review');
+    /* (18.0) النصّ المحفوظ مع سجل اليوم هو المعتمد (كما في الكشف): بعد تغيير الخطة يبقى رقم اليوم القديم بنصّه القديم */
+    if(num('lesson')&&later('lesson')){ reqL=num('lesson'); _snapL=evPastSnap(sid,'lesson',reqL,today); }
+    if(num('review')&&later('review')){ reqR=num('review'); _snapR=evPastSnap(sid,'review',reqR,today); }
   })();
-  var recCell=evRecCell('lesson',reqL,today.lesson,sid);
-  var reviewCell=evRecCell('review',reqR,today.review,sid);
+  var recCell=evRecCell('lesson',reqL,today.lesson,sid,_snapL);
+  var reviewCell=evRecCell('review',reqR,today.review,sid,_snapR);
   function cell(lbl,inner){ return '<div class="ev-cell ev-cell-gold"><div class="ev-lbl">'+lbl+'</div>'+inner+'</div>'; }
   var _isT=(typeof STATE!=='undefined'&&STATE.role==='teacher'), _isT0=_isT;
   var attendCell=cell('\u0627\u0644\u062d\u0636\u0648\u0631', evOptSelect('attend',['\u062d\u0627\u0636\u0631','\u0645\u062a\u0623\u062e\u0631','\u063a\u0627\u0626\u0628','\u063a\u0627\u0626\u0628 \u0628\u0639\u0630\u0631','\u062a\u0633\u0645\u064a\u0639 \u0639\u0646 \u0628\u0639\u062f'],today.attend||(_isT0?'\u062d\u0627\u0636\u0631':'')));
@@ -16248,6 +16288,7 @@ function openStudentEval(sid){
     +'</div>'+_startBox):'';
   var body='<div class="prof-form-wrap ev-eval">'+_eval+'</div>';
   openModal('\u062a\u0642\u064a\u064a\u0645: '+(s.name||''), body);
+  if(_isT){ try{ hqModalHero(s.name||'', '', null, hqHeroIcon('تقييم الطالب'), 'تقييم '+evDayLabel(key)); }catch(e){} }
   if(typeof evApplyAbsence==='function') evApplyAbsence();
   if(_isT){ try{ _evtFree=evtAllDone(); evtGo(_stay||evtFirstOpen(),true); }catch(e){} }
   setTimeout(function(){ hqAnimNums(document.getElementById('modalBody'),'.ev-got'); },160);
@@ -16681,7 +16722,7 @@ function tiSelfEditOpen(){
     '<input class="prof-form-input" id="'+id+'" type="'+(tp||'text')+'" value="'+hqEsc(val||'')+'"></div>'; }
   var uk=hqTeacherUserKey(t.id,t.username);
   var un=(uk&&DB.users[uk]?DB.users[uk].username:t.username)||(h&&h.teacherUser)||'';
-  var body='<div class="prof-form-wrap"><div class="prof-form-grid">'+
+  var body='<div class="prof-form-wrap pf-glow"><div class="prof-form-grid">'+
     fld('الاسم','ti-name',t.name||(h&&h.teacherName)||'')+
     fld('الهوية / الإقامة','ti-nid',t.nid)+
     '<div class="prof-form-field"><label class="prof-form-lbl">تاريخ الميلاد (هجري)</label>'+
@@ -16980,7 +17021,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 17.9';
+  window.HQ_BUILD='2026 - 18.1';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -18651,6 +18692,86 @@ html,body{background:#051e1c}
 .ev-eval .ev-act-wide:active .ev-act-ico{transform:rotate(-12deg) scale(1.08);transition:transform .2s}
 .ev-act-m{display:flex;flex-direction:column;gap:3px}
 .ev-eval .ev-act-wide .ev-act-t{font-size:1.15rem !important}
+/* ===== (18.0) بطاقة التقييم: تبويبات متساوية ثابتة العبارات ===== */
+.ev-eval .evt-tabs{display:grid !important;grid-template-columns:repeat(4,1fr);gap:6px !important;padding:6px !important}
+.ev-eval .evt-tab{height:58px;flex:none !important;display:flex;align-items:center;justify-content:center;padding:4px 3px !important;white-space:normal !important;
+  font-size:11.5px !important;line-height:1.25 !important;text-align:center;overflow:visible !important;position:relative}
+.ev-eval .evt-tab .evt-tab-l{display:block}
+.ev-eval .evt-tab .evt-tick{display:none;position:absolute;top:4px;left:5px;width:15px;height:15px;margin:0 !important;border-radius:50%;font-size:9px !important;line-height:1;
+  align-items:center;justify-content:center;background:#34d399;color:#062a26;box-shadow:0 0 8px rgba(52,211,153,.6)}
+.ev-eval .evt-tab.ok .evt-tick{display:flex}
+.ev-eval .evt-tab.cur .evt-tick{background:#fff;color:#0b3a36}
+/* (5) بطاقتا الدرس والمراجعة بنمط البطاقة المتوهّجة */
+.ev-eval .ev-cell-rec{border:1.5px solid transparent !important;border-radius:18px !important;padding:12px 11px 12px !important;
+  background:radial-gradient(150px 80px at 50% 0%,rgba(240,208,96,.15),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(160deg,rgba(240,208,96,.62),rgba(240,208,96,.12) 45%,rgba(95,227,161,.38)) border-box !important;box-shadow:0 10px 24px rgba(0,0,0,.28) !important}
+.ev-eval .ev-cell-rec.done{background:radial-gradient(150px 80px at 50% 0%,rgba(95,227,161,.16),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(160deg,rgba(95,227,161,.8),rgba(95,227,161,.14) 45%,rgba(240,208,96,.4)) border-box !important}
+.ev-eval .ev-cell-rec .ev-lbl{font-size:.9rem !important;font-weight:900;color:#ffe79a;text-shadow:0 0 12px rgba(247,215,116,.3);margin-bottom:2px}
+.ev-eval .ev-cell-rec.done .ev-lbl{color:#7cf0b9;text-shadow:0 0 12px rgba(95,227,161,.35)}
+.ev-eval .ev-cell-rec .ev-dd-btn{border-radius:12px !important;background:rgba(0,0,0,.28) !important;border:1px solid rgba(240,208,96,.3) !important;padding:9px 9px !important;font-size:.74rem !important}
+.ev-eval .ev-cell-rec.done .ev-dd-btn{border-color:rgba(95,227,161,.5) !important;background:rgba(95,227,161,.1) !important;color:#9ff5cd !important}
+.ev-eval .ev-cell-rec .ev-jp-btn{border-radius:13px !important;padding:11px 6px !important;font-size:.76rem !important;color:#e8f7f6 !important;background:rgba(0,0,0,.24) !important;border:1px solid rgba(240,208,96,.22) !important;transition:transform .15s,background .2s}
+.ev-eval .ev-cell-rec .ev-jp-btn.view{padding:9px 6px !important;font-size:.7rem !important;color:#f7e3a3 !important;border-color:rgba(240,208,96,.32) !important}
+.ev-eval .ev-cell-rec .ev-jp-btn.ok{color:#7cf0b9 !important;border-color:rgba(95,227,161,.5) !important;background:rgba(95,227,161,.1) !important;font-weight:900}
+.ev-eval .ev-cell-rec .ev-jp-btn.no{color:#ffc7c7 !important;border-color:rgba(248,113,113,.45) !important;background:rgba(248,113,113,.08) !important;font-weight:900}
+.ev-eval .ev-cell-rec .ev-jp-btn:active{transform:scale(.96)}
+.ev-eval .ev-cell-rec .ev-jp-undo{width:44px !important;border-radius:13px !important;color:#0b3a36 !important;border:0 !important;
+  background:linear-gradient(145deg,#fff1b8,#f2c74a 55%,#b8912a) !important;box-shadow:0 4px 12px rgba(201,162,39,.35)}
+.ev-eval .ev-cell-rec .ev-jp-undo:active{transform:scale(.92) rotate(-30deg)}
+.ev-eval .ev-cell-rec .ev-jp-rev{gap:7px}
+/* الرأس المميّز الساكن عند إعادة البناء */
+.mhero.still .mhero-ic,.mhero.still .mhero-t,.mhero.still .mhero-chip,.mhero.still .mhero-sub{animation:none !important}
+/* (7)(8) صفحة التقييم عند المعلّم */
+body.hq-grades #appHeader{display:none !important}
+.ev-sticky{position:sticky;top:-14px;z-index:40;margin:-14px -14px 10px;padding:14px 14px 10px;border-radius:0 0 22px 22px;
+  background:linear-gradient(180deg,#0b3a36 0%,#0a3531 100%);box-shadow:0 12px 18px -8px rgba(4,30,28,.7)}
+.ev-sticky .pg-hero{margin-bottom:10px}
+.ev-sticky .ev-week{margin-bottom:0 !important}
+/* ===== (18.0) الأداء: ما خلف النافذة المفتوحة يتوقّف عن الحركة (لا يُرى تحت الطمس) ===== */
+body.hq-modal-open #appHeader *,body.hq-modal-open #appHeader *::before,body.hq-modal-open #appHeader *::after,
+body.hq-modal-open .pages-wrap *,body.hq-modal-open .pages-wrap *::before,body.hq-modal-open .pages-wrap *::after{animation-play-state:paused !important}
+
+/* ===== (18.1) قائمة «تقييم الحاضرين» بهيئة قائمة «بيانات الطلاب» ===== */
+.evh-eval .ev-stu-list{gap:10px !important}
+.evh-eval .ev-stu{border:1.5px solid transparent !important;border-radius:22px !important;padding:10px 12px !important;gap:11px !important;
+  background:radial-gradient(170px 80px at 50% 0%,rgba(240,208,96,.10),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(135deg,rgba(240,208,96,.85) 0%,rgba(240,208,96,.14) 38%,rgba(240,208,96,.10) 62%,rgba(240,208,96,.85) 100%) border-box !important;
+  box-shadow:0 10px 24px rgba(0,0,0,.28) !important}
+.evh-eval .ev-stu::before{display:none !important}
+.evh-eval .ev-stu.done{background:radial-gradient(170px 80px at 50% 0%,rgba(95,227,161,.12),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(135deg,rgba(95,227,161,.95) 0%,rgba(95,227,161,.16) 38%,rgba(95,227,161,.12) 62%,rgba(95,227,161,.95) 100%) border-box !important}
+.evh-eval .ev-stu.partial{background:radial-gradient(170px 80px at 50% 0%,rgba(251,191,36,.12),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(135deg,rgba(253,230,138,.9) 0%,rgba(251,191,36,.16) 38%,rgba(251,191,36,.12) 62%,rgba(253,230,138,.9) 100%) border-box !important}
+.evh-eval .ev-stu.autoabs{background:radial-gradient(170px 80px at 50% 0%,rgba(148,163,184,.08),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(135deg,rgba(203,213,225,.55) 0%,rgba(148,163,184,.12) 38%,rgba(148,163,184,.1) 62%,rgba(203,213,225,.55) 100%) border-box !important}
+.evh-eval .ev-stu .stu-avatar{width:40px !important;height:40px !important;border-radius:50% !important;font-size:.9rem !important;font-weight:900;color:#fff3c4 !important;
+  background:linear-gradient(145deg,#1f7a70,#0e4c46) !important;box-shadow:0 0 0 2px rgba(240,208,96,.42),0 0 14px rgba(240,208,96,.2) !important}
+.evh-eval .ev-stu.done .stu-avatar{box-shadow:0 0 0 2px rgba(95,227,161,.6),0 0 14px rgba(95,227,161,.35) !important}
+.evh-eval .ev-stu.partial .stu-avatar{box-shadow:0 0 0 2px rgba(251,191,36,.55),0 0 14px rgba(251,191,36,.3) !important}
+.evh-eval .ev-stu-name{font-size:.9rem !important;font-weight:900 !important;color:#f7e3a3 !important;line-height:1.35}
+.evh-eval .ev-stu.done .ev-stu-name{color:#fff !important}
+.evh-eval .ev-stu-score{font-size:.8rem !important;min-width:52px !important;padding:5px 10px !important;border-radius:12px !important;
+  background:rgba(0,0,0,.24) !important;border:1px solid rgba(240,208,96,.3) !important;color:#ffe79a !important}
+.evh-eval .ev-stu.done .ev-stu-score{border-color:rgba(95,227,161,.4) !important;color:#9ff5cd !important}
+.evh-eval .ev-stu-chevron{width:32px !important;height:32px !important;border-radius:50% !important;flex:none;
+  background:rgba(0,0,0,.22) !important;border:1px solid rgba(240,208,96,.28) !important;color:#f7d774 !important;font-size:1.05rem !important}
+.evh-eval .ev-stu-chevron.ok,.evh-eval .ev-stu.done .ev-stu-chevron{border:0 !important;color:#04261c !important;
+  background:linear-gradient(150deg,#a7f3d0 0%,#34d399 55%,#0e7a55 100%) !important;box-shadow:0 0 0 1.5px rgba(209,250,229,.55),0 4px 14px rgba(52,211,153,.45),inset 0 1px 0 rgba(255,255,255,.45) !important;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.evh-eval .ev-stu-chevron.ok svg{width:18px;height:18px;transform:translateY(-1px)}
+.evh-eval .ev-stu:active .ev-stu-chevron.ok{transform:rotate(-14deg) scale(1.1)}
+/* شارة «غير مكتمل» */
+.evh-eval .ev-stu-partial{display:inline-flex;align-items:center;gap:6px;margin-inline-start:0 !important;padding:4px 10px 4px 9px !important;border-radius:999px !important;
+  font-size:.6rem !important;font-weight:900 !important;letter-spacing:.2px;color:#fde68a !important;border:1px solid transparent;white-space:nowrap;animation:none !important;
+  background:linear-gradient(135deg,rgba(251,191,36,.18),rgba(251,191,36,.05)) padding-box,linear-gradient(135deg,rgba(253,230,138,.9),rgba(251,191,36,.25)) border-box !important;
+  box-shadow:0 0 14px rgba(251,191,36,.16)}
+.evh-eval .ev-stu-partial::before{content:'';width:6px;height:6px;border-radius:50%;background:#fbbf24;box-shadow:0 0 8px rgba(251,191,36,.9);animation:evxDot 1.4s ease-in-out infinite}
+@keyframes evxDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.65)}}
+.evh-eval .ev-stu-partial.auto{color:#dbe4ee !important;box-shadow:none;
+  background:linear-gradient(135deg,rgba(148,163,184,.16),rgba(148,163,184,.05)) padding-box,linear-gradient(135deg,rgba(203,213,225,.7),rgba(148,163,184,.2)) border-box !important}
+.evh-eval .ev-stu-partial.auto::before{background:#94a3b8;box-shadow:none;animation:none}
+.evh-eval .ev-stu.autoabs .ev-stu-chevron{color:#cbd5e1 !important;border-color:rgba(203,213,225,.3) !important}
 </style>
 <script>
 /* ===================================================================
