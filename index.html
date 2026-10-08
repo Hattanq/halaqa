@@ -9400,7 +9400,7 @@ function showTeacherReports(){
     card('rp-t1','تقرير أرقام الحلقة','','trPrintInfo()')+
     card('rp-t2','تقرير الحضور اليومي','','trTogglePop(\'rp-pop-att\',\'rp-t2\')')+
     card('rp-t3','كشف مستوى الطالب','','trTogglePop(\'rp-pop-ks\',\'rp-t3\')')+
-    card('rp-t4','تقرير متابعة الطلاب','','trPrintStudents()')+
+    card('rp-t4','تقرير متابعة الطلاب','','trTogglePop(\'rp-pop-st\',\'rp-t4\')')+
   '</div>'+
   '<div class="rp-pop" id="rp-pop-att">'+
     '<div class="rp-pop-t">تقرير الحضور — حدّد المدى ثم اطبع</div>'+
@@ -9413,12 +9413,17 @@ function showTeacherReports(){
     ksFld('اختر الطالب','ks-stu',so,'ksClear()')+
     '<div id="ks-range">'+hqDateRangeFld('ks')+'</div><div id="ks-result" style="display:none"></div>'+
     '<button class="tl-fetch" onclick="trPrintKs()">طباعة الكشف PDF</button>'+
+  '</div>'+
+  '<div class="rp-pop" id="rp-pop-st">'+
+    '<div class="rp-pop-t">تقرير متابعة الطلاب — حدّد المدى ثم اطبع</div>'+
+    '<div id="st-range">'+hqDateRangeFld('st')+'</div>'+
+    '<button class="tl-fetch" onclick="trPrintStudents()">طباعة التقرير PDF</button>'+
   '</div></div>';
   openModal('تقارير '+(h.name?('حلقة '+h.name).replace('حلقة حلقة','حلقة'):'الحلقة'), body);
   hqModalTall();
 }
 function trTogglePop(id,cardId){
-  var all=['rp-pop-att','rp-pop-ks'], cards={'rp-pop-att':'rp-t2','rp-pop-ks':'rp-t3'};
+  var all=['rp-pop-att','rp-pop-ks','rp-pop-st'], cards={'rp-pop-att':'rp-t2','rp-pop-ks':'rp-t3','rp-pop-st':'rp-t4'};
   all.forEach(function(x){ var p=document.getElementById(x), c=document.getElementById(cards[x]); if(!p) return;
     var open=(x===id)?!p.classList.contains('open'):false;
     p.classList.toggle('open',open); if(c) c.classList.toggle('on',open);
@@ -9435,7 +9440,8 @@ async function trPrintKs(){
   for(var i=0;i<studs.length;i++){
     var r=await ksCompute(studs[i].id,kind); if(!r) return;
     if(!first) first=r;
-    inner+=rpSec(r.name+(isDiscontinued(studs[i])?' (منقطع)':''))+
+    inner+=rpSec(r.name+(isDiscontinued(studs[i])?' (منقطع)':''))+ksDaysHtml(r)+
+      ((r.days&&r.days.length)?'<div class="pr-sec">ملخّص الفترة — '+hqEsc(r.name)+'</div>':'')+
       hqPrTableChunks(['#','البيان','القيمة'], r.rows.map(function(x){ return [x[0], x[1]]; }), 30);
     n++;
   }
@@ -9445,11 +9451,13 @@ async function trPrintKs(){
     '<div class="pr-meta">'+meta.map(function(m){ return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>'; }).join('')+'</div>'+inner);
 }
 /* حسابات مشتركة لتقارير المعلّم */
-async function trStuStats(){
+async function trStuStats(lo,hi){
   var studs=(DB.students||[]), out=[], tKey=evRealKey(), totDays=0;
-  studs.forEach(function(s){ var c=0; hsTermDays(s.id).forEach(function(d){ if(d&&(d.attend==='حاضر'||d.attend==='غائب'||d.attend==='متأخر'||d.attend==='تسميع عن بعد'||d.attend==='غائب بعذر')) c++; }); if(c>totDays) totDays=c; });
+  var _rg=(lo&&hi);
+  function _days(sid){ return _rg?evEntryList(sid).filter(function(e){ return isFinite(e.jd)&&e.jd>=lo&&e.jd<=hi; }).map(function(e){ return e.d; }):hsTermDays(sid); }
+  studs.forEach(function(s){ var c=0; _days(s.id).forEach(function(d){ if(d&&(d.attend==='حاضر'||d.attend==='غائب'||d.attend==='متأخر'||d.attend==='تسميع عن بعد'||d.attend==='غائب بعذر')) c++; }); if(c>totDays) totDays=c; });
   for(var i=0;i<studs.length;i++){
-    var s=studs[i], td=hsTermDays(s.id), at=0, ab=0;
+    var s=studs[i], td=_days(s.id), at=0, ab=0;
     td.forEach(function(d){ if(!d) return; if(d.attend==='حاضر'||d.attend==='متأخر'||d.attend==='تسميع عن بعد') at++; else if(d.attend==='غائب'||d.attend==='غائب بعذر') ab++; });
     var fl=hsFirstLast(td,'lesson'), fr=hsFirstLast(td,'review');
     var lp=0, rp=0, edge=null;
@@ -9459,7 +9467,7 @@ async function trStuStats(){
     var cs=evCurrentScore(s.id), tIdx=Math.min(cs.term,EX_TERMS)||1;
     var e1=exSum(exGet(s.id,tIdx,1)), e2=exSum(exGet(s.id,tIdx,2)), e3=exSum(exGet(s.id,tIdx,3));
     out.push({s:s, off:isDiscontinued(s), at:at, ab:ab, pct:(at+ab)?Math.round(at/(at+ab)*100):0, lp:lp||0, rp:rp||0,
-              edge:edge, total:cs.score.total||0, taj:hsTajweedLevel(s.id), ex:[e1,e2,e3], stage:hsStage(s.grade)});
+              edge:edge, total:_rg?td.reduce(function(a,d){ return a+ksDayPts(d); },0):(cs.score.total||0), taj:hsTajweedLevel(s.id), ex:[e1,e2,e3], stage:hsStage(s.grade)});
   }
   return {list:out, totDays:totDays};
 }
@@ -9488,16 +9496,17 @@ async function trPrintInfo(){
 /* (٤) تقرير متابعة الطلاب */
 async function trPrintStudents(){
   var h=hqActiveHalqa(); if(!h) return;
+  var RG=hqDateRangeRead('st'); if(!RG) return;
   showToast('جارٍ تجهيز التقرير…','info');
   try{
-    var hi=hqInfoOf(h), st=await trStuStats(), L=st.list.filter(function(x){ return !x.off; });
+    var hi=hqInfoOf(h), st=await trStuStats(RG.lo,RG.hi), L=st.list.filter(function(x){ return !x.off; });
     function nm(x){ return x.s.name||'—'; }
     var byPts=L.slice().sort(function(a,b){ return b.total-a.total; });
     var byAtt=L.slice().sort(function(a,b){ return b.pct-a.pct || b.at-a.at; });
     var byPg=L.slice().sort(function(a,b){ return (b.lp+b.rp)-(a.lp+a.rp); });
     var disc=st.list.filter(function(x){ return x.off; });
     var inner=
-      '<div class="pr-meta">'+[['الحلقة',hi.name],['معلّم الحلقة',hi.teacher],['الطلاب المنتظمون',arNum(L.length)],['الأيام المسجَّلة',arNum(st.totDays)]].map(function(m){
+      '<div class="pr-meta">'+[['الحلقة',hi.name],['معلّم الحلقة',hi.teacher],['المدى',RG.span],['الطلاب المنتظمون',arNum(L.length)],['الأيام المسجَّلة',arNum(st.totDays)]].map(function(m){
         return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>'; }).join('')+'</div>'+
       rpSec('ترتيب الطلاب بالنقاط')+hqPrTableChunks(['#','الطالب','المركز','النقاط'], byPts.map(function(x,i){ return [nm(x), hsRankWord(i+1), evFmt(x.total)]; }), 14)+
       rpSec('الحضور')+hqPrTableChunks(['#','الطالب','حضور','غياب','النسبة'], byAtt.map(function(x){ return [nm(x), arNum(x.at), arNum(x.ab), arNum(x.pct)+'٪']; }), 14)+
@@ -12612,7 +12621,7 @@ async function hqStuShow(){
     (days||[]).forEach(function(d){
       if(!d) return;
       pl+=parseFloat(d.plus)||0; pn+=parseFloat(d.minus)||0;
-      pw=pw.concat(evPMList(d,'plus')); mw=mw.concat(evPMList(d,'minus'));
+      pw=pw.concat(evPMItems(d,'plus')); mw=mw.concat(evPMItems(d,'minus'));
     });
     return { st:hqDaysStats(days),
              lp:await hqStuPages(sid,'lesson',days),
@@ -12759,7 +12768,7 @@ async function ksShow(){
 async function ksCompute(sid,kind){
   var stu=(DB.students||[]).find(function(x){ return x.id===sid; });
   var hi=hqInfoOf(hqActiveHalqa());
-  var rows=[], chart=[], span='';
+  var rows=[], chart=[], span='', dayList=[];
   var RG=hqDateRangeRead('ks'); if(!RG) return null;
 
   if(RG.day){
@@ -12778,13 +12787,17 @@ async function ksCompute(sid,kind){
       rows.push(['المراجعة المُنجزة', rn?ksDayText(sid,'review',rn,d):'لم تُنجز']);
       rows.push(['عدد الأخطاء', arNum(ksMistakes(sid,ent.k))]);
       rows.push(['الحضور', d.attend||'—']);
-      rows.push(['المشاركة', evPMText(evPMList(d,'plus'),'plus')]);
-      rows.push(['العقوبة', evPMText(evPMList(d,'minus'),'minus')]);
-      if(d.tajweed) rows.push(['مستوى الحفظ', String(d.tajweed)]);
+      rows.push(['المشاركة', evPMText(evPMItems(d,'plus'),'plus')]);
+      rows.push(['العقوبة', evPMText(evPMItems(d,'minus'),'minus')]);
+      if(d.tajweed) rows.push(['مستوى حفظ الطالب للدرس', String(d.tajweed)]);
+      rows.push(['نقاط اليوم', evFmt(ksDayPts(d))]);
+      if(!evIsAbsentVal(d.attend)) rows.push(['ترتيبه في الحلقة لهذا اليوم', ksDayRank(sid,ent.k)]);
     }
   } else {
     span=RG.span;
-    var days=evEntryList(sid).filter(function(e){ return isFinite(e.jd)&&e.jd>=RG.lo&&e.jd<=RG.hi; }).map(function(e){ return e.d; });
+    var _ents=evEntryList(sid).filter(function(e){ return isFinite(e.jd)&&e.jd>=RG.lo&&e.jd<=RG.hi; });
+    var days=_ents.map(function(e){ return e.d; });
+    dayList=_ents.map(function(e){ return {title:evDayLabel(e.k), rows:ksDayRows(sid,e)}; });
     var st=hqDaysStats(days);
     var fl=hsFirstLast(days,'lesson'), fr=hsFirstLast(days,'review');
     var lp=0, rp=0;
@@ -12799,7 +12812,7 @@ async function ksCompute(sid,kind){
     days.forEach(function(x){
       if(!x) return;
       pl+=parseFloat(x.plus)||0; pn+=parseFloat(x.minus)||0;
-      pw=pw.concat(evPMList(x,'plus')); mw=mw.concat(evPMList(x,'minus'));
+      pw=pw.concat(evPMItems(x,'plus')); mw=mw.concat(evPMItems(x,'minus'));
     });
     var cs=evCurrentScore(sid), tIdx=Math.min(cs.term,EX_TERMS)||1;
     var e1=exSum(exGet(sid,tIdx,1)), e2=exSum(exGet(sid,tIdx,2)), e3=exSum(exGet(sid,tIdx,3));
@@ -12824,8 +12837,31 @@ async function ksCompute(sid,kind){
     meta:[['الطالب',(stu&&stu.name)||'—'],['الحلقة',hi.name||'—'],
           ['معلّم الحلقة',hi.teacher||'—'],
           ['المدى',span||'—']],
-    rows:rows, chart:chart, name:(stu&&stu.name)||'—'
+    rows:rows, chart:chart, days:dayList, name:(stu&&stu.name)||'—'
   };
+}
+/* (17.9) حال الدرس/المراجعة في يوم */
+function ksStatTxt(v){ v=String(v||''); if(v.indexOf('n:')===0) return 'أنجز'; if(v.indexOf('x:')===0) return 'لم ينجز'; if(v.indexOf('z:')===0) return 'أنجز (لا يوجد)'; return 'لم يُقيَّم'; }
+/* نقاط يوم واحد لطالب (للترتيب): الدرس والمراجعة والمستوى والحضور والمشاركات − العقوبات */
+function ksDayPts(d){ if(!d) return 0; return (evTermScore([d]).total||0)+(parseFloat(d.plus)||0)-(parseFloat(d.minus)||0); }
+/* ترتيب الطالب في حلقته في يوم بعينه */
+function ksDayRank(sid,key){
+  var arr=[]; (DB.students||[]).forEach(function(s){ if(isDiscontinued(s)) return; var d=(((DB.evals||{})[s.id]||{}).days||{})[key]; if(!d||evIsAbsentVal(d.attend)) return; arr.push({id:s.id,p:ksDayPts(d)}); });
+  var me=arr.filter(function(x){ return x.id===sid; })[0]; if(!me) return '—';
+  var r=1; arr.forEach(function(x){ if(x.p>me.p+0.0001) r++; });
+  return (typeof hsRankWord==='function'?hsRankWord(r):arNum(r))+' من '+arNum(arr.length);
+}
+/* صفوف يوم واحد في الكشف */
+function ksDayRows(sid,e){
+  var d=e.d||{}, ln=ksNumOf(d,'lesson'), rn=ksNumOf(d,'review');
+  function k2(kind){ var m=String(d[kind]||'').match(/^[nxz]:(\d+)/); var n=m?parseInt(m[1],10):0; return n?(ksDayText(sid,kind,n,d)+' — '+ksStatTxt(d[kind])):'لم يُقيَّم'; }
+  return [['الحضور', d.attend||'—'], ['الدرس', k2('lesson')], ['المراجعة', k2('review')], ['مستوى حفظ الطالب للدرس', d.tajweed||'—'],
+          ['المشاركات', evPMText(evPMItems(d,'plus'),'plus')], ['العقوبات', evPMText(evPMItems(d,'minus'),'minus')],
+          ['نقاط اليوم', evFmt(ksDayPts(d))], ['ترتيبه في الحلقة لهذا اليوم', evIsAbsentVal(d.attend)?'—':ksDayRank(sid,e.k)]];
+}
+function ksDaysHtml(L){
+  if(!L||!L.days||!L.days.length) return '';
+  return L.days.map(function(x){ return '<div class="pr-sec">تقييم '+hqEsc(x.title)+'</div>'+hqPrTable(['#','البيان','القيمة'], x.rows); }).join('');
 }
 function ksPrint(){
   var L=window._ksLast;
@@ -12834,9 +12870,9 @@ function ksPrint(){
     '<div class="pr-meta">'+L.meta.map(function(m){
       return '<div class="pr-meta-i"><span>'+hqEsc(m[0])+'</span><b>'+hqEsc(m[1]||'—')+'</b></div>';
     }).join('')+'</div>'+
-    '<div class="pr-sec">تفاصيل الكشف</div>'+
-    hqPrTable(['#','البيان','القيمة'], L.rows.map(function(r){ return [r[0], r[1]]; }))+
-    ((L.chart&&L.chart.some(function(x){ return (+x.v||0)>0; }))?hqPrChart('مؤشّرات الطالب', L.chart):'');
+    ksDaysHtml(L)+
+    '<div class="pr-sec">'+((L.days&&L.days.length)?'ملخّص الفترة':'تفاصيل الكشف')+'</div>'+
+    hqPrTable(['#','البيان','القيمة'], L.rows.map(function(r){ return [r[0], r[1]]; }));
   hqPrintDoc('كشف مستوى الطالب', inner);
 }
 
@@ -13369,8 +13405,8 @@ async function rsStudentData(h,sid){
     if(ksNumOf(d,'lesson')) ld++; if(ksNumOf(d,'review')) rd++;
     var p1=parseFloat(d.plus)||0, m1=parseFloat(d.minus)||0;
     pl+=p1; pn+=m1;
-    evPMList(d,'plus').forEach(function(w){ pmRows.push([rsKeyHijri(e.k),'مشاركة',arNum(1),w||'بلا سبب']); });
-    evPMList(d,'minus').forEach(function(w){ pmRows.push([rsKeyHijri(e.k),'عقوبة',arNum(1),w||'بلا سبب']); });
+    evPMItems(d,'plus').forEach(function(x){ pmRows.push([rsKeyHijri(e.k),'مشاركة',evFmt(x.p),x.w||'بلا سبب']); });
+    evPMItems(d,'minus').forEach(function(x){ pmRows.push([rsKeyHijri(e.k),'عقوبة',evFmt(x.p),x.w||'بلا سبب']); });
   });
   var attPct=(at+ab)?Math.round(at/(at+ab)*100):0;
   /* الدرس والمراجعة */
@@ -14226,7 +14262,7 @@ function evGapCheck(sid,kind,target){
         '. قدِّم '+(kind==='lesson'?'المراجعة':'الدرس')+' أولاً ليتماشى معه.'};
 }
 /* مستوى الحفظ: متقن = نقطة · متوسط = نصف · ضعيف = صفر (والقديمة محفوظة للتوافق) */
-var EV_TAJWEED={'حفظ مُتقن':1,'حفظ متوسط':0.5,'حفظ ضعيف':0,
+var EV_TAJWEED={'حفظ مُتقن':1,'حفظ متوسط':0.5,'حفظ ضعيف':0,'لم يسمّع الدرس':0,
                 'ممتاز':1,'جيد جداً':0.75,'جيّد':0.5,'مقبول':0.25,'ضعيف':0};
 var EV_BEHAVIOR={'\u0623\u062e\u0644\u0627\u0642 \u0645\u0645\u062a\u0627\u0632\u0629':1,'\u0628\u0639\u0636 \u0627\u0644\u0645\u0644\u0627\u062d\u0638\u0627\u062a':0.5,'\u0623\u062e\u0644\u0627\u0642 \u0633\u064a\u0626\u0629':0};
 function evParseKey(k){ var pp=String(k).split('-'); return new Date(+pp[0],(+pp[1]||1)-1,(+pp[2]||1)).getTime(); }
@@ -14313,19 +14349,83 @@ function evDayPM(sid,fld){
   var v=parseFloat(d[fld]); return isNaN(v)?0:v;
 }
 function evTodayPart(sid){ return evDayPM(sid,'plus'); }
-/* (17.7) أسباب يوم واحد بعدد العقوبات/المشاركات — القديم (سبب واحد لليوم) يتكرّر لكل واحدة */
-function evPMList(d,fld){
-  var n=Math.round(parseFloat(d&&d[fld])||0); if(n<=0) return [];
-  var L=(d[fld+'L']&&d[fld+'L'].slice)?d[fld+'L'].slice(0,n):[];
-  var w=String(d[fld+'Why']||'');
-  while(L.length<n) L.push(w);
-  return L.map(function(x){ return String(x||''); });
+/* (17.9) أسباب المشاركات والعقوبات الجاهزة */
+var EV_PTS_R={plus:['نصيحة توعوية','تلاوة محبّرة','أدب وأخلاق','تفسير آيات','جمال في الصوت','أخرى'],
+              minus:['أخلاق سيئة','عدم احترام المعلم','الإزعاج بالحلقة','الخروج بدون إذن','استخدام الجوال','أخرى']};
+var _evPtsSel={plus:'',minus:''}, _evPtsN={plus:1,minus:1};
+/* عناصر يوم واحد: [{w:السبب, p:النقاط}] — القديم (سبب واحد لليوم) يتكرّر لكل نقطة */
+function evPMItems(d,fld){
+  var tot=parseFloat(d&&d[fld])||0; if(tot<=0) return [];
+  var L=(d[fld+'L']&&d[fld+'L'].slice)?d[fld+'L']:null, P=(d[fld+'P']&&d[fld+'P'].slice)?d[fld+'P']:[];
+  var out=[], sum=0, w=String(d[fld+'Why']||'');
+  if(L){ for(var i=0;i<L.length;i++){ var pp=(P[i]!=null)?parseFloat(P[i]):1; if(!(pp>0)) pp=1; out.push({w:String(L[i]||''),p:pp}); sum+=pp; } }
+  while(sum+0.001<tot){ var r=Math.min(1,tot-sum); out.push({w:w,p:r}); sum+=r; }
+  return out;
 }
+function evPtsPane(sid){
+  var d=((DB.evals&&DB.evals[sid]&&DB.evals[sid].days)||{})[evDateKey()]||{};
+  function card(fld){
+    var neg=(fld==='minus'), items=evPMItems(d,fld), sel=_evPtsSel[fld];
+    return '<div class="ev-pts-card '+fld+'">'+
+      '<div class="ev-pts-hd"><span class="ev-pts-ic">'+(neg?'−':'+')+'</span><b>'+(neg?'خصم نقاط (عقوبة)':'إضافة نقاط (مشاركة)')+'</b></div>'+
+      '<div class="ev-pts-chips">'+EV_PTS_R[fld].map(function(r){ return '<button type="button" class="ev-pts-chip'+(sel===r?' sel':'')+'" onclick="evPtsPick(\''+fld+'\',this)">'+r+'</button>'; }).join('')+'</div>'+
+      '<input type="text" class="ev-why ev-pts-why" id="ev-pts-why-'+fld+'" maxlength="60" placeholder="'+(neg?'اكتب سبب العقوبة':'اكتب سبب المشاركة')+'" onfocus="hqNoZoom(1)" onblur="hqNoZoom(0)"'+(sel==='أخرى'?'':' style="display:none"')+'>'+
+      '<div class="ev-pts-row"><span class="ev-pts-lbl">مقدار النقاط</span>'+
+        '<div class="ev-pts-step"><button type="button" onclick="evPtsStep(\''+fld+'\',-0.5)">−</button><b id="ev-pts-n-'+fld+'">'+evFmt(_evPtsN[fld])+'</b><button type="button" onclick="evPtsStep(\''+fld+'\',0.5)">+</button></div>'+
+        '<button type="button" class="ev-pts-add" onclick="evPtsAdd(\''+sid+'\',\''+fld+'\')">'+(neg?'خصم':'إضافة')+'</button></div>'+
+      (items.length?('<div class="ev-pts-list">'+items.map(function(x,i){ return '<div class="ev-pts-item"><span class="ev-pts-p">'+(neg?'−':'+')+evFmt(x.p)+'</span><span class="ev-pts-w">'+hqEsc(x.w||'بلا سبب')+'</span><button type="button" class="ev-pts-del" onclick="evPtsDel(\''+sid+'\',\''+fld+'\','+i+')">✕</button></div>'; }).join('')+'</div>'):'')+
+    '</div>';
+  }
+  return '<div class="ev-pts"><div class="ev-pts-note">اختيارية — لا يتوقّف عليها اعتماد التقييم</div>'+card('plus')+card('minus')+'</div>';
+}
+function evPtsPick(fld,btn){
+  var r=btn.textContent; _evPtsSel[fld]=(_evPtsSel[fld]===r)?'':r;
+  var box=btn.parentNode; for(var i=0;i<box.children.length;i++) box.children[i].classList.toggle('sel', box.children[i].textContent===_evPtsSel[fld]);
+  var w=document.getElementById('ev-pts-why-'+fld); if(w){ w.style.display=(_evPtsSel[fld]==='أخرى')?'':'none'; if(_evPtsSel[fld]==='أخرى') try{ w.focus(); }catch(e){} }
+}
+function evPtsStep(fld,dl){
+  var v=Math.round(((_evPtsN[fld]||1)+dl)*10)/10; if(v<0.5) v=0.5; if(v>20) v=20; _evPtsN[fld]=v;
+  var b=document.getElementById('ev-pts-n-'+fld); if(b) b.textContent=evFmt(v);
+}
+function evPtsSync(sid){
+  try{ var pane=document.querySelector('.evt-pane[data-t="pts"]'); if(pane) pane.innerHTML=evPtsPane(sid); evtSync(); }catch(e){}
+  if(typeof renderGrades==='function'){ try{ window._hqQuiet=1; renderGrades(); window._hqQuiet=0; }catch(e){ window._hqQuiet=0; } }
+}
+function evPtsAdd(sid,fld){
+  var r=_evPtsSel[fld]; if(!r){ showToast(fld==='minus'?'اختر سبب العقوبة':'اختر سبب المشاركة','error'); return; }
+  if(r==='أخرى'){ var w=document.getElementById('ev-pts-why-'+fld); r=w?String(w.value||'').trim():''; if(!r){ showToast('اكتب السبب','error'); return; } }
+  var n=_evPtsN[fld]||1;
+  if(!DB.evals) DB.evals={};
+  var rec=DB.evals[sid]||{progress:{lesson:0,review:0},days:{}}; if(!rec.days) rec.days={};
+  var k=evDateKey(), d=rec.days[k]||{};
+  var items=evPMItems(d,fld); items.push({w:r,p:n});
+  d[fld+'L']=items.map(function(x){ return x.w; }); d[fld+'P']=items.map(function(x){ return x.p; });
+  d[fld]=Math.round(items.reduce(function(a,x){ return a+x.p; },0)*100)/100; d[fld+'Why']=r;
+  rec.days[k]=d; DB.evals[sid]=rec; save();
+  _evPtsSel[fld]=''; _evPtsN[fld]=1;
+  showToast((fld==='minus'?'خُصمت ':'أُضيفت ')+evFmt(n)+' — '+r,'success');
+  evPtsSync(sid);
+}
+function evPtsDel(sid,fld,i){
+  var rec=(DB.evals||{})[sid]; if(!rec||!rec.days) return;
+  var k=evDateKey(), d=rec.days[k]; if(!d) return;
+  var items=evPMItems(d,fld); items.splice(i,1);
+  if(items.length){ d[fld+'L']=items.map(function(x){ return x.w; }); d[fld+'P']=items.map(function(x){ return x.p; });
+    d[fld]=Math.round(items.reduce(function(a,x){ return a+x.p; },0)*100)/100; d[fld+'Why']=items[items.length-1].w; }
+  else { delete d[fld]; delete d[fld+'L']; delete d[fld+'P']; delete d[fld+'Why'];
+    try{ var t=hqNow(); [fld,fld+'L',fld+'P',fld+'Why'].forEach(function(f){ hqTombAdd('f', sid+'|'+k+'|'+f, t); }); }catch(e){} }
+  save(); evPtsSync(sid);
+}
+/* (17.7) أسباب يوم واحد بعدد العقوبات/المشاركات — القديم (سبب واحد لليوم) يتكرّر لكل واحدة */
+function evPMList(d,fld){ return evPMItems(d,fld).map(function(x){ return x.w; }); }
 function evPMText(list,fld){
   var n=list.length, neg=(fld==='minus');
   if(!n) return neg?'بلا عقوبة':'لم يشارك';
+  var tot=0; list.forEach(function(x){ tot+=(x&&typeof x==='object')?(parseFloat(x.p)||0):1; });
   var w=neg?(n===1?'عقوبة واحدة':(n===2?'عقوبتان':(arNum(n)+(n<=10?' عقوبات':' عقوبة')))):(n===1?'مشاركة واحدة':(n===2?'مشاركتان':(arNum(n)+(n<=10?' مشاركات':' مشاركة'))));
-  return (neg?'عليه ':'شارك ')+w+':\n'+list.map(function(x,i){ return arNum(i+1)+') '+(x||'بلا سبب'); }).join('\n');
+  return (neg?'عليه ':'شارك ')+w+' ('+(neg?'−':'+')+evFmt(tot)+'):\n'+list.map(function(x,i){
+    var o=(x&&typeof x==='object')?x:{w:x,p:1};
+    return arNum(i+1)+') '+(o.w||'بلا سبب')+' ('+(neg?'−':'+')+evFmt(o.p)+')'; }).join('\n');
 }
 function evTodayPen(sid){ return evDayPM(sid,'minus'); }
 /* مجموع الفصل: جمع أيام الفصل + رصيد قديم تراكمي إن وُجد */
@@ -15260,6 +15360,10 @@ function evMarkEval(sid, kind, num){
     function val(id){ var el=document.getElementById(id); return el?(el.getAttribute('data-val')||''):''; }
     var flds=['tajweed','attend','behavior'];
     for(var i=0;i<flds.length;i++){ var v=val('ev-'+flds[i]); if(v) day[flds[i]]=v; }
+    /* (17.9) سجلّ خطوات اليوم: كل حكم يحفظ ما قبله، فيتراجع ↺ خطوة خطوة حتى بداية اليوم */
+    try{ var _U=(day[kind+'U']&&day[kind+'U'].slice)?day[kind+'U'].slice():[];
+      _U.push({v:day[kind]||'',N:day[kind+'N']||0,F:day[kind+'F']||0,T:day[kind+'T']||'',E:day[kind+'E']||null,p:parseInt(rec.progress[kind],10)||0,f:(rec.free&&parseInt(rec.free[kind],10))||0});
+      if(_U.length>30) _U=_U.slice(-30); day[kind+'U']=_U; }catch(e){}
     day[kind]='x:'+req;                 /* x: = تم التقييم بلا نقطة، دون تعديل progress */
     try{ var _e=evDayEdge(sid,kind,req); if(_e){ day[kind+'T']=_e.t; day[kind+'E']=_e.e; } }catch(e){}
     rec.days[key]=day;
@@ -15322,6 +15426,20 @@ function evUndo(sid,kind){
     var w=(kind==='lesson')?'الدرس':'المراجعة';
     var rec=DB.evals&&DB.evals[sid], key=evDateKey(), day=rec&&rec.days&&rec.days[key];
     var val=day?String(day[kind]||''):'';
+    /* (17.9) التراجع بسجلّ الخطوات: يعيد الحال تماماً كما كانت قبل آخر ضغطة */
+    var _U=(day&&day[kind+'U']&&day[kind+'U'].slice)?day[kind+'U'].slice():[];
+    if(_U.length){
+      var s=_U.pop(), _t=hqNow();
+      if(!rec.progress) rec.progress={lesson:0,review:0};
+      if(!rec.free) rec.free={lesson:0,review:0};
+      rec.progress[kind]=s.p; rec.free[kind]=s.f;
+      function put(f,v){ if(v){ day[f]=v; } else { delete day[f]; try{ hqTombAdd('f', sid+'|'+key+'|'+f, _t); }catch(e){} } }
+      put(kind,s.v); put(kind+'N',s.N); put(kind+'F',s.F); put(kind+'T',s.T); put(kind+'E',s.E);
+      if(_U.length) day[kind+'U']=_U; else put(kind+'U',null);
+      rec.days[key]=day; DB.evals[sid]=rec; save();
+      if(typeof showToast==='function') showToast('↺ تراجع خطوة في '+w+(_U.length?'':' — عاد إلى بداية اليوم'),'info');
+      openStudentEval(sid); return;
+    }
     if(!val){ if(typeof showToast==='function') showToast('لا يوجد تقييم لـ'+w+' للتراجع عنه','info'); return; }
     if(val.indexOf('n:')===0||val.indexOf('z:')===0){
       var free=(val.indexOf('z:')===0);
@@ -15359,6 +15477,10 @@ function evMarkDone(sid, kind, num, silent, free){
     function val(id){ var el=document.getElementById(id); return el?(el.getAttribute('data-val')||''):''; }
     var flds=['tajweed','attend','behavior'];
     for(var i=0;i<flds.length;i++){ var v=val('ev-'+flds[i]); if(v) day[flds[i]]=v; }
+    /* (17.9) سجلّ خطوات اليوم: كل حكم يحفظ ما قبله، فيتراجع ↺ خطوة خطوة حتى بداية اليوم */
+    try{ var _U=(day[kind+'U']&&day[kind+'U'].slice)?day[kind+'U'].slice():[];
+      _U.push({v:day[kind]||'',N:day[kind+'N']||0,F:day[kind+'F']||0,T:day[kind+'T']||'',E:day[kind+'E']||null,p:parseInt(rec.progress[kind],10)||0,f:(rec.free&&parseInt(rec.free[kind],10))||0});
+      if(_U.length>30) _U=_U.slice(-30); day[kind+'U']=_U; }catch(e){}
     day[kind]=(free?'z:':'n:')+req;
     /* (17.0) يُحفظ نصّ المقطع وحدّاه مع سجل اليوم، فتبقى التقارير والكشوف صحيحة ولو تغيّرت الخطة بعده */
     try{ var _e=evDayEdge(sid,kind,req); if(_e){ day[kind+'T']=_e.t; day[kind+'E']=_e.e; } }catch(e){}
@@ -15815,6 +15937,7 @@ function evPartClear(sid,fld){
 var EVT_TABS=[
   {k:'lesson', n:'الدرس والمراجعة'},
   {k:'level',  n:'المستوى'},
+  {k:'pts',    n:'إضافة وخصم نقاط'},
   {k:'done',   n:'اعتمد'}
 ];
 var _evtSid='', _evtCur='', _evtFree=false;
@@ -15916,11 +16039,12 @@ function evtDone(k){
     return !!(d.lesson && d.review);
   }
   if(k==='attend'){ el=document.getElementById('ev-attend'); return !!(el&&el.getAttribute('data-val')); }
+  if(k==='pts'){ var _d0=((DB.evals&&DB.evals[_evtSid]&&DB.evals[_evtSid].days)||{})[evDateKey()]||{}; return (parseFloat(_d0.plus)||0)>0||(parseFloat(_d0.minus)||0)>0; }   /* اختيارية */
   if(k==='level'){  if(evtAbsent()) return true; el=document.getElementById('ev-tajweed'); return !!(el&&el.getAttribute('data-val')); }
   return false;
 }
 function evtAllDone(){
-  for(var i=0;i<EVT_TABS.length-1;i++){ if(!evtDone(EVT_TABS[i].k)) return false; }
+  for(var i=0;i<EVT_TABS.length-1;i++){ if(EVT_TABS[i].k==='pts') continue; if(!evtDone(EVT_TABS[i].k)) return false; }
   return true;
 }
 /* هل يُسمح بالانتقال يدويّاً إلى هذه التبويبة الآن؟ */
@@ -15949,7 +16073,7 @@ function evtTabsHtml(){
 }
 /* أول تبويبة لم تُنجز بعد */
 function evtFirstOpen(){
-  for(var i=0;i<EVT_TABS.length-1;i++){ if(!evtDone(EVT_TABS[i].k)) return EVT_TABS[i].k; }
+  for(var i=0;i<EVT_TABS.length-1;i++){ if(EVT_TABS[i].k==='pts') continue; if(!evtDone(EVT_TABS[i].k)) return EVT_TABS[i].k; }
   return 'done';
 }
 /* تثبيت ارتفاع اللوحات على أطولها فلا يقفز مكان التبويبات */
@@ -16049,12 +16173,20 @@ function openStudentEval(sid){
   var _plan=(typeof hqPlanActive==='function')?hqPlanActive(sid):null;
   var _mx=_plan?_plan.days.length:UNIFIED_MAXDAY;
   var reqL=Math.min(_mx,(prog.lesson||0)+1), reqR=Math.min(_mx,(prog.review||0)+1);
+  /* (17.9) يوم سابق قُيّم وبعده أيام مقيَّمة: يُعرض ما سُجّل في ذلك اليوم نفسه، لا موضع الطالب الآن */
+  (function(){
+    var j0=hqJdOfKey(key), dd=rec.days||{};
+    function num(k){ var m=String(today[k]||'').match(/^[nxz]:(\d+)/); return m?parseInt(m[1],10):0; }
+    function later(k){ for(var kk in dd){ if(hqJdOfKey(kk)>j0 && /^[nxz]:/.test(String((dd[kk]||{})[k]||''))) return true; } return false; }
+    if(num('lesson')&&later('lesson')) reqL=num('lesson');
+    if(num('review')&&later('review')) reqR=num('review');
+  })();
   var recCell=evRecCell('lesson',reqL,today.lesson,sid);
   var reviewCell=evRecCell('review',reqR,today.review,sid);
   function cell(lbl,inner){ return '<div class="ev-cell ev-cell-gold"><div class="ev-lbl">'+lbl+'</div>'+inner+'</div>'; }
   var _isT=(typeof STATE!=='undefined'&&STATE.role==='teacher'), _isT0=_isT;
   var attendCell=cell('\u0627\u0644\u062d\u0636\u0648\u0631', evOptSelect('attend',['\u062d\u0627\u0636\u0631','\u0645\u062a\u0623\u062e\u0631','\u063a\u0627\u0626\u0628','\u063a\u0627\u0626\u0628 \u0628\u0639\u0630\u0631','\u062a\u0633\u0645\u064a\u0639 \u0639\u0646 \u0628\u0639\u062f'],today.attend||(_isT0?'\u062d\u0627\u0636\u0631':'')));
-  var tajweedCell=cell('مستوى الحفظ', evOptSelect('tajweed',['حفظ مُتقن','حفظ متوسط','حفظ ضعيف'],today.tajweed));
+  var tajweedCell=cell('مستوى حفظ الطالب للدرس', evOptSelect('tajweed',['حفظ مُتقن','حفظ متوسط','حفظ ضعيف','لم يسمّع الدرس'],today.tajweed));
   var _partVal=(typeof evTodayPart==='function')?evTodayPart(sid):0;   /* اليوم فقط */
   var _penVal =(typeof evTodayPen ==='function')?evTodayPen(sid) :0;
   var partCell=_isT?('<div class="ev-cell ev-cell-gold ev-part-cell evt-fold" id="evt-fold-part">'
@@ -16106,14 +16238,12 @@ function openStudentEval(sid){
     +'<div class="evt-panes" id="evt-panes">'
       +'<div class="evt-pane evt-hide" data-t="attend">'+attendCell+'</div>'
       +'<div class="evt-pane" data-t="lesson">'+recCell+reviewCell+'</div>'
-      +'<div class="evt-pane" data-t="level">'+tajweedCell+partCell+penCell+_startToggle+'</div>'
-      +'<div class="evt-pane" data-t="done"><div class="evt-done-row">'
-        +'<button type="button" class="ev-act ev-act-save" onclick="saveStudentEval(\''+sid+'\')">'
-          +'<span class="ev-act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>'
-          +'<span class="ev-act-t">اعتماد التقييم</span><span class="ev-act-s">حفظ نقاط اليوم</span></button>'
-        +'<button type="button" class="ev-act ev-act-reset" onclick="evResetToday(\''+sid+'\')">'
-          +'<span class="ev-act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></span>'
-          +'<span class="ev-act-t">إعادة التقييم</span><span class="ev-act-s">مسح تقييم اليوم</span></button>'
+      +'<div class="evt-pane" data-t="level">'+tajweedCell+_startToggle+'</div>'
+      +'<div class="evt-pane" data-t="pts">'+evPtsPane(sid)+'</div>'
+      +'<div class="evt-pane" data-t="done"><div class="evt-done-row evt-done-one">'
+        +'<button type="button" class="ev-act ev-act-save ev-act-wide" onclick="saveStudentEval(\''+sid+'\')">'
+          +'<span class="ev-act-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9.5H4.2A1.2 1.2 0 013 18.8v-7.1a1.2 1.2 0 011.2-1.2H7z"/><path d="M7 10.5l3.6-6.8a1.9 1.9 0 013.4 1.5l-.8 3.8h5.4a2.2 2.2 0 012.2 2.6l-1.2 6.6a2.3 2.3 0 01-2.3 1.8H7"/></svg></span>'
+          +'<span class="ev-act-m"><span class="ev-act-t">اعتماد التقييم</span><span class="ev-act-s">حفظ نقاط اليوم للطالب</span></span></button>'
       +'</div></div>'
     +'</div>'+_startBox):'';
   var body='<div class="prof-form-wrap ev-eval">'+_eval+'</div>';
@@ -16850,7 +16980,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 17.8';
+  window.HQ_BUILD='2026 - 17.9';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -18479,6 +18609,48 @@ html,body{background:#051e1c}
 .pf-glow .prof-form-save{margin-top:14px !important;border:0 !important;border-radius:18px !important;padding:15px !important;color:#0b3a36 !important;font-weight:900 !important;
   background:linear-gradient(135deg,#ffe99b,#f2c74a 60%,#c9a227) !important;box-shadow:0 8px 22px rgba(201,162,39,.38) !important;animation:none !important}
 .pf-glow .prof-form-save:active{transform:scale(.97)}
+/* ===== (17.9) خانة «إضافة وخصم نقاط» وزرّ الاعتماد العريض ===== */
+.ev-eval .evt-tab{font-size:11px !important;white-space:normal !important;line-height:1.25 !important;padding:9px 3px !important}
+.ev-eval .evt-tab[data-t="lesson"]{flex:1.35 1 0 !important}
+.ev-eval .evt-tab[data-t="pts"]{flex:1.3 1 0 !important}
+.ev-pts{display:flex;flex-direction:column;gap:10px}
+.ev-pts-note{text-align:center;font-size:.68rem;font-weight:700;color:#9fd4d0}
+.ev-pts-card{padding:12px;border-radius:18px;border:1.5px solid transparent;
+  background:radial-gradient(150px 80px at 50% 0%,rgba(95,227,161,.13),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(160deg,rgba(95,227,161,.7),rgba(95,227,161,.12) 45%,rgba(240,208,96,.4)) border-box;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.ev-pts-card.minus{background:radial-gradient(150px 80px at 50% 0%,rgba(248,113,113,.13),transparent 70%) padding-box,linear-gradient(165deg,#0f4a44 0%,#0a3531 60%,#082b28 100%) padding-box,
+    linear-gradient(160deg,rgba(248,113,113,.7),rgba(248,113,113,.12) 45%,rgba(240,208,96,.35)) border-box}
+.ev-pts-hd{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.ev-pts-hd b{font-size:.88rem;font-weight:900;color:#f7e3a3}
+.ev-pts-ic{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.15rem;color:#062a26;background:linear-gradient(135deg,#7cf0b9,#34d399)}
+.ev-pts-card.minus .ev-pts-ic{color:#3b0a0a;background:linear-gradient(135deg,#fecaca,#f87171)}
+.ev-pts-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ev-pts-chip{font-family:inherit;font-size:.7rem;font-weight:800;color:#dfeeec;background:rgba(0,0,0,.24);border:1px solid rgba(240,208,96,.18);border-radius:12px;padding:9px 3px;cursor:pointer;touch-action:manipulation;transition:transform .12s,background .2s}
+.ev-pts-chip:active{transform:scale(.94)}
+.ev-pts-card.plus .ev-pts-chip.sel{background:linear-gradient(135deg,#7cf0b9,#34d399);color:#062a26;border-color:transparent;box-shadow:0 4px 12px rgba(52,211,153,.35)}
+.ev-pts-card.minus .ev-pts-chip.sel{background:linear-gradient(135deg,#fecaca,#f87171);color:#3b0a0a;border-color:transparent;box-shadow:0 4px 12px rgba(248,113,113,.35)}
+.ev-pts-why{width:100%;margin-top:8px}
+.ev-pts-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.ev-pts-lbl{font-size:.72rem;font-weight:800;color:#b9d6d2;white-space:nowrap}
+.ev-pts-step{display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.25);border:1px solid rgba(240,208,96,.2);border-radius:12px;padding:3px}
+.ev-pts-step button{width:30px;height:30px;border-radius:9px;border:0;background:rgba(240,208,96,.14);color:#f7d774;font-weight:900;font-size:1rem;cursor:pointer;font-family:inherit}
+.ev-pts-step b{min-width:34px;text-align:center;color:#fff;font-size:.95rem}
+.ev-pts-add{flex:1;border:0;border-radius:12px;padding:10px 6px;font-family:inherit;font-weight:900;font-size:.8rem;color:#062a26;background:linear-gradient(135deg,#ffe99b,#f2c74a 60%,#c9a227);box-shadow:0 4px 12px rgba(201,162,39,.3);cursor:pointer}
+.ev-pts-add:active{transform:scale(.97)}
+.ev-pts-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.ev-pts-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);animation:hqStaggerIn .3s ease both}
+.ev-pts-p{flex:none;min-width:40px;text-align:center;font-weight:900;color:#7cf0b9}
+.ev-pts-card.minus .ev-pts-p{color:#fca5a5}
+.ev-pts-w{flex:1;font-size:.76rem;font-weight:700;color:#e8f7f6}
+.ev-pts-del{flex:none;width:28px;height:28px;border-radius:9px;border:1px solid rgba(255,94,84,.45);background:rgba(255,94,84,.12);color:#ff9e93;font-weight:900;cursor:pointer;font-family:inherit}
+.evt-done-row.evt-done-one{grid-template-columns:1fr !important}
+.ev-eval .ev-act.ev-act-wide{flex-direction:row !important;justify-content:flex-start !important;gap:14px !important;min-height:96px !important;padding:16px 18px !important;text-align:right}
+.ev-eval .ev-act-wide .ev-act-ico{width:58px !important;height:58px !important;border-radius:18px !important;color:#0b3a36 !important;
+  background:linear-gradient(145deg,#fff1b8,#f2c74a 55%,#b8912a) !important;border:0 !important;box-shadow:0 6px 18px rgba(201,162,39,.45),inset 0 1px 0 rgba(255,255,255,.6) !important}
+.ev-eval .ev-act-wide .ev-act-ico svg{width:30px !important;height:30px !important}
+.ev-eval .ev-act-wide:active .ev-act-ico{transform:rotate(-12deg) scale(1.08);transition:transform .2s}
+.ev-act-m{display:flex;flex-direction:column;gap:3px}
+.ev-eval .ev-act-wide .ev-act-t{font-size:1.15rem !important}
 </style>
 <script>
 /* ===================================================================
