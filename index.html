@@ -14045,7 +14045,9 @@ function hqHeroAuto(){
 }
 /* ملخّص التحضير يلتصق تحت الرأس أيّاً كان ارتفاعه */
 function hqStickyFix(){
-  try{ var hd=document.querySelector('#modalSheet .modal-hdr'), sm=document.getElementById('att-sum'); if(hd&&sm) sm.style.top=Math.max(0,hd.offsetHeight-1)+'px'; }catch(e){}
+  try{ var hd=document.querySelector('#modalSheet .modal-hdr'); if(!hd) return; var top=Math.max(0,hd.offsetHeight-1)+'px';
+    var sm=document.getElementById('att-sum'); if(sm) sm.style.top=top;
+    var tw=document.getElementById('evt-tabs-wrap'); if(tw) tw.style.top=top; }catch(e){}
 }
 /* رأس مميّز داخل الصفحات (لا النوافذ) */
 function hqPageHero(title,lbl,num){
@@ -15974,8 +15976,8 @@ function evPartClear(sid,fld){
    وبعد إتمام الخطوات كلها يصير التنقّل يدويّاً حرّاً للتعديل */
 var EVT_TABS=[
   {k:'lesson', n:'الدرس والمراجعة', h:'الدرس<br>والمراجعة'},
-  {k:'level',  n:'مستوى حفظ الدرس', h:'مستوى حفظ<br>الدرس'},
-  {k:'pts',    n:'إضافة وخصم نقاط', h:'إضافة وخصم<br>نقاط'},
+  {k:'level',  n:'مستوى حفظ الدرس', h:'مستوى<br>حفظ الدرس'},
+  {k:'pts',    n:'إضافة وخصم نقاط', h:'إضافة<br>وخصم نقاط'},
   {k:'done',   n:'اعتمد',           h:'اعتمد'}
 ];
 var _evtSid='', _evtCur='', _evtFree=false;
@@ -16101,13 +16103,13 @@ function evtTap(k){
   try{ var t=document.querySelector('#evt-tabs .evt-tab[data-t="'+k+'"]'); if(t){ t.classList.remove('shake'); void t.offsetWidth; t.classList.add('shake'); } }catch(e){}
 }
 function evtTabsHtml(){
-  var h='<div class="evt-tabs" id="evt-tabs">';
+  var h='<div class="evt-tabs-wrap" id="evt-tabs-wrap"><div class="evt-tabs" id="evt-tabs">';
   for(var i=0;i<EVT_TABS.length;i++){
     var t=EVT_TABS[i];
     h+='<button type="button" class="evt-tab" data-t="'+t.k+'" '+
        'onclick="evtTapEv(event,\''+t.k+'\')" ontouchend="evtTapEv(event,\''+t.k+'\')"><span class="evt-tick">✓</span><span class="evt-tab-l">'+(t.h||t.n)+'</span></button>';
   }
-  return h+'</div>';
+  return h+'</div></div>';
 }
 /* أول تبويبة لم تُنجز بعد */
 function evtFirstOpen(){
@@ -16152,7 +16154,8 @@ function evtGo(k,quiet){
   if(k==='done' && evtAllDone()) _evtFree=true;   /* اكتملت الخطوات: التنقّل صار حرّاً */
   evtSync();
   try{ evtFixHeight(); }catch(e){}
-  if(!quiet){ try{ wrap.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){} }
+  /* (18.2) التبويبات ثابتة أعلى الورقة؛ الانتقال بينها يعيد الورقة إلى أعلاها فتظهر اللوحة من بدايتها */
+  if(!quiet){ try{ var _sh=document.getElementById('modalSheet'); if(_sh) _sh.scrollTop=0; }catch(e){} }
 }
 /* تخضير التبويبات المنجَزة وقفل ما لم يحن دوره بعد */
 function evtSync(){
@@ -17021,7 +17024,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 18.1';
+  window.HQ_BUILD='2026 - 18.2';
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
     if(!document.body){ setTimeout(hqBuildStamp,80); return; }
@@ -18772,6 +18775,10 @@ body.hq-modal-open .pages-wrap *,body.hq-modal-open .pages-wrap *::before,body.h
   background:linear-gradient(135deg,rgba(148,163,184,.16),rgba(148,163,184,.05)) padding-box,linear-gradient(135deg,rgba(203,213,225,.7),rgba(148,163,184,.2)) border-box !important}
 .evh-eval .ev-stu-partial.auto::before{background:#94a3b8;box-shadow:none;animation:none}
 .evh-eval .ev-stu.autoabs .ev-stu-chevron{color:#cbd5e1 !important;border-color:rgba(203,213,225,.3) !important}
+
+/* ===== (18.2) تبويبات بطاقة التقييم ثابتة تحت الرأس ===== */
+.evt-tabs-wrap{position:sticky;top:0;z-index:6;margin:-4px -18px 12px;padding:4px 18px 10px;background:#0f4540;box-shadow:0 12px 16px -12px rgba(4,30,28,.75)}
+.ev-eval .evt-tabs{margin:0 !important}
 </style>
 <script>
 /* ===================================================================
