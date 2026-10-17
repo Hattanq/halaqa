@@ -1604,6 +1604,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;min-height:100dvh;overflow:h
 .pi-ph    { background:rgba(147,253,244,.12);border:1px solid rgba(147,253,244,.2); }
 .pi-gph   { background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.2); }
 .pi-gr    { background:rgba(132,252,242,.12);border:1px solid rgba(132,252,242,.2); }
+.pi-iban  { background:rgba(247,215,116,.12);border:1px solid rgba(247,215,116,.25); }
 /* نموذج التعديل */
 .prof-form-wrap { direction:rtl;padding:4px 0; }
 .prof-form-title { font-family:'Cairo','Noto Sans Arabic',sans-serif;font-size:1rem;font-weight:800;color:#f0c040;text-align:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(201,162,39,.2); }
@@ -1927,6 +1928,10 @@ select.prof-form-input:focus{border:0;box-shadow:0 0 0 2px rgba(201,162,39,.55)}
 .stul-item.open .stul-body{display:grid;animation:pageReveal .25s ease both}
 .stul-field{display:flex;flex-direction:column;gap:2px;background:rgba(255,255,255,0.04);border-radius:10px;padding:7px 10px}
 .stul-acts4{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.stul-pcard{grid-column:1 / -1;margin-top:4px}
+.stul-pcard .pcard-top{padding:14px 12px 12px;gap:12px}
+.stul-pcard .prof-avatar-glow{width:60px;height:60px}
+.stul-pcard .pcard-name{font-size:1rem}
 .stul-acts4 button{margin:0 !important;padding:11px 6px !important;border-radius:12px !important;font-size:.78rem !important;font-weight:800 !important;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:44px;white-space:nowrap}
 .stul-acts4 .stul-plan-btn{grid-column:auto;margin-top:0}
 .stul-plan-btn{grid-column:1 / -1;margin-top:2px;padding:11px;border-radius:12px;border:1px solid rgba(247,215,116,.4);background:rgba(247,215,116,.1);color:#f7d774;font-family:inherit;font-weight:800;font-size:.78rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
@@ -12449,22 +12454,27 @@ function hqTimesWord(c){ c=parseInt(c,10)||0; if(c<=1) return 'مرة واحدة
    لا من أرقام الأيام — فالأرقام تعود إلى ١ مع كل خطة جديدة فتتشابه بين خطة وأخرى.
    صفحات الدرس = الصفحات المختلفة التي مرّ بها الطالب (لا تُعدّ الصفحة مرتين ولا تضيع عند تغيير الخطة)،
    وصفحات المراجعة مجموع دوراتها (hqRevCycles) */
-function hsSpanSync(days,kind){
+function hsSpanSync(days,kind,sid){
   var items=[];
   (days||[]).forEach(function(d){ if(!d) return; var v=String(d[kind]||''); if(v.indexOf('n:')!==0) return; var n=parseInt(v.slice(2),10)||0; if(!n) return;
     var e=d[kind+'E']; items.push({d:d,n:n,e:(e&&typeof e==='object'&&e.s1&&e.p1!=null&&e.p2!=null)?e:null}); });
   var o={n:items.length,start:null,end:null,pages:0,cycles:0,first:items[0]||null,last:items.length?items[items.length-1]:null,full:false};
   if(!items.length) return o;
   o.start=hsDayEdge(o.first.d,kind,'start'); o.end=hsDayEdge(o.last.d,kind,'end');
+  /* (18.8) أول يوم في المدى هو أول يوم في الفصل: البداية = «أول درس/مراجعة في الفصل الدراسي» كما حدّدها المعلّم، وتبقى كذلك ولو تغيّرت الخطة */
+  o.t0=null;
+  if(sid){ try{ var _tf=hsFirstLast(hsTermDays(sid),kind).fd; if(_tf&&_tf===o.first.d){ var _t0=hsT0Edge(sid,kind); if(_t0&&_t0.s){ o.t0=_t0; o.start=_t0; } } }catch(e){} }
   o.full=items.every(function(x){ return !!x.e; });
   if(!o.full) return o;
   if(kind==='review'){ var rc=hqRevCycles(days); if(rc){ o.pages=rc.pages; o.cycles=rc.cycles; } else o.full=false; return o; }
   var set={}; items.forEach(function(x){ var a=Math.min(+x.e.p1,+x.e.p2), b=Math.max(+x.e.p1,+x.e.p2); for(var p=a;p<=b;p++) set[p]=1; });
+  /* صفحات ما بين بداية الفصل وأول درس مسجَّل تُحسب أيضاً (كما كان قبل 18.7) */
+  if(o.t0&&o.t0.page!=null){ var a0=Math.min(+o.t0.page,+o.first.e.p1), b0=Math.max(+o.t0.page,+o.first.e.p1); for(var q=a0;q<=b0;q++) set[q]=1; }
   o.pages=Object.keys(set).length;
   return o;
 }
 async function hsSpan(days,kind,sid){
-  var o=hsSpanSync(days,kind);
+  var o=hsSpanSync(days,kind,sid);
   if(!o.n) return o;
   try{ if(!o.start) o.start=await hsEdge(kind,o.first.n,'start',sid); }catch(e){}
   try{ if(!o.end) o.end=await hsEdge(kind,o.last.n,'end',sid); }catch(e){}
@@ -16707,7 +16717,20 @@ function renderProfile(){
   if(STATE.role==='supervisor'){ renderSupProfile(wrap); return; }
   var s=DB.students.find(function(st){return st.id===u.sid||st.code===u.username;});
   if(!s){wrap.innerHTML='<div class="empty-state"><div class="empty-state-icon">👤</div>لم تُوجد بيانات</div>';return;}
-  var avatarSrc=(document.getElementById('img-prof-avatar')||{src:''}).src;
+  wrap.innerHTML='<div class="pcard">'+hqStuHeroHtml(s,'openProfileEdit()')+hqStuInfoGrid(s)+'</div>';
+}
+/* (18.8) بطاقة بيانات الطالب — تصميم واحد في حساب الطالب وعند المعلّم */
+function hqStuHeroHtml(s,editOn){
+  return '<div class="pcard-hero">'+
+    '<div class="pcard-bg-circle"></div><div class="pcard-bg-circle2"></div>'+
+    '<div class="pcard-top">'+
+    '<div class="prof-avatar-glow"><img src="'+IMG.profAvatar+'"></div>'+
+    '<div class="pcard-name-zone">'+
+    '<div class="pcard-name">'+hqEsc(s.name||'')+'</div>'+
+    (editOn?('<button class="prof-edit-btn" type="button" onclick="event.stopPropagation();'+editOn+'"><div class="prof-edit-icon">✏️</div> تعديل البيانات</button>'):'')+
+    '</div></div></div>';
+}
+function hqStuInfoGrid(s){
   function item(icSrc,icCls,lbl,val,full,delay){
     var v=val||'',ec=!v?' dash':'',dv=v||'—';
     return '<div class="pcard-info-item'+(full?' full':'')+'" style="animation-delay:'+delay+'s">'+
@@ -16717,25 +16740,16 @@ function renderProfile(){
   }
   var iID=IMG.profAvatar,iBT=IMG.birth,iAG=IMG.age,
       iNA=IMG.nation,iPH=IMG.phone,iGP=IMG.guardian,iGR=IMG.grade;
-  var html='<div class="pcard"><div class="pcard-hero">'+
-    '<div class="pcard-bg-circle"></div><div class="pcard-bg-circle2"></div>'+
-    '<div class="pcard-top">'+
-    '<div class="prof-avatar-glow"><img src="'+iID+'"></div>'+
-    '<div class="pcard-name-zone">'+
-    '<div class="pcard-name">'+s.name+'</div>'+
-    '<button class="prof-edit-btn" onclick="openProfileEdit()"><div class="prof-edit-icon">✏️</div> تعديل البيانات</button>'+
-    '</div></div></div>'+
-    '<div class="pcard-info-grid" style="margin-top:10px">'+
-    item(iID,'pi-id',  'الهوية / الإقامة',s.nationalId||'',         false,'0.05')+
-    item(iBT,'pi-birth','تاريخ الميلاد',  s.birthDate||'',          false,'0.10')+
+  return '<div class="pcard-info-grid" style="margin-top:10px">'+
+    item(iID,'pi-id',  'الهوية / الإقامة',hqEsc(s.nationalId||''), false,'0.05')+
+    item(iBT,'pi-birth','تاريخ الميلاد',  hqEsc(s.birthDate||''),  false,'0.10')+
     item(iAG,'pi-age', 'العمر',           s.age?(s.age+' سنة'):'', false,'0.15')+
-    item(iNA,'pi-nat', 'الجنسية',          s.nationality||'',        false,'0.20')+
-    item(iPH,'pi-ph',  'جوال الطالب',     s.phone||'',              false,'0.25')+
-    item(iGP,'pi-gph', 'جوال ولي الأمر', s.guardianPhone||'',      false,'0.30')+
-    item(iGR,'pi-gr',  'الصف الدراسي',    s.grade||'',              true, '0.35')+
+    item(iNA,'pi-nat', 'الجنسية',          hqEsc(s.nationality||''),false,'0.20')+
+    item(iPH,'pi-ph',  'جوال الطالب',     hqEsc(s.phone||''),      false,'0.25')+
+    item(iGP,'pi-gph', 'جوال ولي الأمر', hqEsc(s.guardianPhone||''),false,'0.30')+
+    item(iGR,'pi-gr',  'الصف الدراسي',    hqEsc(s.grade||''),      true, '0.35')+
     item(iID,'pi-iban','رقم الآيبان',     s.iban?('<span dir="ltr" style="unicode-bidi:embed;letter-spacing:.3px">'+hqEsc(hqIbanFmt(s.iban))+'</span>'):'', true, '0.40')+
-    '</div></div>';
-  wrap.innerHTML=html;
+    '</div>';
 }
 
 function openProfileEdit(sid){
@@ -17121,13 +17135,8 @@ function showStudentsData(){
           '<div class="stul-id"><div class="stul-name">'+esc(s.name)+_discHint+'</div></div>'+
         '</div>'+
         '<div class="stul-body">'+
-          '<div class="stul-field"><span class="stul-lbl">\u0627\u0644\u0639\u0645\u0631</span><span class="stul-val">'+(s.age?ageStr(s.age):'\u2014')+'</span></div>'+
-          '<div class="stul-field"><span class="stul-lbl">\u0627\u0644\u0635\u0641</span><span class="stul-val">'+esc(s.grade)+'</span></div>'+
-          '<div class="stul-field"><span class="stul-lbl">\u0627\u0644\u062c\u0646\u0633\u064a\u0629</span><span class="stul-val">'+esc(s.nationality)+'</span></div>'+
-          '<div class="stul-field"><span class="stul-lbl">الهوية / الإقامة</span><span class="stul-val ltr">'+esc(s.nationalId)+'</span></div>'+
-          '<div class="stul-field"><span class="stul-lbl">\u062c\u0648\u0627\u0644 \u0627\u0644\u0637\u0627\u0644\u0628</span><span class="stul-val ltr">'+esc(s.phone)+'</span></div>'+
-          '<div class="stul-field"><span class="stul-lbl">\u062c\u0648\u0627\u0644 \u0648\u0644\u064a \u0627\u0644\u0623\u0645\u0631</span><span class="stul-val ltr">'+esc(s.guardianPhone)+'</span></div>'+
-          '<div class="stul-field"><span class="stul-lbl">رقم الآيبان</span><span class="stul-val ltr">'+esc(hqIbanFmt(s.iban))+'</span></div>'+
+          /* (18.8) بطاقة الطالب نفسها التي في حسابه: الرأس المتوهّج وشبكة البيانات بأيقوناتها */
+          '<div class="pcard stul-pcard">'+hqStuHeroHtml(s,"openProfileEdit('"+esc(s.id)+"')")+hqStuInfoGrid(s)+'</div>'+
           /* (17.0) أربعة أزرار متساوية تحت البيانات: صفّان في كل صفّ زرّان */
           '<div class="stul-acts4">'+
             '<button class="stul-plan-btn" data-sid="'+esc(s.id)+'" onclick="event.stopPropagation();hqPlanOpenFor(this.getAttribute(\'data-sid\'))">خطة الطالب</button>'+
@@ -17341,7 +17350,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 18.7';
+  window.HQ_BUILD='2026 - 18.8';
   try{ var _ua=navigator.userAgent||''; if(/iPad|iPhone|iPod/.test(_ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)) document.documentElement.classList.add('hq-ios'); }catch(e){}
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
