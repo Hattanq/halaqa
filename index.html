@@ -4989,6 +4989,7 @@ function renderDash(){
       '<div class="menu-card mc-3 mc-test" onclick="hqTestTool()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="34" r="20" stroke="white" stroke-width="3"/><path d="M32 22v12l8 5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 10l-7 6M44 10l7 6" stroke="white" stroke-width="3" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">أدوات التجربة (مؤقّتة)</div></div>'+
       '<div class="menu-card mc-6" onclick="hqSyncDiag()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 12a20 20 0 1 0 20 20" stroke="white" stroke-width="3.2" stroke-linecap="round"/><path d="M52 12v12H40" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="32" r="4" fill="white"/></svg></div><div class="mc-accent"></div><div class="mc-label">تشخيص المزامنة</div></div>'+
       mhCardHtml(false)+
+      '<div class="menu-card mc-7" onclick="frcOpen()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M12 20h26M12 32h18M12 44h22" stroke="white" stroke-width="3.2" stroke-linecap="round"/><path d="M44 26l10 6-10 6" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">التحويل إلى المنهج الحر</div></div>'+
       '<div class="menu-card mc-1" onclick="hqBackupOpen()"><div class="mc-icon"><svg viewBox="0 0 64 64" fill="none"><path d="M32 10v26M22 28l10 10 10-10" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 40v8a6 6 0 006 6h28a6 6 0 006-6v-8" stroke="white" stroke-width="3.4" stroke-linecap="round"/></svg></div><div class="mc-accent"></div><div class="mc-label">النسخ الاحتياطي</div></div>'+
       '<div class="menu-card mc-gold" onclick="showAllHalqatStats()"><div class="mc-icon">'+svgStatH+'</div><div class="mc-accent"></div><div class="mc-label">تقارير الجمعية</div></div>'+
     '</div>';
@@ -6887,10 +6888,11 @@ function hqJuzPages(j){
 /* البطاقات الخمس: juz=عدد الأجزاء · pages=صفحات الخطة · rev=بدء المراجعة بعد كم صفحة */
 var HQ_PLAN_TYPES=[
   {k:'tj',  n:'منهج تصحيح التلاوة', juz:0, pages:0,   rev:2, tj:true, d:'خطة لتصحيح التلاوة في مقاطع مختارة'},
-  {k:'j1',  n:'المنهج الابتدائي',   juz:1, pages:20,  rev:3, d:'عمل خطة لحفظ جزء خلال فصل دراسي واحد'},
-  {k:'j2',  n:'المنهج التكميلي ١',  juz:2, pages:40,  rev:4, d:'عمل خطة لحفظ جزئين خلال فصل دراسي واحد'},
-  {k:'j3',  n:'المنهج التكميلي ٢',  juz:3, pages:60,  rev:6, d:'عمل خطة لحفظ ثلاثة أجزاء خلال فصل دراسي واحد'},
-  {k:'j5',  n:'منهج الحُفّاظ',       juz:5, pages:100, rev:8, d:'عمل خطة لحفظ خمسة أجزاء خلال فصل دراسي واحد'},
+  /* (18.9) مناهج الأجزاء مخفيّة: التطبيق على المنهج الحر، والكود باقٍ لقراءة الخطط القائمة */
+  {k:'j1',  n:'المنهج الابتدائي',   juz:1, pages:20,  rev:3, hide:true, d:'عمل خطة لحفظ جزء خلال فصل دراسي واحد'},
+  {k:'j2',  n:'المنهج التكميلي ١',  juz:2, pages:40,  rev:4, hide:true, d:'عمل خطة لحفظ جزئين خلال فصل دراسي واحد'},
+  {k:'j3',  n:'المنهج التكميلي ٢',  juz:3, pages:60,  rev:6, hide:true, d:'عمل خطة لحفظ ثلاثة أجزاء خلال فصل دراسي واحد'},
+  {k:'j5',  n:'منهج الحُفّاظ',       juz:5, pages:100, rev:8, hide:true, d:'عمل خطة لحفظ خمسة أجزاء خلال فصل دراسي واحد'},
   {k:'fr',  n:'المنهج الحر',        juz:0, pages:0,   rev:0, free:true, d:'عمل خطة حرّة ومرنة من أي موضع من القرآن، تصاعديّاً أو تنازليّاً'},
   /* الخطة القديمة مهمَّشة حالياً — تُفعَّل بحذف hide */
   {k:'old', n:'الخطة القديمة',   juz:0, pages:0,   rev:0, hide:true}
@@ -7764,9 +7766,10 @@ function hqRevNowPos(sid,p){
   return null;
 }
 function hqFrRevEnd(p,rv){
-  var ld=(p&&p.dir==='up')?'up':'down';
-  if(rv.dir===ld&&p&&p.lTo) return {s:p.lTo.s,a:p.lTo.a};
-  return hqFrTerminal({dir:rv.dir,lFrom:rv.from});
+  var ld=(p&&p.dir==='up')?'up':'down', term=hqFrTerminal({dir:rv.dir,lFrom:rv.from});
+  /* (18.9) نهاية الدرس تحدّ المراجعة إن وقعت داخل مداها؛ وإلا (مراجعة ما حُفظ قبل الفصل وراء الدرس) يبقى المدى إلى طرفه — كان يُرجع نهاية خارج المدى فيفرغ */
+  if(rv.dir===ld&&p&&p.lTo){ try{ if(hqLineIdxAt(hqRangeLines(rv.from,term),p.lTo.s,p.lTo.a)>=0) return {s:p.lTo.s,a:p.lTo.a}; }catch(e){ return {s:p.lTo.s,a:p.lTo.a}; } }
+  return term;
 }
 function hqFrRevDefaults(old,dFrom){
   var d={dir:'down',unit:'line',qty:7,from:{s:114,a:1},now:null};
@@ -17350,7 +17353,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 18.8';
+  window.HQ_BUILD='2026 - 18.9';
   try{ var _ua=navigator.userAgent||''; if(/iPad|iPhone|iPod/.test(_ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)) document.documentElement.classList.add('hq-ios'); }catch(e){}
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
@@ -20410,5 +20413,260 @@ function remRecSend(){
 
 
 
+
+<script>
+/* =====================================================================
+   (18.9) التحويل الجماعي إلى المنهج الحر — من حساب الشؤون، مرة واحدة
+   القاعدة (كما حدّدها صاحب التطبيق):
+   - الاتجاه من ترتيب دروس الطالب ومراجعاته المسجّلة.
+   - النوع والكميّة من متوسط أسطر الدرس/المراجعة في آخر ثلاثة أسابيع من أيامه، ثم أكبر قيمة ممكنة ≤ المتوسط (تخفيفاً).
+   - بداية الدرس = أول آية في درسه القادم؛ البداية الآن للمراجعة = أول آية في مراجعته القادمة.
+   - أول درس/أول مراجعة في الفصل = من أول يوم مسجّل له؛ بداية العودة = أول مراجعة في الفصل.
+   - النهاية تُحسب كأي خطة حرّة (الكميّة × الأيام الدراسية المتبقية).
+   - لا يُمسّ: النقاط (رصيد مرحَّل)، الترتيب، التقارير، الموضعان — ويُتحقَّق منها لكل طالب قبل التبديل وبعده.
+   ===================================================================== */
+var HQ_FRC_WINDOW=21, HQ_FRC_TYPES=['j1','j2','j3','j5'];
+function frcLinesOfEdge(e){ try{ if(!e||!e.s1||!e.s2) return 0; return hqRangeLines({s:+e.s1,a:+e.a1||1},{s:+e.s2,a:+e.a2||1}).length; }catch(x){ return 0; } }
+/* أيام الفصل الحالي (المجزّأ كما في التقارير) بمفاتيحها وتواريخها */
+function frcTermEntries(sid){ var L=evEntryList(sid); if(!L.length) return L; var st=Math.floor((L.length-1)/EV_TERM_DAYS)*EV_TERM_DAYS; return L.slice(st); }
+/* متوسط أسطر اليوم في آخر ثلاثة أسابيع من أيام الطالب المسجّلة */
+function frcDailyLines(sid,kind){
+  var L=frcTermEntries(sid), done=[];
+  for(var i=0;i<L.length;i++){ var d=L[i].d, v=d&&d[kind]; if(!(v&&String(v).indexOf('n:')===0)) continue; var n=frcLinesOfEdge(d[kind+'E']); if(n>0) done.push({jd:L[i].jd,n:n}); }
+  if(!done.length) return null;
+  var last=done[done.length-1].jd, sel=done.filter(function(x){ return last-x.jd<HQ_FRC_WINDOW; }), tot=0;
+  sel.forEach(function(x){ tot+=x.n; });
+  return {avg:tot/sel.length, days:sel.length};
+}
+/* أكبر كميّة ممكنة في المنهج الحر لا تتجاوز المتوسط (أسطر ١–١٠ · أوجه ١–١٠ · أجزاء) */
+function frcQtyFloor(avg,kind){
+  var best=null; function cand(unit,qty,lines){ if(lines<=avg+1e-9&&(!best||lines>best.lines)) best={unit:unit,qty:qty,lines:lines}; }
+  for(var i=1;i<=10;i++) cand('line',i,i);
+  for(var j=1;j<=10;j++) cand('page',j,j*HQ_PAGE_LINES);
+  var jm=(kind==='review')?30:5; for(var k=1;k<=jm;k++) cand('juz',k,k*HQ_JUZ_PAGES*HQ_PAGE_LINES);
+  return best||{unit:'line',qty:1,lines:1};
+}
+function frcQtyName(unit,qty){ var L=(unit==='juz'&&qty>5)?hqFrQtyOpts('r','juz'):HQ_FR_QTY[unit]; for(var i=0;i<(L||[]).length;i++){ if(L[i][0]===qty) return L[i][1]; } return arNum(qty); }
+function frcPosTxt(p){ return (p&&p.s)?(hqSurName(p.s)+' '+arNum(p.a)):'—'; }
+function frcPosAfter(pos,dir){ var nx=hqNextAyahIn(pos); if(nx) return nx; var s=(dir==='up')?pos.s+1:pos.s-1; if(s<1||s>114) return null; return {s:s,a:1}; }
+function frcDirOf(p){ try{ var ln=hqPlanLines(p); if(ln.length>1){ var a=ln[0], b=ln[ln.length-1]; if(a.s!==b.s) return (a.s>b.s)?'down':'up'; }
+  /* مدى داخل سورة واحدة لا يُظهر الاتجاه (الآيات تصاعدية في الاتجاهين): من مدى المراجعة إن امتدّ على سور، وإلا الأصل نزولاً */
+  if(p&&p.rFrom&&p.rTo&&p.rFrom.s!==p.rTo.s) return (p.rFrom.s>p.rTo.s)?'down':'up'; }catch(e){} return 'down'; }
+function frcRevDirOf(p){ if(p&&p.rFrom&&p.rTo&&p.rFrom.s!==p.rTo.s) return (p.rFrom.s>p.rTo.s)?'down':'up'; return frcDirOf(p); }
+/* موضع الدرس الحالي: أول آية في الدرس القادم (أو ما بعد آخر درس إن أنهى خطته) */
+function frcLessonNow(sid,p){
+  var rec=(DB.evals||{})[sid]||{}, pl=parseInt((rec.progress||{}).lesson,10)||0, days=p.days||[];
+  var lines=hqFrIsQty(p)?hqFrSeq(p):hqPlanLines(p);
+  for(var n=pl+1;n<=days.length;n++){ var seg=hqDaySeg(days[n-1],'lesson'); if(!seg) continue; if(seg.fs&&seg.fs.s) return {s:+seg.fs.s,a:+seg.fs.a}; var x=hqLinePos(lines,seg[0]-1,false); if(x) return x; }
+  for(var m=days.length;m>=1;m--){ var sg=hqDaySeg(days[m-1],'lesson'); if(!sg) continue; var end=sg.te||hqLinePos(lines,sg[1]-1,true); if(end) return frcPosAfter(end,frcDirOf(p)); }
+  return null;
+}
+/* الأسبق في الاتجاه بين موضعين (نزولاً: السورة الأكبر رقماً ثم الآية الأصغر) */
+function frcEarlier(dir,a,b){ if(!a) return b; if(!b) return a; if(a.s!==b.s) return ((dir==='up')?(a.s<b.s):(a.s>b.s))?a:b; return (a.a<=b.a)?a:b; }
+/* أول درس/مراجعة في الفصل: ما حدّده المعلّم إن وُجد؛ وإلا الأسبق في الاتجاه بين أول يوم مسجّل له وبداية خطته الحالية
+   (أيام ما قبل 17.0 قد تخلو من حدودها، والخطة قد تكون أُعيد اعتمادها في منتصف الفصل — فالأسبق هو الأقرب إلى أول الفصل) */
+function frcT0(sid,p,kind,dir){
+  var t0=hqTermStart(sid), k=(kind==='review')?'r':'l'; if(t0&&t0[k]&&t0[k].s) return {s:+t0[k].s,a:+t0[k].a||1};
+  var L=frcTermEntries(sid), rec=null;
+  for(var i=0;i<L.length;i++){ var d=L[i].d, v=d&&d[kind]; if(!(v&&String(v).indexOf('n:')===0)) continue; var e=d[kind+'E']; if(e&&e.s1){ rec={s:+e.s1,a:+e.a1||1}; break; } }
+  var pl=null;
+  try{ if(kind==='review'&&p.rFrom&&p.rFrom.s) pl={s:+p.rFrom.s,a:+p.rFrom.a||1};
+    else { var d0=(p.days||[])[0], sg=d0?hqDaySeg(d0,'lesson'):null; if(sg&&sg.fs) pl={s:+sg.fs.s,a:+sg.fs.a}; else { var ln=hqPlanLines(p); if(ln.length) pl=hqLinePos(ln,0,false); } } }catch(e){}
+  /* أول يوم مسجّل بحدوده هو ما تعتمده التقارير اليوم، فيبقى كما هو؛ وبداية الخطة احتياط حين لا حدود مسجّلة */
+  return rec||pl;
+}
+/* مقترح التحويل لطالب (في سياق حلقته) */
+function frcPropose(sid,h){
+  var p=hqPlanOf(sid); if(!p||!p.approved||HQ_FRC_TYPES.indexOf(p.type)<0) return null;
+  var st=hqPlanStu(sid)||{}; h=h||hqHalqaById(STATE.activeHid)||{};
+  var o={sid:sid,name:st.name||'',hid:h.id||'',halqa:h.name||'',oldType:(hqPlanType(p.type)||{}).n||p.type,notes:[]};
+  o.dir=frcDirOf(p); o.rDir=frcRevDirOf(p);
+  var dl=frcDailyLines(sid,'lesson');
+  if(!dl){ var ln=0,c=0; for(var i=0;i<Math.min(5,(p.days||[]).length);i++){ var sg=hqDaySeg(p.days[i],'lesson'); if(sg){ ln+=sg[1]-sg[0]+1; c++; } } dl={avg:c?ln/c:5,days:0}; o.notes.push('لا دروس مسجّلة في آخر أسابيع — الكميّة من أيام خطته'); }
+  var q=frcQtyFloor(dl.avg,'lesson'); o.unit=q.unit; o.qty=q.qty; o.avgL=dl.avg; o.qtyLines=q.lines; o.daysL=dl.days;
+  if(q.lines<dl.avg*0.7) o.notes.push('كميّة الدرس أقل من معدّله الفعلي ('+arNum(Math.round(dl.avg))+' سطراً) — يزيدها المعلّم إن شاء');
+  var rl=frcDailyLines(sid,'review');
+  if(!rl){ var rp=parseFloat(p.rPages); rl={avg:((isFinite(rp)&&rp>0)?rp:1)*HQ_PAGE_LINES,days:0}; o.notes.push('لا مراجعات مسجّلة في آخر أسابيع — القدر من إعداد خطته'); }
+  var rq=frcQtyFloor(rl.avg,'review'); o.rUnit=rq.unit; o.rQty=rq.qty; o.avgR=rl.avg; o.daysR=rl.days;
+  o.lFrom=frcLessonNow(sid,p); if(!o.lFrom){ o.err='تعذّر تحديد موضع الدرس الحالي'; return o; }
+  o.rNow=hqRevNowPos(sid,p)||null; if(!o.rNow) o.notes.push('لا موضع مراجعة حالي — تبدأ من بداية العودة');
+  o.t0l=frcT0(sid,p,'lesson',o.dir); o.t0r=frcT0(sid,p,'review',o.rDir)||o.t0l; o.rFrom=o.t0r;
+  if(!o.t0l){ o.err='تعذّر تحديد أول درس في الفصل'; return o; }
+  /* بداية العودة لا تكون بعد موضع المراجعة الحالي في اتجاهها */
+  if(o.rNow){ var _e=frcEarlier(o.rDir,o.rNow,o.rFrom); if(_e===o.rNow&&(o.rNow.s!==o.rFrom.s||o.rNow.a!==o.rFrom.a)){ o.rFrom={s:o.rNow.s,a:o.rNow.a}; o.notes.push('بداية العودة جُعلت موضع المراجعة الحالي لأنه أسبق من أول مراجعة مسجّلة'); } }
+  try{ var est=hqFrEstimate({dir:o.dir,unit:o.unit,qty:o.qty,from:o.lFrom}); if(est){ o.end=est.end; o.endDays=est.days; o.endPages=est.pages; } }catch(e){}
+  return o;
+}
+/* لقطة للتحقّق: المجموع، الموضعان، صفحات الفصل (كما تحسبها التقارير) */
+async function frcSnapshot(sid,p,isNew){
+  var o={};
+  try{ o.total=Math.round(((evCurrentScore(sid).score||{}).total||0)*1000)/1000; }catch(e){ o.total='?'; }
+  try{ var pos=isNew?(function(){ var sg=hqDaySeg((p.days||[])[0],'lesson'); if(!sg) return null; if(sg.fs) return sg.fs; return hqLinePos(hqFrSeq(p),sg[0]-1,false); })():frcLessonNow(sid,p); o.lesson=pos?(pos.s+':'+pos.a):''; }catch(e){ o.lesson='?'; }
+  try{ var rp=frcRevNext(sid,p,isNew); o.review=rp?(rp.s+':'+rp.a):''; }catch(e){ o.review='?'; }
+  try{ var td=frcTermEntries(sid).map(function(x){ return x.d; }); var a=await hsSpan(td,'lesson',sid), b=await hsSpan(td,'review',sid);
+    function K(x){ if(!x) return ''; var sn=x.surah||(x.s?hsSurahName(x.s):''); return sn+':'+(x.ayah!=null?x.ayah:x.a); }
+    o.pagesL=a?a.pages:''; o.pagesR=b?b.pages:''; o.cycles=b?b.cycles:''; o.startL=K(a&&a.start); o.endL=K(a&&a.end);
+    /* إن كانت حدود الأيام القديمة ناقصة فالتقرير قبل التبديل تقديري (يُكمل الاعتماد الحدود كعادته) — لا يُعدّ اختلافه خللاً */
+    o.fullL=!!(a&&a.full); o.fullR=!!(b&&b.full); }catch(e){ o.pagesL='?'; }
+  return o;
+}
+/* موضع أول آية في يوم المراجعة التالي (الخطة القديمة: اليوم بعد المنجَز؛ الجديدة: يومها الأول) */
+function frcRevNext(sid,p,isNew){
+  var rec=(DB.evals||{})[sid]||{}, n=isNew?1:((parseInt((rec.progress||{}).review,10)||0)+1);
+  var seg=hqPlanSegOf(sid,'review',n); if(!seg) return null;
+  if(seg.fs&&seg.fs.s) return {s:+seg.fs.s,a:+seg.fs.a};
+  return hqLinePos(hqPlanRevLines(p),seg[0]-1,false);
+}
+function frcDiff(a,b,o){
+  var out=[];
+  if(String(a.total)!==String(b.total)) out.push('النقاط '+a.total+'←'+b.total);
+  if(a.lesson!==b.lesson) out.push('موضع الدرس '+a.lesson+'←'+b.lesson);
+  if(a.review&&a.review!==b.review) out.push('موضع المراجعة '+a.review+'←'+b.review);
+  if(a.fullL){
+    if(String(a.pagesL)!==String(b.pagesL)) out.push('صفحات الدرس '+a.pagesL+'←'+b.pagesL);
+    if(a.startL!==b.startL) out.push('بداية الدرس في التقرير '+a.startL+'←'+b.startL);
+    if(a.endL!==b.endL) out.push('نهاية الدرس في التقرير '+a.endL+'←'+b.endL);
+  } else if(String(a.pagesL)!==String(b.pagesL)||a.startL!==b.startL||a.endL!==b.endL){ o.notes.push('تقرير الدرس كان تقديرياً لنقص حدود أيام قديمة؛ صار من الحدود الفعلية (الصفحات '+a.pagesL+'←'+b.pagesL+')'); }
+  if(a.fullR){
+    if(String(a.pagesR)!==String(b.pagesR)||String(a.cycles)!==String(b.cycles)) out.push('صفحات المراجعة '+a.pagesR+'←'+b.pagesR);
+  } else if(String(a.pagesR)!==String(b.pagesR)){ o.notes.push('تقرير المراجعة كان تقديرياً لنقص حدود أيام قديمة؛ صار من الحدود الفعلية (الصفحات '+a.pagesR+'←'+b.pagesR+')'); }
+  return out.join(' · ');
+}
+/* تنفيذ التحويل لطالب واحد (في سياق حلقته) مع التحقّق والتراجع عند أي اختلاف */
+async function frcApply(o){
+  var sid=o.sid, oldP=hqPlanOf(sid); if(!oldP) return {ok:false,why:'لا خطة'};
+  var store=hqPlanStore(), bakP=JSON.parse(JSON.stringify(oldP)), bakE=(DB.evals&&DB.evals[sid])?JSON.parse(JSON.stringify(DB.evals[sid])):null, bakDyn=_hqRevDyn[sid];
+  var before=await frcSnapshot(sid,oldP,false);
+  try{
+    var p=hqPlanMake('fr',0); p.dir=o.dir; p.unit=o.unit; p.qty=o.qty; p.lFrom={s:+o.lFrom.s,a:+o.lFrom.a}; p.lTo=hqFrTerminal(p);
+    if(!hqFrSeq(p).length) throw new Error('مدى الدرس فارغ');
+    var rv={dir:o.rDir,unit:o.rUnit,qty:o.rQty,from:{s:+o.rFrom.s,a:+o.rFrom.a},now:o.rNow?{s:+o.rNow.s,a:+o.rNow.a}:null};
+    p.rDir=rv.dir; p.rUnit=rv.unit; p.rQty=rv.qty; p.rPages=hqFrRevDaily(rv); p.rFrom=rv.from; p.rTo=hqFrTerminal({dir:rv.dir,lFrom:rv.from});
+    if(rv.now&&!hqRevIdxOf(p,rv.now)){ rv.now=null; o.rNow=null; o.notes.push('«البداية الآن» خارج مدى المراجعة — بدأت من بداية العودة'); }
+    p.rNow=rv.now; p.rNowAt=0;
+    hqTermStartSet(sid,o.t0l,o.t0r);
+    hqPlanApprove(sid,p,null);
+    /* بداية في منتصف سطر: يُثبَّت أول اليوم على الآية نفسها لا على أول السطر */
+    try{ var l0=hqFrSeq(p)[0], d0=p.days[0]; if(l0&&d0&&d0.l&&l0.s===p.lFrom.s&&(l0.sa||l0.a)<p.lFrom.a) d0.lf={s:p.lFrom.s,a:p.lFrom.a}; }catch(e){}
+    p.rTo=hqFrRevEnd(p,rv);
+    try{ var _term=hqFrTerminal({dir:rv.dir,lFrom:rv.from}); if(p.rTo.s===_term.s&&p.rTo.a===_term.a&&oldP.rTo&&oldP.rTo.s){ p.rTo={s:+oldP.rTo.s,a:+oldP.rTo.a}; o.notes.push('مدى المراجعة أبقي كما كان ('+frcPosTxt(p.rFrom)+' ← '+frcPosTxt(p.rTo)+') لأنه خارج مدى الدرس'); } }catch(e){}
+    try{ delete _hqRevDyn[sid]; }catch(e){}
+    try{ hqPlanFillReview(p,p.days,0); }catch(e){}
+    p.mt=hqNow(); p.frc=1;
+    var after=await frcSnapshot(sid,p,true), diff=frcDiff(before,after,o);
+    if(diff) throw new Error('اختلاف: '+diff);
+    o.after=after; return {ok:true};
+  }catch(e){
+    store[sid]=bakP; if(bakE){ DB.evals[sid]=bakE; } else if(DB.evals){ delete DB.evals[sid]; }
+    try{ if(bakDyn) _hqRevDyn[sid]=bakDyn; else delete _hqRevDyn[sid]; }catch(_){ }
+    return {ok:false,why:String((e&&e.message)||e)};
+  }
+}
+/* ---- الواجهة ---- */
+var _frc={list:[],tj:[],fr:0,none:0,done:false,res:null};
+async function frcScan(){
+  var out=[], tj=[], fr=0, none=0, L=DB.halqat||[];
+  for(var i=0;i<L.length;i++){
+    var h=L[i]; if(!h||!h.id) continue;
+    await hqWithHalqaA(h,async function(){
+      (DB.students||[]).forEach(function(st){ if(!st||!st.id) return;
+        var p=hqPlanOf(st.id);
+        if(!p||!p.approved){ none++; return; }
+        if(p.type==='fr'){ fr++; return; }
+        if(p.type==='tj'){ tj.push({name:st.name||'',halqa:h.name||'',teacher:h.teacherName||''}); return; }
+        var o=frcPropose(st.id,h); if(o) out.push(o);
+      });
+    });
+  }
+  return {list:out,tj:tj,fr:fr,none:none};
+}
+function frcCard(o){
+  function row(l,v){ return '<div class="hqacc-row"><span class="hqacc-lbl">'+l+'</span><span class="hqacc-val">'+v+'</span></div>'; }
+  var body=o.err?('<div class="hqacc-row" style="color:#fca5a5">'+hqEsc(o.err)+'</div>'):(
+    row('الاتجاه',(o.dir==='up')?'من البقرة للناس':'من الناس للبقرة')+
+    row('الدرس',frcQtyName(o.unit,o.qty)+' يومياً <small style="opacity:.75">(معدّله '+arNum(Math.round(o.avgL*10)/10)+' سطراً في '+arNum(o.daysL)+' يوماً)</small>')+
+    row('بداية الدرس',frcPosTxt(o.lFrom))+
+    row('النهاية المتوقّعة',o.end?(frcPosTxt(o.end)+' <small style="opacity:.75">('+arNum(o.endDays)+' يوماً)</small>'):'—')+
+    row('المراجعة',frcQtyName(o.rUnit,o.rQty)+' يومياً <small style="opacity:.75">(معدّله '+arNum(Math.round(o.avgR*10)/10)+' سطراً في '+arNum(o.daysR)+' يوماً)</small>')+
+    row('البداية الآن',frcPosTxt(o.rNow)+(o.rNow?'':' <small>(من بداية العودة)</small>'))+
+    row('بداية العودة',frcPosTxt(o.rFrom))+
+    row('أول درس في الفصل',frcPosTxt(o.t0l))+row('أول مراجعة في الفصل',frcPosTxt(o.t0r)));
+  var notes=o.notes.length?('<div class="vs-hint" style="color:#fbbf24;margin:2px 4px">'+o.notes.map(hqEsc).join('<br>')+'</div>'):'';
+  var st=o.res?('<div class="vs-hint" style="color:'+(o.res.ok?'#86efac':'#fca5a5')+';margin:2px 4px;font-weight:700">'+(o.res.ok?'✓ حُوِّل':'✗ لم يُحوَّل: '+hqEsc(o.res.why))+'</div>'):'';
+  return '<div class="hq-diag-box" style="margin-bottom:8px"><div class="hq-diag-t">'+hqEsc(o.name)+' <small style="opacity:.75">— '+hqEsc(o.oldType)+'</small></div>'+body+notes+st+'</div>';
+}
+function frcRender(){
+  var L=_frc.list, byH={}, order=[];
+  L.forEach(function(o){ if(!byH[o.hid]){ byH[o.hid]=[]; order.push(o.hid); } byH[o.hid].push(o); });
+  var errs=L.filter(function(o){ return o.err; }).length;
+  var sum='<div class="hq-diag-box">'+
+    hqDiagRow('سيُحوَّلون إلى المنهج الحر', arNum(L.length-errs))+
+    (errs?hqDiagRow('تعذّر إعداد مقترحهم', arNum(errs), true):'')+
+    hqDiagRow('على المنهج الحر فعلاً', arNum(_frc.fr))+
+    hqDiagRow('بلا خطة معتمَدة (لا يُمسّون)', arNum(_frc.none))+
+    hqDiagRow('منهج تصحيح التلاوة (يبقون كما هم)', arNum(_frc.tj.length))+
+  '</div>';
+  var tj=_frc.tj.length?('<div class="hq-diag-box"><div class="hq-diag-t">طلاب تصحيح التلاوة — للتواصل مع معلّميهم</div>'+_frc.tj.map(function(x){ return '<div class="hqacc-row"><span class="hqacc-lbl">'+hqEsc(x.name)+'</span><span class="hqacc-val">'+hqEsc(x.halqa)+'<br><small>'+hqEsc(x.teacher)+'</small></span></div>'; }).join('')+'</div>'):'';
+  var res='';
+  if(_frc.res){ var r=_frc.res; res='<div class="hq-diag-box" style="border-color:'+(r.fail?'#fca5a5':'#86efac')+'"><div class="hq-diag-t">نتيجة التنفيذ</div>'+hqDiagRow('حُوِّلوا', arNum(r.ok))+hqDiagRow('لم يُحوَّلوا (بقوا على خطتهم)', arNum(r.fail), r.fail>0)+'<div class="vs-hint">حُفظ كل شيء وسيصل أجهزة المعلّمين مع أول مزامنة. يمكن تكرار التنفيذ بأمان لمن لم يُحوَّل.</div></div>'; }
+  var cards=order.map(function(hid){ var arr=byH[hid]; return '<details class="frc-h"><summary>'+hqEsc(arr[0].halqa)+' <b>'+arNum(arr.length)+'</b></summary>'+arr.map(frcCard).join('')+'</details>'; }).join('');
+  var acts='<div class="hqacc-acts" style="justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap">'+
+    '<button class="hq-mini-btn view" onclick="hqBackupDownload()">نسخة احتياطية أولاً</button>'+
+    ((L.length-errs>0&&!_frc.res)?'<button class="hq-mini-btn del" id="frc-go" onclick="frcGoAsk()">تنفيذ التحويل</button>':'')+
+    (_frc.res?'<button class="hq-mini-btn edit" onclick="frcCopyReport()">نسخ التقرير</button>':'')+
+  '</div>';
+  openModal('التحويل إلى المنهج الحر',
+    '<div class="hs-wrap"><div class="ev-susp-note">معاينة لكل طالب على مناهج الأجزاء: الاتجاه والنوع والكميّة من أيامه المسجّلة في آخر ثلاثة أسابيع، وبداية الدرس والمراجعة من موضعه الحالي، وأول الفصل وبداية العودة من أول يوم مسجّل له. النقاط والترتيب والتقارير والموضعان تُقارَن قبل التبديل وبعده، ومن يختلف فيه شيء يُستثنى ويبقى على خطته.<br><b>نفّذ من هذا الجهاز وهو متزامن، في وقت لا يعمل فيه المعلّمون.</b></div>'+
+    sum+res+acts+'<div id="frc-prog" class="vs-hint" style="text-align:center"></div>'+cards+tj+'</div>');
+  hqModalTall();
+}
+async function frcOpen(){
+  if(STATE.role!=='admin'){ showToast('هذه الأداة لحساب الشؤون','error'); return; }
+  openModal('التحويل إلى المنهج الحر','<div class="hs-wrap"><div class="vs-hint" style="text-align:center;padding:20px">جارٍ فحص الحلقات…</div></div>');
+  try{ var r=await frcScan(); _frc={list:r.list,tj:r.tj,fr:r.fr,none:r.none,done:false,res:null}; frcRender(); }
+  catch(e){ showToast('تعذّر الفحص: '+String(e&&e.message||e),'error'); }
+}
+function frcGoAsk(){
+  var n=_frc.list.filter(function(o){ return !o.err; }).length;
+  openModal('تأكيد التحويل',
+    '<div class="hs-wrap"><div class="ev-susp-note">سيُحوَّل <b>'+arNum(n)+'</b> طالباً إلى المنهج الحر الآن. هل نزّلت نسخة احتياطية؟ وهل مؤشّر المزامنة «متزامن»؟</div>'+
+    '<div class="hqacc-acts" style="justify-content:center;gap:8px;margin-top:12px">'+
+    '<button class="hq-mini-btn del" onclick="frcGo()">نعم، نفّذ</button><button class="hq-mini-btn view" onclick="frcRender()">عودة</button></div></div>');
+}
+async function frcGo(){
+  var L=_frc.list.filter(function(o){ return !o.err; }), ok=0, fail=0, byH={};
+  L.forEach(function(o){ (byH[o.hid]||(byH[o.hid]=[])).push(o); });
+  frcRender(); var pg=document.getElementById('frc-prog'); var go=document.getElementById('frc-go'); if(go) go.disabled=true;
+  var _save=window.save; window.save=function(){};   /* حفظ واحد في النهاية */
+  try{
+    for(var hid in byH){
+      var h=hqHalqaById(hid); if(!h) continue;
+      await hqWithHalqaA(h,async function(){
+        var arr=byH[hid];
+        for(var i=0;i<arr.length;i++){ var o=arr[i]; o.res=await frcApply(o); if(o.res.ok) ok++; else fail++;
+          if(pg) pg.textContent='جارٍ التحويل… '+arNum(ok+fail)+' من '+arNum(L.length);
+          if((i%5)===4) await new Promise(function(r){ setTimeout(r,0); }); }
+      });
+    }
+  } finally { window.save=_save; }
+  try{ save(); }catch(e){}
+  try{ hqSaveFlush&&hqSaveFlush(); }catch(e){}
+  _frc.res={ok:ok,fail:fail,at:Date.now()};
+  frcRender();
+  showToast('اكتمل التحويل: '+arNum(ok)+' طالباً'+(fail?(' — لم يُحوَّل '+arNum(fail)):''), fail?'info':'success');
+}
+function frcCopyReport(){
+  var r=_frc.res||{}, lines=['التحويل إلى المنهج الحر — '+new Date().toLocaleString('ar-SA'),'حُوِّلوا: '+(r.ok||0)+' · لم يُحوَّلوا: '+(r.fail||0),''];
+  _frc.list.forEach(function(o){ lines.push((o.res&&o.res.ok?'✓ ':'✗ ')+o.halqa+' — '+o.name+' — '+(o.oldType||'')+' ← الحر: '+(o.err||((o.dir==='up'?'صاعد':'نازل')+' · الدرس '+frcQtyName(o.unit,o.qty)+' من '+frcPosTxt(o.lFrom)+' · المراجعة '+frcQtyName(o.rUnit,o.rQty)+' الآن '+frcPosTxt(o.rNow)+' والعودة '+frcPosTxt(o.rFrom)))+(o.res&&!o.res.ok?(' — '+o.res.why):'')+(o.notes.length?(' — '+o.notes.join(' / ')):'')); });
+  var t=lines.join('\n');
+  try{ navigator.clipboard.writeText(t).then(function(){ showToast('نُسخ التقرير','success'); }, function(){ prompt('انسخ التقرير',t); }); }catch(e){ prompt('انسخ التقرير',t); }
+}
+</script>
+<style>
+.frc-h{margin:8px 0;border:1px solid rgba(247,215,116,.25);border-radius:12px;padding:4px 8px;background:rgba(255,255,255,.03)}
+.frc-h summary{cursor:pointer;font-weight:800;color:#f7d774;padding:6px 2px;list-style:none;display:flex;justify-content:space-between}
+.frc-h summary::-webkit-details-marker{display:none}
+.frc-h summary b{background:rgba(247,215,116,.18);border-radius:10px;padding:0 10px}
+</style>
 </body>
 </html>
