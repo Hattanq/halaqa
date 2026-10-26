@@ -12669,8 +12669,11 @@ function hsSpanSync(days,kind,sid){
   if(!items.length) return o;
   o.start=hsDayEdge(o.first.d,kind,'start'); o.end=hsDayEdge(o.last.d,kind,'end');
   /* (18.8) أول يوم في المدى هو أول يوم في الفصل: البداية = «أول درس/مراجعة في الفصل الدراسي» كما حدّدها المعلّم، وتبقى كذلك ولو تغيّرت الخطة */
+  /* (19.3) البداية = أول درس/مراجعة سجّله المعلّم فعلاً في أول يوم من الفصل (حدود اليوم المحفوظة)، فهي الحقيقة ولا تتبدّل بتغيير الخطة.
+     «أول درس في الفصل الدراسي» المحدَّد في الخطة (t0) احتياطٌ لليوم الذي لا حدود محفوظة له فقط — كان يُقدَّم على السجل فظهرت بداية خاطئة
+     (الحديد ١ بدل التحريم ١) لمن أُعيد اعتماد خطته بقيمة افتراضية */
   o.t0=null;
-  if(sid){ try{ var _tf=hsFirstLast(hsTermDays(sid),kind).fd; if(_tf&&_tf===o.first.d){ var _t0=hsT0Edge(sid,kind); if(_t0&&_t0.s){ o.t0=_t0; o.start=_t0; } } }catch(e){} }
+  if(sid){ try{ var _tf=hsFirstLast(hsTermDays(sid),kind).fd; if(_tf&&_tf===o.first.d){ var _t0=hsT0Edge(sid,kind); if(_t0&&_t0.s){ o.t0=_t0; if(!o.start) o.start=_t0; } } }catch(e){} }
   o.full=items.every(function(x){ return !!x.e; });
   if(!o.full) return o;
   if(kind==='review'){ var rc=hqRevCycles(days); if(rc){ o.pages=rc.pages; o.cycles=rc.cycles; } else o.full=false; return o; }
@@ -17567,7 +17570,7 @@ var HQ_SVG_OFFLINE='<svg viewBox="0 0 64 64" fill="none"><path d="M14 44a11 11 0
   var SW_OK=false, _swReg=null;
 
   /* ---- ختم الإصدار: يكشف أي نسخة تعمل فعلًا في الجهاز ---- */
-  window.HQ_BUILD='2026 - 19.2';
+  window.HQ_BUILD='2026 - 19.3';
   try{ var _ua=navigator.userAgent||''; if(/iPad|iPhone|iPod/.test(_ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)) document.documentElement.classList.add('hq-ios'); }catch(e){}
   function hqBuildStamp(){
     if(document.getElementById('hq-build')) return;
@@ -21254,6 +21257,81 @@ var HQ_CT={
   p1Title:'المدير التنفيذي للجمعية', p1Name:'فهد علي أحمد الزهراني', p1Nid:'1073420331',
   reward:1000, year:'1448هـ'
 };
+/* (19.3) نصّ العقد قابل للتحرير من حساب الشؤون: يُحفظ في حساب الشؤون (DB.users — يُزامَن ككل سجل) ويُطبَّق على كل العقود فوراً.
+   {الحلقة} و{المكافأة} و{السنة} تُستبدل تلقائياً. */
+var HQ_CT_DEF={
+  title:'تجديد عقد عمل مؤقت مع (معلم) سعودي',
+  bism:'الحمد لله والصلاة والسلام على رسول الله وبعد:',
+  intro:'فإنه في يوم الثلاثاء 1448/3/19هـ الموافق 2026/9/1م اتفق كل من الجمعية الخيرية لتحفيظ القرآن الكريم بمحافظة المندق الطرف الأول ويمثلها المدير التنفيذي للجمعية.',
+  p1Title:'المدير التنفيذي للجمعية', p1Name:'فهد علي أحمد الزهراني', p1Nid:'1073420331',
+  lead:'على ما يلي:-',
+  clauses:[
+    'أن يلتزم الطرف الثاني بالعمل (معلمًا) بحلقة ({الحلقة}) وذلك مقابل مكافأة ({المكافأة}) ريال شهرياً فقط.',
+    'يكون الدوام من الأحد حتى الأربعاء غير متفرغ وعمله لبعض الوقت بحيث لا يزيد عن ساعتين في اليوم.',
+    'يسري مفعول هذا العقد من تاريخ مباشرة الطرف الثاني.',
+    'يتبع لجمعية تحفيظ القرآن الكريم بالمندق ويقوم بالمهام التي تسند إليه من قبل الجمعية أو أي أعمال أخرى تسند إليه من قبل إدارة الجمعية.',
+    'يحق للطرف الأول إنهاء عقد الطرف الثاني فوراً في الحالات التالية:\nأ- عدم تقيد الطرف الثاني بالأنظمة والتعليمات الخاصة بالجمعية وإدارة الشؤون التعليمية أو قيامه بسلوك يتنافى مع أنظمة الجمعية.\nب- إذا انقطع عن العمل مدة تزيد على خمسة (5) أيام، دون إشعار الطرف الأول بعذر شرعي يقبله مجلس الإدارة التنفيذية بالجمعية يتم طي قيده من الجمعية.\nج- إذا لم يقم بالعمل على الوجه المطلوب ورفع عنه مدير الشؤون التعليمية بالجمعية بما يفيد عدم صلاحيته للعمل.',
+    'لا يحق للطرف الثاني أي مكافأة مالية في الإجازات الصيفية أو القصيرة أو في حالة توقف الحلقات لأي سبب كان وتتوقف المكافأة بتوقف الطرف الثاني عن العمل لأي سبب كان لأن الأجر مقابل العمل ولا يحق للطرف الثاني أي مكافأة مالية نهاية الخدمة.',
+    'يكون للجمعية الحق في إنهاء العقد عند الاستغناء عن الطرف الثاني بأي وقت وليس له الحق في مطالبة الطرف الأول بأي تعويضات مالية أو غيرها.',
+    'ينتهي هذا العقد بنهاية العام الدراسي {السنة} ولا يحق للطرف الثاني المطالبة بإعادة تجديد العقد إلا برغبة الجمعية.'
+  ],
+  note:'• يحرر هذا العقد من نسختين وتسلم نسخة لكل طرف بعد الموافقة عليه وتوقيعه من الطرفين.',
+  ack:'((يقرر الطرف الثاني بأنه علم واستوعب كافة مواد هذا العقد بتنفيذه والالتزام به وعلى ذلك يوقع))',
+  dateH:'1448/3/19هـ', reward:'1000', year:'1448هـ'
+};
+var HQ_CT_FIELDS=[['title','عنوان العقد',1],['bism','الافتتاحية',1],['intro','فقرة التمهيد (اليوم والتاريخ والطرف الأول)',2],['p1Title','صفة الطرف الأول',1],['p1Name','اسم الطرف الأول',1],['p1Nid','هوية الطرف الأول',1],['lead','عبارة «على ما يلي»',1],
+  ['c0','البند ١ — ({الحلقة} و{المكافأة} تُستبدلان تلقائياً)',3],['c1','البند ٢',2],['c2','البند ٣',2],['c3','البند ٤',2],['c4','البند ٥ (كل فقرة فرعية في سطر: أ- ب- ج-)',5],['c5','البند ٦',3],['c6','البند ٧',2],['c7','البند ٨ — ({السنة} تُستبدل تلقائياً)',2],
+  ['note','ملاحظة النسختين',2],['ack','إقرار الطرف الثاني',2],['dateH','تاريخ تحرير العقد (هجري)',1],['reward','المكافأة الشهرية (ريال)',1],['year','العام الدراسي',1]];
+function ctAdminUser(){ try{ if(DB.users.admin&&DB.users.admin.role==='admin') return DB.users.admin; for(var k in DB.users){ var u=DB.users[k]; if(u&&u.role==='admin') return u; } }catch(e){} return null; }
+function ctTpl(){
+  var d=JSON.parse(JSON.stringify(HQ_CT_DEF)), u=ctAdminUser(), t=u&&u.ctTpl;
+  if(t&&typeof t==='object'){ for(var k in t){ if(k==='clauses'){ if(Array.isArray(t.clauses)&&t.clauses.length) d.clauses=t.clauses.map(function(x,i){ return (x==null)?(HQ_CT_DEF.clauses[i]||''):String(x); }); } else if(typeof t[k]==='string') d[k]=t[k]; } }
+  return d;
+}
+function ctTplGet(k){ var t=ctTpl(); var m=/^c(\d+)$/.exec(k); return m?(t.clauses[+m[1]]||''):(t[k]||''); }
+function ctTplOpen(){
+  if(STATE.role!=='admin'){ showToast('التحرير لحساب الشؤون التعليمية','error'); return; }
+  var rows='';
+  HQ_CT_FIELDS.forEach(function(f){
+    var v=ctTplGet(f[0]);
+    rows+='<div class="prof-form-field"><label class="prof-form-lbl">'+hqEsc(f[1])+'</label>'+
+      ((f[2]>1)?('<textarea class="prof-form-input ct-ta" id="ctt-'+f[0]+'" rows="'+f[2]+'">'+hqEsc(v)+'</textarea>'):('<input class="prof-form-input" id="ctt-'+f[0]+'" type="text" value="'+hqEsc(v)+'">'))+'</div>';
+  });
+  openModal('تحرير نصّ العقد',
+    '<div class="prof-form-wrap pf-glow"><div class="ev-susp-note">كل ما تعدّله هنا يظهر في عقود جميع المعلّمين (الموقّعة وغير الموقّعة) فور الحفظ ويصل أجهزتهم بالمزامنة. اترك {الحلقة} و{المكافأة} و{السنة} كما هي ليُعبّئها التطبيق تلقائياً.</div>'+
+    '<div class="prof-form-grid">'+rows+'</div>'+
+    '<button class="prof-form-save" onclick="ctTplSave()" style="margin-top:14px">حفظ نصّ العقد</button>'+
+    '<div class="hqacc-acts" style="justify-content:center;gap:8px;margin-top:10px"><button type="button" class="hq-mini-btn view" onclick="ctTplPreview()">معاينة العقد</button><button type="button" class="hq-mini-btn del" onclick="ctTplReset()">استعادة النصّ الأصلي</button></div></div>');
+  hqBackTitle(ctOpenAdmin);
+  hqModalTall();
+}
+function ctTplRead(){
+  var o={clauses:[]};
+  HQ_CT_FIELDS.forEach(function(f){ var el=document.getElementById('ctt-'+f[0]); if(!el) return; var v=String(el.value||'').trim(); var m=/^c(\d+)$/.exec(f[0]); if(m) o.clauses[+m[1]]=v; else o[f[0]]=v; });
+  return o;
+}
+function ctTplSave(){
+  var u=ctAdminUser(); if(!u){ showToast('تعذّر الوصول إلى حساب الشؤون','error'); return; }
+  var o=ctTplRead(); if(!o.title||!o.clauses.filter(Boolean).length){ showToast('العنوان والبنود لا تكون فارغة','error'); return; }
+  o.mt=hqNow(); u.ctTpl=o;
+  try{ save(); }catch(e){}
+  showToast('✅ حُفظ نصّ العقد وسيظهر في عقود جميع المعلّمين','success');
+  ctOpenAdmin();
+}
+function ctTplResetGo(){ var u=ctAdminUser(); if(u){ delete u.ctTpl; try{ save(); }catch(e){} } showToast('أُعيد النصّ الأصلي','info'); ctTplOpen(); }
+function ctTplReset(){
+  openModal('استعادة النصّ الأصلي','<div class="hs-wrap"><div class="ev-susp-note">سيُستبدل النصّ المعدَّل بنصّ العقد الأصلي كما ورد في النموذج المعتمَد.</div><div class="hqacc-acts" style="justify-content:center;gap:8px;margin-top:12px"><button class="hq-mini-btn del" onclick="ctTplResetGo()">نعم، استعد الأصل</button><button class="hq-mini-btn view" onclick="ctTplOpen()">عودة</button></div></div>');
+}
+function ctTplPreview(){
+  var u=ctAdminUser(); if(!u) return; var keep=u.ctTpl; u.ctTpl=ctTplRead();
+  try{ hqPrintDoc('معاينة عقد العمل', ctPaperHtml({name:'اسم المعلّم',nid:'1000000000',halqa:'اسم الحلقة',venue:'المقرّ',reward:parseInt(ctTpl().reward,10)||HQ_CT.reward},null,{cover:true})); }
+  finally{ u.ctTpl=keep; }
+}
+/* تعبئة {الحلقة} {المكافأة} {السنة} بعد تهريب النصّ */
+function ctEscFill(txt,c){
+  var t=ctTpl(), hq=hqEsc(c.halqa||'')+(c.venue?(' - '+hqEsc(c.venue)):'');
+  return hqEsc(String(txt||'')).replace(/\{الحلقة\}/g,'<b>'+hq+'</b>').replace(/\{المكافأة\}/g,'<b>'+arNum(c.reward||t.reward)+'</b>').replace(/\{السنة\}/g,hqEsc(t.year));
+}
 var CTP={strokes:[],cur:null,w:0,h:0,dpr:1};
 function ctHijriToday(){ try{ var h=hijriNow(); return arNum(h.day)+' '+h.monthName+' '+arNum(h.year)+'هـ'; }catch(e){ return ''; } }
 /* المعلّم الحالي: سجلّه وحلقته وحسابه */
@@ -21261,13 +21339,20 @@ function ctTeacherRec(h,u){ var t=null; try{ if(u&&u.tid) t=hqTeacher(u.tid); if
 function ctCtx(h,t,u){
   var name=(t&&t.name)||(u&&u.name)||(h&&h.teacherName)||'';
   var nid=(t&&t.nid)||(h&&h.teacherInfo&&h.teacherInfo.nid)||'';
-  return {name:name, nid:nid, halqa:(h&&h.name)||'', venue:(h&&h.venue)||'', reward:HQ_CT.reward};
+  var _rw=parseInt(ctTpl().reward,10); return {name:name, nid:nid, halqa:(h&&h.name)||'', venue:(h&&h.venue)||'', reward:(_rw>0?_rw:HQ_CT.reward)};
 }
 /* سجل العقد المحفوظ لمعلّم حلقة (سجل المعلّم أولاً ثم حساب الدخول) */
 function ctGetFor(h,u){
   var t=ctTeacherRec(h,u); if(t&&t.contract&&t.contract.sig) return t.contract;
   if(u&&u.contract&&u.contract.sig) return u.contract;
   try{ for(var k in DB.users){ var x=DB.users[k]; if(x&&x.role==='teacher'&&x.contract&&x.contract.sig&&((h&&h.teacherId&&x.tid===h.teacherId)||(h&&x.hid===h.id))) return x.contract; } }catch(e){}
+  return null;
+}
+/* (19.3) عقد معلّم بعينه بمعرّفه (المعلّم الأول أو الثاني في الحلقة): سجلّه ثم حساب دخوله */
+function ctGetByTid(tid,h){
+  if(!tid) return null;
+  var t=hqTeacher(tid); if(t&&t.contract&&t.contract.sig) return t.contract;
+  try{ for(var k in DB.users){ var x=DB.users[k]; if(x&&x.role==='teacher'&&x.contract&&x.contract.sig&&x.tid===tid) return x.contract; } }catch(e){}
   return null;
 }
 function ctSetFor(h,u,rec){
@@ -21277,28 +21362,25 @@ function ctSetFor(h,u,rec){
 }
 /* ---------- نصّ العقد ---------- */
 function ctClauses(c){
-  var hq=hqEsc(c.halqa||'')+(c.venue?(' - '+hqEsc(c.venue)):'');
-  return [
-    'أن يلتزم الطرف الثاني بالعمل (معلمًا) بحلقة (<b>'+hq+'</b>) وذلك مقابل مكافأة (<b>'+arNum(c.reward)+'</b>) ريال شهرياً فقط.',
-    'يكون الدوام من الأحد حتى الأربعاء غير متفرغ وعمله لبعض الوقت بحيث لا يزيد عن ساعتين في اليوم.',
-    'يسري مفعول هذا العقد من تاريخ مباشرة الطرف الثاني.',
-    'يتبع لجمعية تحفيظ القرآن الكريم بالمندق ويقوم بالمهام التي تسند إليه من قبل الجمعية أو أي أعمال أخرى تسند إليه من قبل إدارة الجمعية.',
-    'يحق للطرف الأول إنهاء عقد الطرف الثاني فوراً في الحالات التالية:'+
-      '<div class="ct-sub"><div><b>أ-</b> عدم تقيد الطرف الثاني بالأنظمة والتعليمات الخاصة بالجمعية وإدارة الشؤون التعليمية أو قيامه بسلوك يتنافى مع أنظمة الجمعية.</div>'+
-      '<div><b>ب-</b> إذا انقطع عن العمل مدة تزيد على خمسة (5) أيام، دون إشعار الطرف الأول بعذر شرعي يقبله مجلس الإدارة التنفيذية بالجمعية يتم طي قيده من الجمعية.</div>'+
-      '<div><b>ج-</b> إذا لم يقم بالعمل على الوجه المطلوب ورفع عنه مدير الشؤون التعليمية بالجمعية بما يفيد عدم صلاحيته للعمل.</div></div>',
-    'لا يحق للطرف الثاني أي مكافأة مالية في الإجازات الصيفية أو القصيرة أو في حالة توقف الحلقات لأي سبب كان وتتوقف المكافأة بتوقف الطرف الثاني عن العمل لأي سبب كان لأن الأجر مقابل العمل ولا يحق للطرف الثاني أي مكافأة مالية نهاية الخدمة.',
-    'يكون للجمعية الحق في إنهاء العقد عند الاستغناء عن الطرف الثاني بأي وقت وليس له الحق في مطالبة الطرف الأول بأي تعويضات مالية أو غيرها.',
-    'ينتهي هذا العقد بنهاية العام الدراسي '+HQ_CT.year+' ولا يحق للطرف الثاني المطالبة بإعادة تجديد العقد إلا برغبة الجمعية.'
-  ];
+  /* (19.3) من النصّ المعتمَد أو المعدَّل؛ أسطر البند بعد الأول فقرات فرعية (أ- ب- ج-) */
+  var t=ctTpl();
+  return t.clauses.map(function(txt){
+    var ls=String(txt||'').split(/\n+/).map(function(x){ return x.trim(); }).filter(Boolean);
+    if(!ls.length) return '';
+    var h=ctEscFill(ls[0],c);
+    if(ls.length>1){ h+='<div class="ct-sub">'+ls.slice(1).map(function(x){ var m=/^([\u0621-\u064Aa-z0-9]{1,2}[-\u2013)])\s*(.*)$/.exec(x); return '<div>'+(m?('<b>'+hqEsc(m[1])+'</b> '+ctEscFill(m[2],c)):ctEscFill(x,c))+'</div>'; }).join('')+'</div>'; }
+    return h;
+  }).filter(Boolean);
 }
 /* التوقيع المحفوظ (مسارات) ← SVG */
 function ctSigSvg(sig,cls){
   if(sig&&sig.img) return '<img class="ct-sig'+(cls?(' '+cls):'')+'" src="'+sig.img+'" alt="">';   /* (19.2) توقيع مرفوع صورةً */
   if(!sig||!sig.p||!sig.p.length) return '';
   var W=sig.w||600, H=sig.h||220, d='';
-  for(var i=0;i<sig.p.length;i++){ var st=sig.p[i]; if(!st||st.length<2) continue; d+='M'+st[0]+' '+st[1]; if(st.length===2) d+='l0.1 0'; for(var j=2;j<st.length;j+=2) d+='L'+st[j]+' '+st[j+1]; }
-  return '<svg class="ct-sig'+(cls?(' '+cls):'')+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet"><path d="'+d+'" fill="none" stroke="#1b2a6b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  /* (19.3) التواقيع المرسومة قبل 19.3 حُفظت بمطّ أفقي (قياس غير متناسب من لوحة ≈ 330×190 إلى 600×220)؛ تُعرض الآن بنسبتها الطبيعية */
+  var kx=(sig.v>=2)?1:0.64, cx=W/2, X=function(x){ return Math.round((cx+(x-cx)*kx)*10)/10; };
+  for(var i=0;i<sig.p.length;i++){ var st=sig.p[i]; if(!st||st.length<2) continue; d+='M'+X(st[0])+' '+st[1]; if(st.length===2) d+='l0.1 0'; for(var j=2;j<st.length;j+=2) d+='L'+X(st[j])+' '+st[j+1]; }
+  return '<svg class="ct-sig'+(cls?(' '+cls):'')+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet"><path d="'+d+'" fill="none" stroke="#1b2a6b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 }
 /* ورقة العقد (للشاشة وللطباعة سواء) */
 function ctPaperHtml(c,rec,opt){
@@ -21307,23 +21389,24 @@ function ctPaperHtml(c,rec,opt){
   for(var i=0;i<cl.length;i++) li+='<li><span class="ct-n">'+arNum(i+1)+'-</span><div>'+cl[i]+'</div></li>';
   var sig=rec&&rec.sig?ctSigSvg(rec.sig):'<div class="ct-line"></div>';
   var stamp=(typeof IMG!=='undefined'&&IMG.stamp)?('<img class="ct-stamp" src="'+IMG.stamp+'" alt="">'):'';
+  var t=ctTpl();
   return '<div class="ct-paper'+(opt.cover?' pr-own':'')+'">'+
-    '<div class="ct-h1">'+hqEsc(HQ_CT.title)+'</div>'+
-    '<div class="ct-bism">الحمد لله والصلاة والسلام على رسول الله وبعد:</div>'+
-    '<p class="ct-p">فإنه في يوم '+HQ_CT.dayName+' '+HQ_CT.dateH+' الموافق '+HQ_CT.dateG+' اتفق كل من الجمعية الخيرية لتحفيظ القرآن الكريم بمحافظة المندق الطرف الأول ويمثلها المدير التنفيذي للجمعية.</p>'+
+    '<div class="ct-h1">'+hqEsc(t.title)+'</div>'+
+    '<div class="ct-bism">'+hqEsc(t.bism)+'</div>'+
+    '<p class="ct-p">'+ctEscFill(t.intro,c)+'</p>'+
     '<div class="ct-parties">'+
-      '<div class="ct-party"><div class="ct-party-t">الطرف الأول</div><div>الأستاذ / <b>'+hqEsc(HQ_CT.p1Name)+'</b></div><div>بموجب الهوية الوطنية (<b dir="ltr">'+hqEsc(HQ_CT.p1Nid)+'</b>)</div></div>'+
+      '<div class="ct-party"><div class="ct-party-t">الطرف الأول</div><div>الأستاذ / <b>'+hqEsc(t.p1Name)+'</b></div><div>بموجب الهوية الوطنية (<b dir="ltr">'+hqEsc(t.p1Nid)+'</b>)</div></div>'+
       '<div class="ct-party"><div class="ct-party-t">الطرف الثاني</div><div>الأستاذ / <b>'+hqEsc(c.name||'—')+'</b></div><div>بموجب الهوية الوطنية رقم (<b dir="ltr">'+hqEsc(c.nid||'……………')+'</b>)</div></div>'+
     '</div>'+
-    '<div class="ct-p ct-lead">على ما يلي:-</div>'+
+    '<div class="ct-p ct-lead">'+hqEsc(t.lead)+'</div>'+
     '<ol class="ct-list">'+li+'</ol>'+
-    '<p class="ct-p">• يحرر هذا العقد من نسختين وتسلم نسخة لكل طرف بعد الموافقة عليه وتوقيعه من الطرفين.</p>'+
-    '<p class="ct-p ct-ack">((يقرر الطرف الثاني بأنه علم واستوعب كافة مواد هذا العقد بتنفيذه والالتزام به وعلى ذلك يوقع))</p>'+
+    '<p class="ct-p">'+hqEsc(t.note)+'</p>'+
+    '<p class="ct-p ct-ack">'+hqEsc(t.ack)+'</p>'+
     '<div class="ct-sign">'+
-      '<div class="ct-sg"><div class="ct-sg-t">الطرف الأول / '+hqEsc(HQ_CT.p1Title)+'</div><div class="ct-sg-n">الاسم / '+hqEsc(HQ_CT.p1Name)+'</div><div class="ct-sg-l">التوقيع</div>'+((typeof IMG!=='undefined'&&IMG.sig1)?('<img class="ct-sig ct-sig1" src="'+IMG.sig1+'" alt="">'):'<div class="ct-line"></div>')+'<div class="ct-sg-d">'+HQ_CT.dateH+'</div></div>'+
-      '<div class="ct-sg"><div class="ct-sg-t">الطرف الثاني</div><div class="ct-sg-n">الاسم / '+hqEsc(c.name||'—')+'</div><div class="ct-sg-l">التوقيع</div>'+sig+'<div class="ct-sg-d">'+(rec&&rec.hat?('وُقّع بتاريخ '+hqEsc(rec.hat)):HQ_CT.dateH)+'</div></div>'+
+      '<div class="ct-sg"><div class="ct-sg-t">الطرف الأول / '+hqEsc(t.p1Title)+'</div><div class="ct-sg-n">الاسم / '+hqEsc(t.p1Name)+'</div><div class="ct-sg-l">التوقيع</div>'+((typeof IMG!=='undefined'&&IMG.sig1)?('<img class="ct-sig ct-sig1" src="'+IMG.sig1+'" alt="">'):'<div class="ct-line"></div>')+'<div class="ct-sg-d">'+hqEsc(t.dateH)+'</div></div>'+
+      '<div class="ct-sg"><div class="ct-sg-t">الطرف الثاني</div><div class="ct-sg-n">الاسم / '+hqEsc(c.name||'—')+'</div><div class="ct-sg-l">التوقيع</div>'+sig+'<div class="ct-sg-d">'+(rec&&rec.hat?('وُقّع بتاريخ '+hqEsc(rec.hat)):hqEsc(t.dateH))+'</div></div>'+
     '</div>'+
-    '<div class="ct-foot"><span>حرر العقد بتاريخ '+HQ_CT.dateH+'</span>'+stamp+'</div>'+
+    '<div class="ct-foot"><span>حرر العقد بتاريخ '+hqEsc(t.dateH)+'</span>'+stamp+'</div>'+
   '</div>';
 }
 /* ---------- لوحة التوقيع ---------- */
@@ -21390,9 +21473,10 @@ function ctPadUndo(){ CTP.strokes.pop(); CTP.cur=null; ctPadDraw(); ctPadHint();
 /* التوقيع ← مسارات مُقيَّسة إلى 600×220 بأعداد صحيحة (خفيف جداً في المزامنة) */
 function ctPadData(){
   if(CTP.img&&CTP.img.img) return {w:CTP.img.w,h:CTP.img.h,img:CTP.img.img};   /* (19.2) صورة مرفوعة */
-  var W=600, H=220, sx=W/(CTP.w||1), sy=H/(CTP.h||1), out=[], n=0;
-  for(var i=0;i<CTP.strokes.length;i++){ var st=CTP.strokes[i], o=[]; for(var j=0;j<st.length;j+=2){ o.push(Math.round(st[j]*sx),Math.round(st[j+1]*sy)); } if(o.length>=2){ out.push(o); n+=o.length/2; } }
-  return n?{w:W,h:H,p:out}:null;
+  /* (19.3) قياس متناسب (نسبة واحدة للعرض والارتفاع) إلى صندوق 600×220 فلا يُمطّ التوقيع */
+  var W=600, H=220, k=Math.min(W/(CTP.w||1), H/(CTP.h||1)), out=[], n=0;
+  for(var i=0;i<CTP.strokes.length;i++){ var st=CTP.strokes[i], o=[]; for(var j=0;j<st.length;j+=2){ o.push(Math.round(st[j]*k),Math.round(st[j+1]*k)); } if(o.length>=2){ out.push(o); n+=o.length/2; } }
+  return n?{w:Math.max(1,Math.round((CTP.w||1)*k)),h:Math.max(1,Math.round((CTP.h||1)*k)),p:out,v:2}:null;
 }
 /* ---------- شاشة المعلّم ---------- */
 function ctOpenTeacher(){
@@ -21439,26 +21523,36 @@ function ctPrintMine(){
 }
 /* ---------- الشؤون التعليمية: عقود المعلمين ---------- */
 function ctAdminRows(){
-  var out=[], L=(DB.halqat||[]).slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''),'ar'); });
-  L.forEach(function(h){ if(!h||!h.id||!(h.teacherName||h.teacherId)) return; var t=h.teacherId?hqTeacher(h.teacherId):null; var rec=ctGetFor(h,null); out.push({h:h,t:t,rec:rec,name:(t&&t.name)||h.teacherName||'—'}); });
+  /* (19.3) صفّ لكل معلّم — الأول والثاني في الحلقة (كان المعلّم الثاني لا يظهر فيبدو عقده مفقوداً) */
+  var out=[], seen={}, L=(DB.halqat||[]).slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''),'ar'); });
+  L.forEach(function(h){
+    if(!h||!h.id) return;
+    [{tid:h.teacherId,name:h.teacherName,k:1},{tid:h.teacherId2,name:h.teacherName2,k:2}].forEach(function(x){
+      if(!x.tid&&!x.name) return;
+      var key=x.tid||('n:'+x.name+'@'+h.id); if(seen[key]) return; seen[key]=1;
+      var t=x.tid?hqTeacher(x.tid):null, rec=x.tid?ctGetByTid(x.tid,h):ctGetFor(h,null);
+      out.push({h:h,t:t,tid:x.tid||'',rec:rec,name:(t&&t.name)||x.name||'—',second:(x.k===2)});
+    });
+  });
   return out;
 }
 function ctOpenAdmin(){
   var rows=ctAdminRows(), signed=rows.filter(function(r){ return !!r.rec; });
   var list=rows.map(function(r,i){
     var st=r.rec?('<span class="ct-badge ok">موقّع - '+hqEsc(r.rec.hat||'')+'</span>'):'<span class="ct-badge no">لم يوقّع بعد</span>';
-    return '<div class="hqacc-row ct-row"><span class="hqacc-val"><b>'+hqEsc(r.name)+'</b><span class="hqp-stu-s" style="display:block">'+hqEsc(r.h.name||'')+'</span>'+st+'</span>'+
-      (r.rec?('<button type="button" class="hq-mini-btn view" onclick="ctPrintOne(\''+hqEsc(r.h.id)+'\')">عرض وطباعة</button>'):'')+'</div>';
+    return '<div class="hqacc-row ct-row"><span class="hqacc-val"><b>'+hqEsc(r.name)+'</b><span class="hqp-stu-s" style="display:block">'+hqEsc(r.h.name||'')+(r.second?' <small>(معلّم ثانٍ)</small>':'')+'</span>'+st+'</span>'+
+      (r.rec?('<button type="button" class="hq-mini-btn view" onclick="ctPrintOne(\''+hqEsc(r.h.id)+'\',\''+hqEsc(r.tid)+'\')">عرض وطباعة</button>'):'')+'</div>';
   }).join('');
   openModal('عقود المعلمين',
     '<div class="hs-wrap"><div class="hqacc" style="margin:0 0 10px"><div class="hqacc-body hqacc-plain">'+
       hqAccRow('المعلّمون',arNum(rows.length))+hqAccRow('وقّعوا العقد',arNum(signed.length))+hqAccRow('لم يوقّعوا بعد',arNum(rows.length-signed.length))+'</div></div>'+
+    '<button type="button" class="tl-fetch ct-editbtn" style="margin:0 0 10px" onclick="ctTplOpen()">تحرير نصّ العقد (بنوده وأطرافه وتواريخه)</button>'+
     (signed.length?'<button type="button" class="tl-fetch" style="margin:0 0 12px" onclick="ctPrintAll()">طباعة جميع العقود الموقّعة ('+arNum(signed.length)+') PDF</button>':'')+
     '<div class="hqacc" style="margin:0"><div class="hqacc-body hqacc-plain">'+(list||'<div class="empty-state"><div class="empty-state-icon">📄</div>لا توجد حلقات</div>')+'</div></div></div>');
   hqModalTall();
 }
-function ctPrintOne(hid){
-  var h=hqHalqaById(hid); if(!h) return; var rec=ctGetFor(h,null); if(!rec){ showToast('لم يوقّع المعلّم بعد','info'); return; }
+function ctPrintOne(hid,tid){
+  var h=hqHalqaById(hid); if(!h) return; var rec=tid?ctGetByTid(tid,h):ctGetFor(h,null); if(!rec){ showToast('لم يوقّع المعلّم بعد','info'); return; }
   var c={name:rec.name,nid:rec.nid,halqa:rec.halqa||h.name,venue:rec.venue||h.venue,reward:rec.reward||HQ_CT.reward};
   hqPrintDoc('عقد عمل - '+(c.name||''), ctPaperHtml(c,rec,{cover:true}));
 }
@@ -21496,7 +21590,7 @@ function ctPrintAll(){
 .ct-sg-t{font-weight:900;color:#0b3a36}
 .ct-sg-l{font-weight:800;margin-top:2px}
 .ct-line{height:30px;border-bottom:1px dotted #555;margin:2px 0 4px}
-.ct-sig{display:block;width:100%;height:46px}
+.ct-sig{display:block;width:auto;max-width:100%;height:52px;margin:0 auto;object-fit:contain}
 .ct-sg-d{font-size:.68rem;color:#444}
 .ct-foot{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:10px;font-weight:800;font-size:.74rem}
 .ct-stamp{width:104px;height:104px;object-fit:contain;flex:none;opacity:.95;transform:rotate(-6deg)}
@@ -21514,6 +21608,8 @@ function ctPrintAll(){
 .ct-agree{display:flex;align-items:center;gap:10px;margin:14px 2px 6px;font-size:.8rem;font-weight:700;color:#dfeeec;cursor:pointer}
 .ct-agree input{width:22px;height:22px;accent-color:#f0c040;flex:none}
 .ct-badge{display:inline-block;margin-top:4px;padding:2px 9px;border-radius:99px;font-size:.62rem;font-weight:800}
+.ct-ta{resize:vertical;min-height:44px;line-height:1.6;font-size:.86rem !important}
+.ct-editbtn{background:rgba(247,215,116,.14) !important;border-color:rgba(247,215,116,.6) !important;color:#ffe9a8 !important}
 .ct-badge.ok{background:rgba(95,227,161,.16);color:#86efac;border:1px solid rgba(95,227,161,.4)}
 .ct-badge.no{background:rgba(248,113,113,.14);color:#fca5a5;border:1px solid rgba(248,113,113,.4)}
 /* الطباعة */
@@ -21527,7 +21623,7 @@ function ctPrintAll(){
 #pdfReport .ct-sign{gap:6mm;margin-top:3mm}
 #pdfReport .ct-sg{font-size:8.2pt;line-height:1.55}
 #pdfReport .ct-line{height:9mm}
-#pdfReport .ct-sig{height:13mm}
+#pdfReport .ct-sig{height:14mm;width:auto;max-width:100%}
 #pdfReport .ct-sig1{height:13mm;width:auto}
 #pdfReport .ct-foot{margin-top:1mm;font-size:8.2pt;gap:1mm}
 #pdfReport .ct-stamp{width:34mm;height:34mm;margin-top:-2mm}
